@@ -31,17 +31,25 @@ jobs:
     - name: Install MAUI workload
       run: dotnet workload install maui
       
-    # This step is crucial - explicitly download the Windows runtime pack
-    - name: Download runtime packs
+    # Inspect project file to see what target frameworks are included
+    - name: Inspect project file
+      shell: pwsh
       run: |
-        dotnet build -t:DownloadDotNetRuntimePack /p:DotNetRuntimeIdentifier=win-x64 /p:DotNetBuildSourceOnly=true
-        dotnet build -t:DownloadDotNetRuntimePack /p:DotNetRuntimeIdentifier=android-arm64 /p:DotNetBuildSourceOnly=true
+        $projFiles = Get-ChildItem -Recurse -Filter "*.csproj" 
+        foreach ($file in $projFiles) {
+          Write-Host "Project file: $($file.FullName)"
+          Get-Content $file.FullName | Select-String -Pattern "<TargetFramework" | Write-Host
+        }
       
     - name: Restore dependencies
       run: dotnet restore
       
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
+    # Build only the Android and Windows targets separately
+    - name: Build Android
+      run: dotnet build --configuration Release --no-restore -f net8.0-android
+      
+    - name: Build Windows
+      run: dotnet build --configuration Release --no-restore -f net8.0-windows10.0.19041.0
       
     - name: Test
       run: dotnet test --configuration Release --no-build --verbosity normal
@@ -56,7 +64,7 @@ jobs:
         retention-days: 5
 
   deploy-android:
-    name: Build and Sign Android
+    name: Build Android App
     needs: build-and-test
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: windows-latest
@@ -81,16 +89,16 @@ jobs:
     - name: Install MAUI workload
       run: dotnet workload install maui
       
-    - name: Download Android runtime pack
-      run: dotnet build -t:DownloadDotNetRuntimePack /p:DotNetRuntimeIdentifier=android-arm64 /p:DotNetBuildSourceOnly=true
+    - name: Restore dependencies
+      run: dotnet restore
       
     # Identify Android project path
-    - name: Identify Android project path
+    - name: Identify project path
       id: project-path
       shell: pwsh
       run: |
         $projFile = Get-ChildItem -Recurse -Filter "*.csproj" | Select-Object -First 1
-        echo "PROJECT_PATH=$($projFile.FullName)" >> $env:GITHUB_OUTPUT
+        Write-Output "PROJECT_PATH=$($projFile.FullName)" >> $env:GITHUB_OUTPUT
       
     - name: Build Android App
       run: dotnet publish "${{ steps.project-path.outputs.PROJECT_PATH }}" -f net8.0-android -c Release
@@ -104,7 +112,7 @@ jobs:
         retention-days: 14
 
   deploy-windows:
-    name: Build Windows Package
+    name: Build Windows App
     needs: build-and-test
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: windows-latest
@@ -129,19 +137,19 @@ jobs:
     - name: Install MAUI workload
       run: dotnet workload install maui
       
-    - name: Download Windows runtime pack
-      run: dotnet build -t:DownloadDotNetRuntimePack /p:DotNetRuntimeIdentifier=win-x64 /p:DotNetBuildSourceOnly=true
+    - name: Restore dependencies
+      run: dotnet restore
       
     # Identify Windows project path
-    - name: Identify Windows project path
+    - name: Identify project path
       id: project-path
       shell: pwsh
       run: |
         $projFile = Get-ChildItem -Recurse -Filter "*.csproj" | Select-Object -First 1
-        echo "PROJECT_PATH=$($projFile.FullName)" >> $env:GITHUB_OUTPUT
+        Write-Output "PROJECT_PATH=$($projFile.FullName)" >> $env:GITHUB_OUTPUT
       
     - name: Build Windows App
-      run: dotnet publish "${{ steps.project-path.outputs.PROJECT_PATH }}" -f net8.0-windows10.0.19041.0 -c Release -p:RuntimeIdentifier=win-x64 --self-contained
+      run: dotnet publish "${{ steps.project-path.outputs.PROJECT_PATH }}" -f net8.0-windows10.0.19041.0 -c Release --self-contained
       
     - name: Upload Windows artifacts
       uses: actions/upload-artifact@v4
