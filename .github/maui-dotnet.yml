@@ -1,0 +1,152 @@
+name: MAUI CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+    
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Setup NuGet cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+          
+    - name: Install MAUI workload
+      run: dotnet workload install maui
+      
+    # This step is crucial - explicitly download the Windows runtime pack
+    - name: Download runtime packs
+      run: |
+        dotnet build -t:DownloadDotNetRuntimePack /p:DotNetRuntimeIdentifier=win-x64 /p:DotNetBuildSourceOnly=true
+        dotnet build -t:DownloadDotNetRuntimePack /p:DotNetRuntimeIdentifier=android-arm64 /p:DotNetBuildSourceOnly=true
+      
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      
+    - name: Test
+      run: dotnet test --configuration Release --no-build --verbosity normal
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: maui-builds
+        path: |
+          **/bin/Release/net8.0-android/
+          **/bin/Release/net8.0-windows10.0.19041.0/
+        retention-days: 5
+
+  deploy-android:
+    name: Build and Sign Android
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Setup NuGet cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+      
+    - name: Install MAUI workload
+      run: dotnet workload install maui
+      
+    - name: Download Android runtime pack
+      run: dotnet build -t:DownloadDotNetRuntimePack /p:DotNetRuntimeIdentifier=android-arm64 /p:DotNetBuildSourceOnly=true
+      
+    # Identify Android project path
+    - name: Identify Android project path
+      id: project-path
+      shell: pwsh
+      run: |
+        $projFile = Get-ChildItem -Recurse -Filter "*.csproj" | Select-Object -First 1
+        echo "PROJECT_PATH=$($projFile.FullName)" >> $env:GITHUB_OUTPUT
+      
+    - name: Build Android App
+      run: dotnet publish "${{ steps.project-path.outputs.PROJECT_PATH }}" -f net8.0-android -c Release
+      
+    - name: Upload Android artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-release
+        path: |
+          **/bin/Release/net8.0-android/**/*.apk
+        retention-days: 14
+
+  deploy-windows:
+    name: Build Windows Package
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Setup NuGet cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+      
+    - name: Install MAUI workload
+      run: dotnet workload install maui
+      
+    - name: Download Windows runtime pack
+      run: dotnet build -t:DownloadDotNetRuntimePack /p:DotNetRuntimeIdentifier=win-x64 /p:DotNetBuildSourceOnly=true
+      
+    # Identify Windows project path
+    - name: Identify Windows project path
+      id: project-path
+      shell: pwsh
+      run: |
+        $projFile = Get-ChildItem -Recurse -Filter "*.csproj" | Select-Object -First 1
+        echo "PROJECT_PATH=$($projFile.FullName)" >> $env:GITHUB_OUTPUT
+      
+    - name: Build Windows App
+      run: dotnet publish "${{ steps.project-path.outputs.PROJECT_PATH }}" -f net8.0-windows10.0.19041.0 -c Release -p:RuntimeIdentifier=win-x64 --self-contained
+      
+    - name: Upload Windows artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-release
+        path: |
+          **/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish/**
+        retention-days: 14
