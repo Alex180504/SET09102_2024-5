@@ -66,7 +66,7 @@ jobs:
         run: dotnet tool install -g dotnet-format
 
       - name: Run linting
-        run: dotnet format --check --verbosity diagnostic
+        run: dotnet format SET09102-2024-5.sln --check --verbosity diagnostic
         working-directory: ${{ github.workspace }}
 
   deploy:
