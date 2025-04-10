@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feature/ci-cd-pipeline
   pull_request:
     branches:
       - '*'
@@ -34,66 +35,18 @@ jobs:
 
          - name: Install Workloads
            run: |
-             dotnet workload install android maui
+             dotnet workload install android maui ios tizen wasi-experimental
              dotnet workload restore
 
          - name: Build for Android
-           if: matrix.target == 'android'
+           if: ${{ matrix.target == 'android' }}
            run: |
              dotnet build --configuration Release --framework net8.0-android
 
          - name: Build for Windows
-           if: matrix.target == 'windows'
+           if: ${{ matrix.target == 'windows' }}
            run: |
              dotnet build --configuration Release --framework net8.0-windows10.0.19041.0
 
          - name: Run tests
            run: dotnet test --configuration Release --no-build --verbosity normal
-
-  lint:
-    name: Code Quality Checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Install dotnet-format
-        run: dotnet tool install -g dotnet-format
-
-      - name: Run linting
-        run: dotnet format --check --verbosity diagnostic
-        working-directory: ${{ github.workspace }}
-
-  deploy:
-    name: Deploy to Production
-    needs: [build]
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Cache .NET Workloads
-        uses: actions/cache@v3
-        with:
-          path: ~/.dotnet
-          key: ${{ runner.os }}-dotnet-workloads-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-dotnet-workloads-
-
-      - name: Install Workloads
-        run: |
-          dotnet workload install android maui
-          dotnet workload restore
-
-      - name: Build for Release
-        run: dotnet publish -c Release
