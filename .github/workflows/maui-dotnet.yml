@@ -1,160 +1,52 @@
-name: MAUI CI/CD Pipeline
+name: CI/CD Pipeline for .NET MAUI App
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - feature/ci-cd-pipeline
   pull_request:
-    branches: [ main, develop ]
-    
+    branches:
+      - '*'
+
 jobs:
-  build-and-test:
+  build:
     name: Build and Test
     runs-on: windows-latest
-    
+    strategy:
+      matrix:
+        target: [android, windows]
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.0.x'
-        
-    - name: Setup NuGet cache
-      uses: actions/cache@v3
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
-          
-    - name: Install MAUI workload
-      run: dotnet workload install maui
-      
-    # Inspect project file to see what target frameworks are included
-    - name: Inspect project file
-      shell: pwsh
-      run: |
-        $projFiles = Get-ChildItem -Recurse -Filter "*.csproj" 
-        foreach ($file in $projFiles) {
-          Write-Host "Project file: $($file.FullName)"
-          Get-Content $file.FullName | Select-String -Pattern "<TargetFramework" | Write-Host
-        }
-      
-    - name: Restore dependencies
-      run: dotnet restore
-      
-    # Build only the Android and Windows targets separately
-    - name: Build Android
-      run: dotnet build --configuration Release --no-restore -f net8.0-android
-      
-    - name: Build Windows
-      run: dotnet build --configuration Release --no-restore -f net8.0-windows10.0.19041.0
-      
-    - name: Test
-      run: dotnet test --configuration Release --no-build --verbosity normal
-      
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: maui-builds
-        path: |
-          **/bin/Release/net8.0-android/
-          **/bin/Release/net8.0-windows10.0.19041.0/
-        retention-days: 5
+         - name: Checkout code
+           uses: actions/checkout@v3
+   
+         - name: Setup .NET
+           uses: actions/setup-dotnet@v3
+           with:
+             dotnet-version: '8.0.x'
 
-  deploy-android:
-    name: Build Android App
-    needs: build-and-test
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: windows-latest
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.0.x'
-        
-    - name: Setup NuGet cache
-      uses: actions/cache@v3
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
-      
-    - name: Install MAUI workload
-      run: dotnet workload install maui
-      
-    - name: Restore dependencies
-      run: dotnet restore
-      
-    # Identify Android project path
-    - name: Identify project path
-      id: project-path
-      shell: pwsh
-      run: |
-        $projFile = Get-ChildItem -Recurse -Filter "*.csproj" | Select-Object -First 1
-        Write-Output "PROJECT_PATH=$($projFile.FullName)" >> $env:GITHUB_OUTPUT
-      
-    - name: Build Android App
-      run: dotnet publish "${{ steps.project-path.outputs.PROJECT_PATH }}" -f net8.0-android -c Release
-      
-    - name: Upload Android artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-release
-        path: |
-          **/bin/Release/net8.0-android/**/*.apk
-        retention-days: 14
+         - name: Cache .NET Workloads
+           uses: actions/cache@v3
+           with:
+             path: ~/.dotnet
+             key: ${{ runner.os }}-dotnet-workloads-${{ hashFiles('**/*.csproj') }}
+             restore-keys: |
+               ${{ runner.os }}-dotnet-workloads-
 
-  deploy-windows:
-    name: Build Windows App
-    needs: build-and-test
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: windows-latest
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.0.x'
-        
-    - name: Setup NuGet cache
-      uses: actions/cache@v3
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
-      
-    - name: Install MAUI workload
-      run: dotnet workload install maui
-      
-    - name: Restore dependencies
-      run: dotnet restore
-      
-    # Identify Windows project path
-    - name: Identify project path
-      id: project-path
-      shell: pwsh
-      run: |
-        $projFile = Get-ChildItem -Recurse -Filter "*.csproj" | Select-Object -First 1
-        Write-Output "PROJECT_PATH=$($projFile.FullName)" >> $env:GITHUB_OUTPUT
-      
-    - name: Build Windows App
-      run: dotnet publish "${{ steps.project-path.outputs.PROJECT_PATH }}" -f net8.0-windows10.0.19041.0 -c Release --self-contained
-      
-    - name: Upload Windows artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-release
-        path: |
-          **/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish/**
-        retention-days: 14
+         - name: Install Workloads
+           run: |
+             dotnet workload install android maui ios tizen wasi-experimental
+             dotnet workload restore
+
+         - name: Build for Android
+           if: ${{ matrix.target == 'android' }}
+           run: |
+             dotnet build --configuration Release --framework net8.0-android
+
+         - name: Build for Windows
+           if: ${{ matrix.target == 'windows' }}
+           run: |
+             dotnet build --configuration Release --framework net8.0-windows10.0.19041.0
+
+         - name: Run tests
+           run: dotnet test --configuration Release --no-build --verbosity normal
