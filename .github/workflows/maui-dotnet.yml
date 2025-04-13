@@ -41,12 +41,12 @@ jobs:
          - name: Build for Android
            if: ${{ matrix.target == 'android' }}
            run: |
-             dotnet build --configuration Release --framework net8.0-android
+             dotnet build SET09102-2024-5/SET09102-2024-5.csproj --configuration Release --framework net8.0-android
 
          - name: Build for Windows
            if: ${{ matrix.target == 'windows' }}
            run: |
-             dotnet build --configuration Release --framework net8.0-windows10.0.19041.0
+             dotnet build SET09102-2024-5/SET09102-2024-5.csproj --configuration Release --framework net8.0-windows10.0.19041.0
 
          - name: Run tests
-           run: dotnet test --configuration Release --no-build --verbosity normal
+           run: dotnet test Tests/Tests.csproj --configuration Release --verbosity normal
