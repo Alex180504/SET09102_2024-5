@@ -46,7 +46,7 @@ namespace SET09102_2024_5
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
             // Register services
-            builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
+            builder.Services.AddScoped<IDatabaseService, DatabaseService>();
 
 #if DEBUG
             builder.Logging.AddDebug();
