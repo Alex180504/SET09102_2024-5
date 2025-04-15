@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 using Microsoft.EntityFrameworkCore;
 using SET09102_2024_5.Models;
+using System.IO;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SET09102_2024_5.Data
 {
