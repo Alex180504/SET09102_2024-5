@@ -89,3 +89,7 @@ CREATE TABLE incident_measurement (
     FOREIGN KEY (measurement_id) REFERENCES measurement(measurement_id) ON DELETE CASCADE,
     FOREIGN KEY (incident_id) REFERENCES incident(incident_id) ON DELETE CASCADE
 );
+
+CREATE USER IF NOT EXISTS 'sensor_app'@'localhost' IDENTIFIED BY '165456678';
+GRANT SELECT, INSERT, UPDATE, DELETE ON sensor_monitoring.* TO 'sensor_app'@'localhost';
+FLUSH PRIVILEGES;

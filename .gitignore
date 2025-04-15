@@ -406,3 +406,6 @@ FodyWeavers.xsd
 
 Tests/obj
 Tests/bin
+
+appsettings.json
+appsettings.test.json

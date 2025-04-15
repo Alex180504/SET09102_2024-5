@@ -4,9 +4,9 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-
 		<IsPackable>false</IsPackable>
 		<IsTestProject>true</IsTestProject>
+		<RootNamespace>Tests</RootNamespace>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -14,11 +14,18 @@
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
 		<PackageReference Include="xunit" Version="2.5.3" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.4" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Using Include="Xunit" />
 		<ProjectReference Include="..\SET09102-2024-5\SET09102-2024-5.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="appsettings.test.json" />
+		<EmbeddedResource Include="DigiCertGlobalRootG2.crt.pem" />
 	</ItemGroup>
 
 </Project>
