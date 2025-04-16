@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using SET09102_2024_5.Data;
 using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Services;
+using SET09102_2024_5.ViewModels;
+using SET09102_2024_5.Views;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using System.Reflection;
@@ -47,6 +49,12 @@ namespace SET09102_2024_5
 
             // Register services
             builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+
+            // Register ViewModels
+            builder.Services.AddTransient<MainPageViewModel>();
+
+            // Register Views
+            builder.Services.AddTransient<MainPage>();
 
 #if DEBUG
             builder.Logging.AddDebug();
