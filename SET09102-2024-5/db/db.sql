@@ -4,7 +4,7 @@ USE sensor_monitoring;
 -- Role Table
 CREATE TABLE role (
     role_id INT AUTO_INCREMENT PRIMARY KEY,
-    role_name VARCHAR(100) NOT NULL
+    role_name VARCHAR(100) NOT NULL,
 );
 
 -- User Table
@@ -13,10 +13,10 @@ CREATE TABLE user (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(255),
-    role_id INT,
+    role_id INT NOT NULL,
     password_hash VARCHAR(255),
     password_salt VARCHAR(255),
-    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE SET NULL
+    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE RESTRICT
 );
 
 -- Sensor Table

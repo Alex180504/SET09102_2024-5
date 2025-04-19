@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using System.Reflection;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
+using CommunityToolkit.Maui;
 
 namespace SET09102_2024_5
 {
@@ -20,6 +21,7 @@ namespace SET09102_2024_5
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseMauiCommunityToolkit()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -30,12 +32,18 @@ namespace SET09102_2024_5
             var assembly = Assembly.GetExecutingAssembly();
             using var stream = assembly.GetManifestResourceStream("SET09102_2024_5.appsettings.json");
 
+            if (stream == null)
+            {
+                throw new InvalidOperationException("Could not find appsettings.json embedded resource.");
+            }
+
             var config = new ConfigurationBuilder()
                 .AddJsonStream(stream)
                 .Build();
 
             // Get connection string from configuration
-            var connectionString = config.GetConnectionString("DefaultConnection");
+            var connectionString = config.GetConnectionString("DefaultConnection") 
+                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found in configuration.");
 
             // Extract SSL certificate and save it to a temporary file
             string certPath = ExtractSslCertificate();
@@ -49,12 +57,20 @@ namespace SET09102_2024_5
 
             // Register services
             builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+            builder.Services.AddSingleton<IAuthService, AuthService>(); // Singleton to maintain auth state
+
+            // Register app shell with navigation
+            builder.Services.AddSingleton<AppShell>();
 
             // Register ViewModels
             builder.Services.AddTransient<MainPageViewModel>();
+            builder.Services.AddTransient<LoginViewModel>();
+            builder.Services.AddTransient<RegisterViewModel>();
 
             // Register Views
             builder.Services.AddTransient<MainPage>();
+            builder.Services.AddTransient<LoginPage>();
+            builder.Services.AddTransient<RegisterPage>();
 
 #if DEBUG
             builder.Logging.AddDebug();
@@ -83,6 +99,5 @@ namespace SET09102_2024_5
 
             return tempPath;
         }
-
     }
 }

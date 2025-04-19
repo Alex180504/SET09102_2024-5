@@ -49,14 +49,14 @@ namespace SET09102_2024_5.Data
                 entity.Property(e => e.FirstName).HasColumnName("first_name").HasMaxLength(100);
                 entity.Property(e => e.LastName).HasColumnName("last_name").HasMaxLength(100);
                 entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255);
-                entity.Property(e => e.RoleId).HasColumnName("role_id");
+                entity.Property(e => e.RoleId).HasColumnName("role_id").IsRequired();
                 entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasMaxLength(255);
                 entity.Property(e => e.PasswordSalt).HasColumnName("password_salt").HasMaxLength(255);
 
                 entity.HasOne(u => u.Role)
                       .WithMany(r => r.Users)
                       .HasForeignKey(u => u.RoleId)
-                      .OnDelete(DeleteBehavior.SetNull);
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Sensor>(entity =>
