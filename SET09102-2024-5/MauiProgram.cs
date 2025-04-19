@@ -11,8 +11,6 @@ using System.Reflection;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using CommunityToolkit.Maui;
-using SET09102_2024_5.Interfaces;
-
 
 namespace SET09102_2024_5
 {
@@ -28,24 +26,29 @@ namespace SET09102_2024_5
             builder
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkit()
+                .UseMauiCommunityToolkit()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-            try
+            // Load configuration
+            var assembly = Assembly.GetExecutingAssembly();
+            using var stream = assembly.GetManifestResourceStream("SET09102_2024_5.appsettings.json");
+
+            if (stream == null)
             {
-                // Load configuration
-                var assembly = Assembly.GetExecutingAssembly();
-                using var stream = assembly.GetManifestResourceStream("SET09102_2024_5.appsettings.json");
+                throw new InvalidOperationException("Could not find appsettings.json embedded resource.");
+            }
 
                 var config = new ConfigurationBuilder()
                     .AddJsonStream(stream)
                     .Build();
 
-                // Get connection string from configuration
-                ConnectionString = config.GetConnectionString("DefaultConnection");
+            // Get connection string from configuration
+            var connectionString = config.GetConnectionString("DefaultConnection") 
+                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found in configuration.");
 
                 // Extract SSL certificate and save it to a temporary file
                 CertPath = ExtractSslCertificate();
@@ -80,20 +83,22 @@ namespace SET09102_2024_5
                 // Register repositories
                 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-                // Register services
-                builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+            // Register services
+            builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+            builder.Services.AddSingleton<IAuthService, AuthService>(); // Singleton to maintain auth state
 
-                // Register ViewModels
-                builder.Services.AddTransient<MainPageViewModel>();
-                builder.Services.AddTransient<SensorManagementViewModel>();
+            // Register app shell with navigation
+            builder.Services.AddSingleton<AppShell>();
 
-                // Register Views
-                builder.Services.AddTransient<MainPage>();
-                builder.Services.AddTransient<SensorManagementPage>();
+            // Register ViewModels
+            builder.Services.AddTransient<MainPageViewModel>();
+            builder.Services.AddTransient<LoginViewModel>();
+            builder.Services.AddTransient<RegisterViewModel>();
 
-                builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
-                builder.Services.AddSingleton<IDialogService, DialogService>();
-                builder.Services.AddSingleton<INavigationService, NavigationService>();
+            // Register Views
+            builder.Services.AddTransient<MainPage>();
+            builder.Services.AddTransient<LoginPage>();
+            builder.Services.AddTransient<RegisterPage>();
 
 #if DEBUG
                 builder.Logging.AddDebug();
@@ -126,47 +131,6 @@ namespace SET09102_2024_5
             }
 
             return tempPath;
-        }
-    }
-
-    public interface IDatabaseInitializationService
-    {
-        Task<bool> InitializeDatabaseAsync();
-        bool IsDatabaseAvailable { get; }
-        string GetLastErrorMessage();
-    }
-
-    public class DatabaseInitializationService : IDatabaseInitializationService
-    {
-        private readonly SensorMonitoringContext _dbContext;
-        private bool _isDatabaseAvailable = false;
-        private string _lastErrorMessage = string.Empty;
-
-        public bool IsDatabaseAvailable => _isDatabaseAvailable;
-
-        public DatabaseInitializationService(SensorMonitoringContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
-
-        public string GetLastErrorMessage() => _lastErrorMessage;
-
-        public async Task<bool> InitializeDatabaseAsync()
-        {
-            try
-            {
-                // Try to connect to the database
-                bool canConnect = await _dbContext.Database.CanConnectAsync();
-                _isDatabaseAvailable = canConnect;
-                return canConnect;
-            }
-            catch (Exception ex)
-            {
-                _lastErrorMessage = ex.Message;
-                System.Diagnostics.Debug.WriteLine($"Database connection error: {ex.Message}");
-                _isDatabaseAvailable = false;
-                return false;
-            }
         }
     }
 }

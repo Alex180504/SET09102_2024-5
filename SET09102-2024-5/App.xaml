@@ -2,6 +2,7 @@
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:SET09102_2024_5"
+             xmlns:converters="clr-namespace:SET09102_2024_5.Converters"
              x:Class="SET09102_2024_5.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -9,6 +10,18 @@
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Converters -->
+            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+            <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
+            
+            <!-- Button Styles -->
+            <Style x:Key="TextButton" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBrush}}" />
+                <Setter Property="BorderWidth" Value="0" />
+                <Setter Property="Padding" Value="5,0" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

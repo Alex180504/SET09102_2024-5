@@ -1,66 +1,28 @@
-﻿using Microsoft.Maui.Controls;
-using System;
-using System.Threading.Tasks;
-using CommunityToolkit.Maui.Views;
-using SET09102_2024_5.Controls;
+using Microsoft.Extensions.DependencyInjection;
+using SET09102_2024_5.Services;
 
 namespace SET09102_2024_5
 {
     public partial class App : Application
     {
-        private readonly IDatabaseInitializationService _dbInitService;
-
-        public App(IDatabaseInitializationService dbInitService)
+        public App(IServiceProvider services)
         {
             InitializeComponent();
-            _dbInitService = dbInitService;
 
-            MainPage = new AppShell();
-
-            // Check database connection
-            MainThread.BeginInvokeOnMainThread(CheckDatabaseConnection);
+            // Get IAuthService directly from the service provider
+            var authService = services.GetRequiredService<IAuthService>();
+            
+            // Create AppShell with the authService
+            MainPage = new AppShell(authService);
         }
-
-        private async void CheckDatabaseConnection()
+        
+        // Parameterless constructor for design-time or other uses
+        public App()
         {
-            try
-            {
-                // Try to connect to the database
-                bool isConnected = await _dbInitService.InitializeDatabaseAsync();
-
-                if (!isConnected)
-                {
-                    string errorDetails = _dbInitService.GetLastErrorMessage();
-                    if (string.IsNullOrEmpty(errorDetails))
-                    {
-                        errorDetails = "Cannot connect to the database";
-                    }
-
-                    ShowDatabaseErrorPopup(errorDetails);
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowDatabaseErrorPopup("Cannot connect to the database: " + ex.Message);
-            }
-        }
-
-        private void ShowDatabaseErrorPopup(string details)
-        {
-            var popup = new DatabaseErrorPopup(details);
-            MainPage.ShowPopup(popup);
-        }
-
-        protected override void OnStart()
-        {
-        }
-
-        protected override void OnSleep()
-        {
-        }
-
-        protected override void OnResume()
-        {
+            InitializeComponent();
+            
+            // This will only be called in design time or when services aren't available
+            // In real runtime, the constructor with IServiceProvider will be used
         }
     }
 }

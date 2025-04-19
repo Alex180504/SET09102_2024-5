@@ -2,24 +2,21 @@ using System.Globalization;
 
 namespace SET09102_2024_5.Converters
 {
-    public class InvertedBoolConverter : IValueConverter
+    public class StringNotNullOrEmptyConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is bool boolValue)
+            if (value is string stringValue)
             {
-                return !boolValue;
+                return !string.IsNullOrEmpty(stringValue);
             }
-            return value;
+            return false;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is bool boolValue)
-            {
-                return !boolValue;
-            }
-            return value;
+            // This converter is typically used only for one-way binding
+            throw new NotImplementedException();
         }
     }
 }

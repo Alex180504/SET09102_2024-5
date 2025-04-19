@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:SET09102_2024_5.ViewModels"
+             x:Class="SET09102_2024_5.Views.LoginPage"
+             x:DataType="viewmodel:LoginViewModel"
+             Shell.NavBarIsVisible="False"
+             Shell.FlyoutBehavior="Disabled"
+             Title="{Binding Title}">
+
+    <Grid RowDefinitions="*,Auto,*" ColumnDefinitions="*,*,*"
+          Padding="20" RowSpacing="20" ColumnSpacing="20">
+        
+        <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="20">
+            <Image Source="dotnet_bot.png"
+                   HeightRequest="100" 
+                   HorizontalOptions="Center" />
+            
+            <Label Text="Sensor Monitoring System"
+                   FontSize="28" 
+                   HorizontalOptions="Center" 
+                   FontAttributes="Bold"
+                   Margin="0,0,0,20"/>
+            
+            <Label Text="{Binding ErrorMessage}" 
+                   TextColor="Red" 
+                   IsVisible="{Binding ErrorMessage, Converter={StaticResource StringNotNullOrEmptyConverter}}"
+                   HorizontalOptions="Center" />
+            
+            <Border Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}"
+                   StrokeThickness="1" 
+                   Padding="20">
+                <VerticalStackLayout Spacing="20">
+                    <Label Text="Login to your account" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center"/>
+                    
+                    <Entry Placeholder="Email Address"
+                           Text="{Binding Email}"
+                           Keyboard="Email" 
+                           IsEnabled="{Binding IsAuthenticating, Converter={StaticResource InvertedBoolConverter}}" />
+                    
+                    <Entry Placeholder="Password"
+                           Text="{Binding Password}"
+                           IsPassword="True"
+                           IsEnabled="{Binding IsAuthenticating, Converter={StaticResource InvertedBoolConverter}}" />
+                    
+                    <Button Text="Login" 
+                            Command="{Binding LoginCommand}"
+                            IsEnabled="{Binding IsAuthenticating, Converter={StaticResource InvertedBoolConverter}}"
+                            HorizontalOptions="Fill" />
+                    
+                    <ActivityIndicator IsRunning="{Binding IsAuthenticating}" 
+                                      IsVisible="{Binding IsAuthenticating}" 
+                                      HorizontalOptions="Center" />
+                    
+                    <HorizontalStackLayout HorizontalOptions="Center" Spacing="5">
+                        <Label Text="Don't have an account?" VerticalOptions="Center" />
+                        <Button Text="Register" 
+                                Command="{Binding RegisterCommand}"
+                                Style="{StaticResource TextButton}"
+                                VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
