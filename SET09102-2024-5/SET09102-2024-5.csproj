@@ -67,6 +67,7 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="7.0.0" />
 		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />	</ItemGroup>
 	
 	<!-- Include env variables file in the build -->
@@ -79,6 +80,11 @@
 	<!-- Include DB SSL cert -->
 	<ItemGroup>
 		<EmbeddedResource Include="DigiCertGlobalRootG2.crt.pem" />
+	</ItemGroup>
+	<ItemGroup>
+	  <MauiXaml Update="Controls\DatabaseErrorPopup.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	</ItemGroup>
 
 </Project>
