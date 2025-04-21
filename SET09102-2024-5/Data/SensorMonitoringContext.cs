@@ -10,16 +10,16 @@ namespace SET09102_2024_5.Data
         {
         }
 
-        public DbSet<Role> Roles { get; set; } = null!;
-        public DbSet<User> Users { get; set; } = null!;
-        public DbSet<Sensor> Sensors { get; set; } = null!;
-        public DbSet<SensorFirmware> SensorFirmwares { get; set; } = null!;
-        public DbSet<Measurand> Measurands { get; set; } = null!;
-        public DbSet<Maintenance> Maintenances { get; set; } = null!;
-        public DbSet<Measurement> Measurements { get; set; } = null!;
-        public DbSet<Incident> Incidents { get; set; } = null!;
-        public DbSet<IncidentMeasurement> IncidentMeasurements { get; set; } = null!;
-        public DbSet<Configuration> Configurations { get; set; } = null!;
+        public virtual DbSet<Role> Roles { get; set; } = null!;
+        public virtual DbSet<User> Users { get; set; } = null!;
+        public virtual DbSet<Sensor> Sensors { get; set; } = null!;
+        public virtual DbSet<SensorFirmware> SensorFirmwares { get; set; } = null!;
+        public virtual DbSet<Measurand> Measurands { get; set; } = null!;
+        public virtual DbSet<Maintenance> Maintenances { get; set; } = null!;
+        public virtual DbSet<Measurement> Measurements { get; set; } = null!;
+        public virtual DbSet<Incident> Incidents { get; set; } = null!;
+        public virtual DbSet<IncidentMeasurement> IncidentMeasurements { get; set; } = null!;
+        public virtual DbSet<Configuration> Configurations { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

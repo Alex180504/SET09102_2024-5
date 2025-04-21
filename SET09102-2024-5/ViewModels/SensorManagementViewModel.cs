@@ -1,0 +1,538 @@
+﻿using Microsoft.EntityFrameworkCore;
+using SET09102_2024_5.Data;
+using SET09102_2024_5.Models;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Input;
+
+namespace SET09102_2024_5.ViewModels
+{
+    public class SensorManagementViewModel : BaseViewModel
+    {
+        private readonly SensorMonitoringContext _context;
+        private Sensor _selectedSensor;
+        private ObservableCollection<Sensor> _sensors;
+        private ObservableCollection<Sensor> _filteredSensors;
+        private Configuration _configuration;
+        private SensorFirmware _firmware;
+        private bool _isSensorSelected;
+        private bool _isLoading;
+        private bool _isSearching;
+        private string _searchText;
+        private List<string> _statusOptions = new List<string> { "Active", "Inactive", "Maintenance", "Error" };
+
+        // Validation related fields
+        private Dictionary<string, string> _validationErrors = new Dictionary<string, string>();
+        private bool _hasValidationErrors;
+
+        public SensorManagementViewModel(SensorMonitoringContext context)
+        {
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+
+            // Init commands
+            LoadSensorsCommand = new Command(async () => await LoadSensorsAsync(), () => !IsLoading);
+            SaveChangesCommand = new Command(async () => await SaveChangesAsync(),
+                () => !IsLoading && SelectedSensor != null && !HasValidationErrors);
+            SearchCommand = new Command(ExecuteSearch);
+            ClearSearchCommand = new Command(ClearSearch);
+            ValidateCommand = new Command<string>(ValidateField);
+
+            // Init collections
+            Sensors = new ObservableCollection<Sensor>();
+            FilteredSensors = new ObservableCollection<Sensor>();
+
+            // Init async
+            MainThread.BeginInvokeOnMainThread(async () => await InitializeAsync());
+        }
+
+        public async Task InitializeAsync()
+        {
+            await LoadSensorsAsync();
+        }
+
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set
+            {
+                if (SetProperty(ref _isLoading, value))
+                {
+                    (LoadSensorsCommand as Command)?.ChangeCanExecute();
+                    (SaveChangesCommand as Command)?.ChangeCanExecute();
+                }
+            }
+        }
+
+        public ObservableCollection<Sensor> Sensors
+        {
+            get => _sensors;
+            set => SetProperty(ref _sensors, value);
+        }
+
+        public ObservableCollection<Sensor> FilteredSensors
+        {
+            get => _filteredSensors;
+            set => SetProperty(ref _filteredSensors, value);
+        }
+
+        public Sensor SelectedSensor
+        {
+            get => _selectedSensor;
+            set
+            {
+                if (SetProperty(ref _selectedSensor, value))
+                {
+                    IsSensorSelected = _selectedSensor != null;
+                    if (_selectedSensor != null)
+                    {
+                        LoadSensorDetailsAsync();
+                        if (IsSearching)
+                        {
+                            HideSearchResults();
+                        }
+                    }
+                    else
+                    {
+                        Configuration = null;
+                        Firmware = null;
+                    }
+
+                    ClearValidationErrors();
+                    (SaveChangesCommand as Command)?.ChangeCanExecute();
+                }
+            }
+        }
+
+        public string SearchText
+        {
+            get => _searchText;
+            set => SetProperty(ref _searchText, value);
+        }
+
+        public bool IsSearching
+        {
+            get => _isSearching;
+            set => SetProperty(ref _isSearching, value);
+        }
+
+        public Configuration Configuration
+        {
+            get => _configuration;
+            set => SetProperty(ref _configuration, value);
+        }
+
+        public SensorFirmware Firmware
+        {
+            get => _firmware;
+            set => SetProperty(ref _firmware, value);
+        }
+
+        public bool IsSensorSelected
+        {
+            get => _isSensorSelected;
+            set => SetProperty(ref _isSensorSelected, value);
+        }
+
+        public List<string> StatusOptions => _statusOptions;
+
+        public bool HasValidationErrors
+        {
+            get => _hasValidationErrors;
+            set
+            {
+                if (SetProperty(ref _hasValidationErrors, value))
+                {
+                    (SaveChangesCommand as Command)?.ChangeCanExecute();
+                }
+            }
+        }
+
+        public Dictionary<string, string> ValidationErrors => _validationErrors;
+
+        public ICommand LoadSensorsCommand { get; }
+        public ICommand SaveChangesCommand { get; }
+        public ICommand SearchCommand { get; }
+        public ICommand ClearSearchCommand { get; }
+        public ICommand ValidateCommand { get; }
+
+        public void FilterSensors(string searchText)
+        {
+            // Always show the filtered list when search control is active
+            IsSearching = true;
+            FilteredSensors.Clear();
+
+            // If search is empty, show all sensors
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                foreach (var sensor in Sensors)
+                {
+                    FilteredSensors.Add(sensor);
+                }
+                return;
+            }
+
+            // Otherwise, filter by the search text
+            var lowerSearchText = searchText.ToLowerInvariant();
+            var filtered = Sensors.Where(s =>
+                s.DisplayName.ToLowerInvariant().Contains(lowerSearchText) ||
+                (s.Measurand?.QuantityName?.ToLowerInvariant().Contains(lowerSearchText) ?? false)
+            ).ToList();
+
+            foreach (var sensor in filtered)
+            {
+                FilteredSensors.Add(sensor);
+            }
+        }
+
+        private void ExecuteSearch()
+        {
+            FilterSensors(SearchText);
+        }
+
+        public void HideSearchResults()
+        {
+            IsSearching = false;
+        }
+
+        private void ClearSearch()
+        {
+            SearchText = string.Empty;
+            HideSearchResults();
+        }
+
+        public void ShowAllSensorsInSearch()
+        {
+            IsSearching = true;
+            FilteredSensors.Clear();
+            foreach (var sensor in Sensors)
+            {
+                FilteredSensors.Add(sensor);
+            }
+        }
+
+        public string OrientationText
+        {
+            get => Configuration?.Orientation?.ToString() ?? string.Empty;
+            set
+            {
+                if (Configuration == null) return;
+
+                // Try to parse the input as an integer
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    Configuration.Orientation = null;
+                }
+                else if (int.TryParse(value.TrimEnd('°'), out int degrees))
+                {
+                    Configuration.Orientation = degrees;
+                }
+
+                OnPropertyChanged(nameof(OrientationText));
+            }
+        }
+
+        private void ValidateField(string fieldName)
+        {
+            // Don't proceed with validation if Configuration is null
+            if (Configuration == null) return;
+
+            ClearValidationError(fieldName);
+
+            switch (fieldName)
+            {
+                case nameof(Configuration.Latitude):
+                    ValidateLatitude();
+                    break;
+                case nameof(Configuration.Longitude):
+                    ValidateLongitude();
+                    break;
+                case nameof(Configuration.Altitude):
+                    ValidateAltitude();
+                    break;
+                case nameof(Configuration.Orientation):
+                    ValidateOrientation();
+                    break;
+                case nameof(Configuration.MeasurementFrequency):
+                    ValidateMeasurementFrequency();
+                    break;
+                case nameof(Configuration.MinThreshold):
+                    ValidateMinThreshold();
+                    break;
+                case nameof(Configuration.MaxThreshold):
+                    ValidateMaxThreshold();
+                    break;
+            }
+            HasValidationErrors = ValidationErrors.Count > 0;
+        }
+
+        private void ValidateLatitude()
+        {
+            if (Configuration == null || !Configuration.Latitude.HasValue) return;
+
+            if (Configuration.Latitude < -90 || Configuration.Latitude > 90)
+            {
+                AddValidationError(nameof(Configuration.Latitude), "Latitude must be between -90 and 90 degrees");
+            }
+        }
+
+        private void ValidateLongitude()
+        {
+            if (Configuration == null || !Configuration.Longitude.HasValue) return;
+
+            if (Configuration.Longitude < -180 || Configuration.Longitude > 180)
+            {
+                AddValidationError(nameof(Configuration.Longitude), "Longitude must be between -180 and 180 degrees");
+            }
+        }
+
+        private void ValidateAltitude()
+        {
+            if (Configuration == null || !Configuration.Altitude.HasValue) return;
+
+            if (Configuration.Altitude < -11000 || Configuration.Altitude > 10000)
+            {
+                AddValidationError(nameof(Configuration.Altitude), "Altitude must be a reasonable value (-11,000 to 10,000 meters)");
+            }
+        }
+
+        private void ValidateOrientation()
+        {
+            if (Configuration == null) return;
+
+            if (!Configuration.Orientation.HasValue)
+            {
+                AddValidationError(nameof(Configuration.Orientation), "Orientation is required");
+                return;
+            }
+
+            if (Configuration.Orientation < 0 || Configuration.Orientation > 359)
+            {
+                AddValidationError(nameof(Configuration.Orientation), "Orientation must be a value between 0 and 359 degrees");
+            }
+        }
+
+        private void ValidateMeasurementFrequency()
+        {
+            if (Configuration == null || !Configuration.MeasurementFrequency.HasValue) return;
+
+            if (Configuration.MeasurementFrequency <= 0)
+            {
+                AddValidationError(nameof(Configuration.MeasurementFrequency), "Measurement frequency must be greater than 0");
+            }
+        }
+
+        private void ValidateMinThreshold()
+        {
+            if (Configuration == null || !Configuration.MinThreshold.HasValue) return;
+
+            if (Configuration.MaxThreshold.HasValue &&
+                Configuration.MinThreshold > Configuration.MaxThreshold)
+            {
+                AddValidationError(nameof(Configuration.MinThreshold), "Minimum threshold cannot be greater than maximum threshold");
+            }
+        }
+
+        private void ValidateMaxThreshold()
+        {
+            if (Configuration == null || !Configuration.MaxThreshold.HasValue) return;
+
+            if (Configuration.MinThreshold.HasValue &&
+                Configuration.MaxThreshold < Configuration.MinThreshold)
+            {
+                AddValidationError(nameof(Configuration.MaxThreshold), "Maximum threshold cannot be less than minimum threshold");
+            }
+        }
+
+        private void AddValidationError(string propertyName, string errorMessage)
+        {
+            if (_validationErrors.ContainsKey(propertyName))
+            {
+                _validationErrors[propertyName] = errorMessage;
+            }
+            else
+            {
+                _validationErrors.Add(propertyName, errorMessage);
+            }
+
+            OnPropertyChanged(nameof(ValidationErrors));
+        }
+
+        private void ClearValidationError(string propertyName)
+        {
+            if (_validationErrors.ContainsKey(propertyName))
+            {
+                _validationErrors.Remove(propertyName);
+                OnPropertyChanged(nameof(ValidationErrors));
+            }
+        }
+
+        private void ClearValidationErrors()
+        {
+            _validationErrors.Clear();
+            HasValidationErrors = false;
+            OnPropertyChanged(nameof(ValidationErrors));
+        }
+
+        private void ValidateAllFields()
+        {
+            ValidateField(nameof(Configuration.Latitude));
+            ValidateField(nameof(Configuration.Longitude));
+            ValidateField(nameof(Configuration.Altitude));
+            ValidateField(nameof(Configuration.Orientation));
+            ValidateField(nameof(Configuration.MeasurementFrequency));
+            ValidateField(nameof(Configuration.MinThreshold));
+            ValidateField(nameof(Configuration.MaxThreshold));
+        }
+
+        private async Task LoadSensorsAsync()
+        {
+            if (IsLoading) return;
+
+            try
+            {
+                IsLoading = true;
+
+                var sensors = await _context.Sensors
+                    .Include(s => s.Measurand)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    Sensors.Clear();
+                    foreach (var sensor in sensors)
+                    {
+                        Sensors.Add(sensor);
+                    }
+
+                    if (IsSearching)
+                    {
+                        FilterSensors(SearchText);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                await Application.Current.MainPage.DisplayAlert("Error", $"Failed to load sensors: {ex.Message}", "OK");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        private async Task LoadSensorDetailsAsync()
+        {
+            if (SelectedSensor == null) return;
+
+            try
+            {
+                IsLoading = true;
+
+                var sensor = await _context.Sensors
+                    .Include(s => s.Configuration)
+                    .Include(s => s.Firmware)
+                    .Include(s => s.Measurand)
+                    .FirstOrDefaultAsync(s => s.SensorId == SelectedSensor.SensorId);
+
+                if (sensor != null)
+                {
+                    Configuration = sensor.Configuration ?? new Configuration
+                    {
+                        SensorId = sensor.SensorId,
+                        Latitude = 0,
+                        Longitude = 0,
+                        Altitude = 0,
+                        Orientation = 0,
+                        MeasurementFrequency = 5,
+                        MinThreshold = 0,
+                        MaxThreshold = 100
+                    };
+                }
+
+                OnPropertyChanged(nameof(Configuration));
+                OnPropertyChanged(nameof(Firmware));
+                OnPropertyChanged(nameof(OrientationText));
+            }
+            catch (Exception ex)
+            {
+                await Application.Current.MainPage.DisplayAlert("Error", $"Failed to load sensor details: {ex.Message}", "OK");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        private async Task SaveChangesAsync()
+        {
+            if (SelectedSensor == null || IsLoading) return;
+
+            ValidateAllFields();
+
+            if (HasValidationErrors)
+            {
+                var errors = string.Join("\n", ValidationErrors.Values);
+                await Application.Current.MainPage.DisplayAlert("Validation Errors",
+                    $"Please correct the following errors before saving:\n{errors}", "OK");
+                return;
+            }
+
+            bool confirmSave = await Application.Current.MainPage.DisplayAlert(
+                "Confirm Save",
+                "Are you sure you want to save these changes?",
+                "Yes", "No");
+
+            if (!confirmSave)
+            {
+                return;
+            }
+
+            try
+            {
+                IsLoading = true;
+
+                var sensor = await _context.Sensors
+                    .Include(s => s.Configuration)
+                    .FirstOrDefaultAsync(s => s.SensorId == SelectedSensor.SensorId);
+
+                if (sensor != null)
+                {
+                    sensor.SensorType = SelectedSensor.SensorType;
+                    sensor.Status = SelectedSensor.Status;
+                    if (sensor.Configuration == null)
+                    {
+                        sensor.Configuration = Configuration;
+                        _context.Add(Configuration);
+                    }
+                    else
+                    {
+                        sensor.Configuration.Latitude = Configuration.Latitude;
+                        sensor.Configuration.Longitude = Configuration.Longitude;
+                        sensor.Configuration.Altitude = Configuration.Altitude;
+                        sensor.Configuration.Orientation = Configuration.Orientation;
+                        sensor.Configuration.MeasurementFrequency = Configuration.MeasurementFrequency;
+                        sensor.Configuration.MinThreshold = Configuration.MinThreshold;
+                        sensor.Configuration.MaxThreshold = Configuration.MaxThreshold;
+                    }
+
+                    // Save changes
+                    await _context.SaveChangesAsync();
+                    await LoadSensorsAsync();
+                    await Application.Current.MainPage.DisplayAlert("Success", "Sensor settings saved successfully.", "OK");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Application.Current.MainPage.DisplayAlert("Error", $"Failed to save sensor settings: {ex.Message}", "OK");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+    }
+}

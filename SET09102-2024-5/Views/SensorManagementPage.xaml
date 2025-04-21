@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:SET09102_2024_5.ViewModels"
+             xmlns:converters="clr-namespace:SET09102_2024_5.Converters"
+             xmlns:controls="clr-namespace:SET09102_2024_5.Controls"
+             xmlns:models="clr-namespace:SET09102_2024_5.Models"
+             x:Class="SET09102_2024_5.Views.SensorManagementPage"
+             Title="Sensor Management">
+
+    <ContentPage.Resources>
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        <converters:BoolToHeightConverter x:Key="BoolToHeightConverter" />
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="10">
+        <VerticalStackLayout Grid.Row="0" Spacing="15" Margin="0,0,0,15">
+            <Label Text="Configure settings for each sensor" HorizontalOptions="Center" />
+
+            <Frame BorderColor="LightGray" Padding="10" HasShadow="True">
+                <Grid RowDefinitions="Auto,Auto">
+                    <!-- Search Bar for Filtering -->
+                    <SearchBar Grid.Row="0" 
+                              Placeholder="Search sensors..."
+                              Text="{Binding SearchText}"
+                              TextChanged="OnSearchTextChanged"
+                              SearchButtonPressed="OnSearchButtonPressed"
+                              Focused="OnSearchBarFocused"
+                              Unfocused="OnSearchBarUnfocused"
+                              IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+
+                    <Grid Grid.Row="1">
+                        <!-- CollectionView for displaying search results -->
+                        <Frame BorderColor="LightGray" 
+                               Padding="0" 
+                               IsVisible="{Binding IsSearching}"
+                               HeightRequest="{Binding IsSearching, Converter={StaticResource BoolToHeightConverter}, ConverterParameter=200}">
+                            <CollectionView x:Name="filteredSensorsView"
+                                           ItemsSource="{Binding FilteredSensors}"
+                                           SelectionMode="Single"
+                                           SelectionChanged="OnSensorSelected"
+                                           IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Padding="10">
+                                            <Label Text="{Binding DisplayName}" 
+                                                  VerticalOptions="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </Frame>
+
+                        <ActivityIndicator IsRunning="{Binding IsLoading}"
+                                         IsVisible="{Binding IsLoading}"
+                                         HorizontalOptions="End" 
+                                         VerticalOptions="Center"
+                                         Margin="0,0,10,0" />
+                    </Grid>
+                </Grid>
+            </Frame>
+        </VerticalStackLayout>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="15" IsVisible="{Binding IsSensorSelected}">
+                <Frame BorderColor="LightGray" Padding="15" HasShadow="True">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Sensor Details" FontAttributes="Bold" />
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                            <Label Grid.Row="0" Grid.Column="0" Text="ID:" />
+                            <Label Grid.Row="0" Grid.Column="1" Text="{Binding SelectedSensor.SensorId}" />
+
+                            <Label Grid.Row="1" Grid.Column="0" Text="Type:" />
+                            <Entry Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSensor.SensorType}" 
+                                   IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+
+                            <Label Grid.Row="2" Grid.Column="0" Text="Status:" />
+                            <Picker Grid.Row="2" Grid.Column="1" 
+                                    ItemsSource="{Binding StatusOptions}" 
+                                    SelectedItem="{Binding SelectedSensor.Status}"
+                                    IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+
+                            <Label Grid.Row="3" Grid.Column="0" Text="Measurand:" />
+                            <Label Grid.Row="3" Grid.Column="1" Text="{Binding SelectedSensor.Measurand.QuantityName, TargetNullValue='Not available'}" />
+
+                            <Label Grid.Row="4" Grid.Column="0" Text="Firmware:" />
+                            <Label Grid.Row="4" Grid.Column="1" Text="{Binding Firmware.FirmwareVersion, TargetNullValue='Not available'}" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Frame BorderColor="LightGray" Padding="15" HasShadow="True">
+                    <Grid>
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="Configuration Settings" FontAttributes="Bold" />
+                            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                                <Label Grid.Row="0" Grid.Column="0" Text="Latitude:" />
+                                <VerticalStackLayout Grid.Row="0" Grid.Column="1">
+                                    <Entry Text="{Binding Configuration.Latitude}" 
+                                           Keyboard="Numeric"
+                                           Unfocused="OnFieldUnfocused"
+                                           ClassId="{x:Static models:ConfigurationConstants.Latitude}"
+                                           IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+                                    <controls:ValidationErrorIndicator 
+                                        FieldName="{x:Static models:ConfigurationConstants.Latitude}"
+                                        ValidationErrors="{Binding ValidationErrors}"
+                                        ValidateCommand="{Binding ValidateCommand}" />
+                                </VerticalStackLayout>
+
+                                <Label Grid.Row="1" Grid.Column="0" Text="Longitude:" />
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="1">
+                                    <Entry Text="{Binding Configuration.Longitude}" 
+                                           Keyboard="Numeric"
+                                           Unfocused="OnFieldUnfocused"
+                                           ClassId="{x:Static models:ConfigurationConstants.Longitude}"
+                                           IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+                                    <controls:ValidationErrorIndicator 
+                                        FieldName="{x:Static models:ConfigurationConstants.Longitude}"
+                                        ValidationErrors="{Binding ValidationErrors}"
+                                        ValidateCommand="{Binding ValidateCommand}" />
+                                </VerticalStackLayout>
+
+                                <Label Grid.Row="2" Grid.Column="0" Text="Altitude:" />
+                                <VerticalStackLayout Grid.Row="2" Grid.Column="1">
+                                    <Entry Text="{Binding Configuration.Altitude}" 
+                                           Keyboard="Numeric"
+                                           Unfocused="OnFieldUnfocused"
+                                           ClassId="{x:Static models:ConfigurationConstants.Altitude}"
+                                           IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+                                    <controls:ValidationErrorIndicator 
+                                        FieldName="{x:Static models:ConfigurationConstants.Altitude}"
+                                        ValidationErrors="{Binding ValidationErrors}"
+                                        ValidateCommand="{Binding ValidateCommand}" />
+                                </VerticalStackLayout>
+                                <Label Grid.Row="3" Grid.Column="0" Text="Orientation (°):" />
+                                <VerticalStackLayout Grid.Row="3" Grid.Column="1">
+                                    <Entry Text="{Binding OrientationText}" 
+                                           Keyboard="Numeric"
+                                           Placeholder="0-359 degrees"
+                                           Unfocused="OnFieldUnfocused"
+                                           ClassId="Orientation"
+                                           IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+                                    <controls:ValidationErrorIndicator 
+                                        FieldName="Orientation"
+                                        ValidationErrors="{Binding ValidationErrors}"
+                                        ValidateCommand="{Binding ValidateCommand}" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <!-- Measurement Frequency -->
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" Margin="0,10,0,0">
+                                <Label Text="Measurement Frequency:" Grid.Column="0" VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Column="1">
+                                    <Entry Text="{Binding Configuration.MeasurementFrequency}" 
+                                           Keyboard="Numeric"
+                                           Unfocused="OnFieldUnfocused"
+                                           ClassId="{x:Static models:ConfigurationConstants.MeasurementFrequency}"
+                                           IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+                                    <controls:ValidationErrorIndicator 
+                                        FieldName="{x:Static models:ConfigurationConstants.MeasurementFrequency}"
+                                        ValidationErrors="{Binding ValidationErrors}"
+                                        ValidateCommand="{Binding ValidateCommand}" />
+                                </VerticalStackLayout>
+                                <Label Text="minutes" Grid.Column="2" VerticalOptions="Center" />
+                            </Grid>
+
+                            <!-- Thresholds -->
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,10,0,0">
+                                <Frame BorderColor="LightGray" Padding="10" HasShadow="True" Grid.Column="0">
+                                    <VerticalStackLayout Spacing="5">
+                                        <Label Text="Min Threshold" FontAttributes="Bold" HorizontalOptions="Center" />
+                                        <Entry Text="{Binding Configuration.MinThreshold}" 
+                                               Keyboard="Numeric"
+                                               Unfocused="OnFieldUnfocused"
+                                               ClassId="{x:Static models:ConfigurationConstants.MinThreshold}"
+                                               IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+                                        <controls:ValidationErrorIndicator 
+                                            FieldName="{x:Static models:ConfigurationConstants.MinThreshold}"
+                                            ValidationErrors="{Binding ValidationErrors}"
+                                            ValidateCommand="{Binding ValidateCommand}" />
+                                    </VerticalStackLayout>
+                                </Frame>
+
+                                <Frame BorderColor="LightGray" Padding="10" HasShadow="True" Grid.Column="1">
+                                    <VerticalStackLayout Spacing="5">
+                                        <Label Text="Max Threshold" FontAttributes="Bold" HorizontalOptions="Center" />
+                                        <Entry Text="{Binding Configuration.MaxThreshold}" 
+                                               Keyboard="Numeric"
+                                               Unfocused="OnFieldUnfocused"
+                                               ClassId="{x:Static models:ConfigurationConstants.MaxThreshold}"
+                                               IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+                                        <controls:ValidationErrorIndicator 
+                                            FieldName="{x:Static models:ConfigurationConstants.MaxThreshold}"
+                                            ValidationErrors="{Binding ValidationErrors}"
+                                            ValidateCommand="{Binding ValidateCommand}" />
+                                    </VerticalStackLayout>
+                                </Frame>
+                            </Grid>
+                        </VerticalStackLayout>
+
+                        <ActivityIndicator IsRunning="{Binding IsLoading}" 
+                                           IsVisible="{Binding IsLoading}"
+                                           HorizontalOptions="Center" 
+                                           VerticalOptions="Center" />
+                    </Grid>
+                </Frame>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <VerticalStackLayout Grid.Row="2" IsVisible="{Binding IsSensorSelected}" Spacing="10" Margin="0,15,0,0">
+            <Button Text="Save Changes" 
+                    Command="{Binding SaveChangesCommand}" 
+                    BackgroundColor="#007BFF" 
+                    TextColor="White" 
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
