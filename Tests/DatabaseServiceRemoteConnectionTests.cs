@@ -59,6 +59,8 @@ namespace SET09102_2024_5.Tests
             catch (Exception ex)
             {
                 Assert.True(false, $"Database connection test failed with exception: {ex.Message}");
+            }
+
         }
 
         [Fact]
