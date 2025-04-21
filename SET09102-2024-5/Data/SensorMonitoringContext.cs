@@ -1,14 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SET09102_2024_5.Models;
-using System.IO;
-using System.Security.Cryptography.X509Certificates;
 
 namespace SET09102_2024_5.Data
 {
@@ -22,12 +13,13 @@ namespace SET09102_2024_5.Data
         public DbSet<Role> Roles { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Sensor> Sensors { get; set; } = null!;
-        public DbSet<ConfigurationSetting> ConfigurationSettings { get; set; } = null!;
+        public DbSet<SensorFirmware> SensorFirmwares { get; set; } = null!;
+        public DbSet<Measurand> Measurands { get; set; } = null!;
         public DbSet<Maintenance> Maintenances { get; set; } = null!;
-        public DbSet<PhysicalQuantity> PhysicalQuantities { get; set; } = null!;
         public DbSet<Measurement> Measurements { get; set; } = null!;
         public DbSet<Incident> Incidents { get; set; } = null!;
         public DbSet<IncidentMeasurement> IncidentMeasurements { get; set; } = null!;
+        public DbSet<Configuration> Configurations { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -59,6 +51,17 @@ namespace SET09102_2024_5.Data
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
+            modelBuilder.Entity<Measurand>(entity =>
+            {
+                entity.ToTable("measurand");
+                entity.HasKey(e => e.MeasurandId);
+                entity.Property(e => e.MeasurandId).HasColumnName("measurand_id");
+                entity.Property(e => e.QuantityType).HasColumnName("quantity_type").HasMaxLength(100);
+                entity.Property(e => e.QuantityName).HasColumnName("quantity_name").HasMaxLength(100);
+                entity.Property(e => e.Symbol).HasColumnName("symbol").HasMaxLength(20);
+                entity.Property(e => e.Unit).HasColumnName("unit").HasMaxLength(50);
+            });
+
             modelBuilder.Entity<Sensor>(entity =>
             {
                 entity.ToTable("sensor");
@@ -67,22 +70,59 @@ namespace SET09102_2024_5.Data
                 entity.Property(e => e.SensorType).HasColumnName("sensor_type").HasMaxLength(100);
                 entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(50);
                 entity.Property(e => e.DeploymentDate).HasColumnName("deployment_date");
+                entity.Property(e => e.MeasurandId).HasColumnName("measurand_id");
+
+                entity.HasOne(s => s.Measurand)
+                      .WithMany(m => m.Sensors)
+                      .HasForeignKey(s => s.MeasurandId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<ConfigurationSetting>(entity =>
+            modelBuilder.Entity<Configuration>(entity =>
             {
-                entity.ToTable("configuration_setting");
-                entity.HasKey(e => e.SettingId);
-                entity.Property(e => e.SettingId).HasColumnName("setting_id");
+                entity.ToTable("configuration");
+                entity.HasKey(e => e.SensorId);
                 entity.Property(e => e.SensorId).HasColumnName("sensor_id");
-                entity.Property(e => e.SettingName).HasColumnName("setting_name").HasMaxLength(100);
-                entity.Property(e => e.MinimumValue).HasColumnName("minimum_value");
-                entity.Property(e => e.MaximumValue).HasColumnName("maximum_value");
-                entity.Property(e => e.CurrentValue).HasColumnName("current_value");
+                entity.Property(e => e.Latitude).HasColumnName("latitude");
+                entity.Property(e => e.Longitude).HasColumnName("longitude");
+                entity.Property(e => e.Altitude).HasColumnName("altitude");
+                entity.Property(e => e.Orientation).HasColumnName("orientation");
+                entity.Property(e => e.MeasurementFrequency).HasColumnName("measurment_frequency");
+                entity.Property(e => e.MinThreshold).HasColumnName("min_threshold");
+                entity.Property(e => e.MaxThreshold).HasColumnName("max_threshold");
 
                 entity.HasOne(c => c.Sensor)
-                      .WithMany(s => s.ConfigurationSettings)
-                      .HasForeignKey(c => c.SensorId)
+                      .WithOne(s => s.Configuration)
+                      .HasForeignKey<Configuration>(c => c.SensorId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<SensorFirmware>(entity =>
+            {
+                entity.ToTable("sensor_firmware");
+                entity.HasKey(e => e.SensorId);
+                entity.Property(e => e.SensorId).HasColumnName("sensor_id");
+                entity.Property(e => e.FirmwareVersion).HasColumnName("firmware_version").HasMaxLength(50);
+                entity.Property(e => e.LastUpdateDate).HasColumnName("last_update_date");
+
+                entity.HasOne(f => f.Sensor)
+                      .WithOne(s => s.Firmware)
+                      .HasForeignKey<SensorFirmware>(f => f.SensorId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Measurement>(entity =>
+            {
+                entity.ToTable("measurement");
+                entity.HasKey(e => e.MeasurementId);
+                entity.Property(e => e.MeasurementId).HasColumnName("measurement_id");
+                entity.Property(e => e.Timestamp).HasColumnName("timestamp");
+                entity.Property(e => e.Value).HasColumnName("value");
+                entity.Property(e => e.SensorId).HasColumnName("sensor_id");
+
+                entity.HasOne(m => m.Sensor)
+                      .WithMany(s => s.Measurements)
+                      .HasForeignKey(m => m.SensorId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -107,40 +147,6 @@ namespace SET09102_2024_5.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<PhysicalQuantity>(entity =>
-            {
-                entity.ToTable("physical_quantity");
-                entity.HasKey(e => e.QuantityId);
-                entity.Property(e => e.QuantityId).HasColumnName("quantity_id");
-                entity.Property(e => e.SensorId).HasColumnName("sensor_id");
-                entity.Property(e => e.LowerWarningThreshold).HasColumnName("lower_warning_threshold");
-                entity.Property(e => e.UpperWarningThreshold).HasColumnName("upper_warning_threshold");
-                entity.Property(e => e.LowerEmergencyThreshold).HasColumnName("lower_emergency_threshold");
-                entity.Property(e => e.UpperEmergencyThreshold).HasColumnName("upper_emergency_threshold");
-                entity.Property(e => e.QuantityName).HasColumnName("quantity_name").HasMaxLength(100);
-
-                entity.HasOne(p => p.Sensor)
-                      .WithMany(s => s.PhysicalQuantities)
-                      .HasForeignKey(p => p.SensorId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<Measurement>(entity =>
-            {
-                entity.ToTable("measurement");
-                entity.HasKey(e => e.MeasurementId);
-                entity.Property(e => e.MeasurementId).HasColumnName("measurement_id");
-                entity.Property(e => e.Timestamp).HasColumnName("timestamp");
-                entity.Property(e => e.UnitOfMeasurement).HasColumnName("unit_of_measurement").HasMaxLength(50);
-                entity.Property(e => e.Value).HasColumnName("value");
-                entity.Property(e => e.QuantityId).HasColumnName("quantity_id");
-
-                entity.HasOne(m => m.PhysicalQuantity)
-                      .WithMany(q => q.Measurements)
-                      .HasForeignKey(m => m.QuantityId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
             modelBuilder.Entity<Incident>(entity =>
             {
                 entity.ToTable("incident");
@@ -160,8 +166,7 @@ namespace SET09102_2024_5.Data
             modelBuilder.Entity<IncidentMeasurement>(entity =>
             {
                 entity.ToTable("incident_measurement");
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
+                entity.HasKey(e => new { e.MeasurementId, e.IncidentId });
                 entity.Property(e => e.MeasurementId).HasColumnName("measurement_id");
                 entity.Property(e => e.IncidentId).HasColumnName("incident_id");
 
