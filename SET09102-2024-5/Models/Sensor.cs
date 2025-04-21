@@ -30,6 +30,6 @@ namespace SET09102_2024_5.Models
         public ICollection<Maintenance> Maintenances { get; set; }
 
         [NotMapped]
-        public string DisplayName => $"ID: {SensorId} - {SensorType}";
+        public string DisplayName { get; set; }
     }
 }
