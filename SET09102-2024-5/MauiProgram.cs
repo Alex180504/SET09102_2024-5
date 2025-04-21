@@ -11,6 +11,7 @@ using System.Reflection;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using CommunityToolkit.Maui;
+using SET09102_2024_5.Interfaces;
 
 
 namespace SET09102_2024_5
@@ -90,6 +91,10 @@ namespace SET09102_2024_5
                 // Register Views
                 builder.Services.AddTransient<MainPage>();
                 builder.Services.AddTransient<SensorManagementPage>();
+
+                builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
+                builder.Services.AddSingleton<IDialogService, DialogService>();
+                builder.Services.AddSingleton<INavigationService, NavigationService>();
 
 #if DEBUG
                 builder.Logging.AddDebug();

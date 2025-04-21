@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SET09102_2024_5.Data;
+using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Models;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,9 @@ namespace SET09102_2024_5.ViewModels
     public class SensorManagementViewModel : BaseViewModel
     {
         private readonly SensorMonitoringContext _context;
+        private readonly IMainThreadService _mainThreadService;
+        private readonly IDialogService _dialogService;
+
         private Sensor _selectedSensor;
         private ObservableCollection<Sensor> _sensors;
         private ObservableCollection<Sensor> _filteredSensors;
@@ -28,9 +32,14 @@ namespace SET09102_2024_5.ViewModels
         private Dictionary<string, string> _validationErrors = new Dictionary<string, string>();
         private bool _hasValidationErrors;
 
-        public SensorManagementViewModel(SensorMonitoringContext context)
+        public SensorManagementViewModel(
+            SensorMonitoringContext context,
+            IMainThreadService mainThreadService = null,
+            IDialogService dialogService = null)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _mainThreadService = mainThreadService ?? new Services.MainThreadService();
+            _dialogService = dialogService ?? new Services.DialogService();
 
             // Init commands
             LoadSensorsCommand = new Command(async () => await LoadSensorsAsync(), () => !IsLoading);
@@ -45,7 +54,7 @@ namespace SET09102_2024_5.ViewModels
             FilteredSensors = new ObservableCollection<Sensor>();
 
             // Init async
-            MainThread.BeginInvokeOnMainThread(async () => await InitializeAsync());
+            _mainThreadService.BeginInvokeOnMainThread(async () => await InitializeAsync());
         }
 
         public async Task InitializeAsync()
@@ -177,7 +186,8 @@ namespace SET09102_2024_5.ViewModels
             // Otherwise, filter by the search text
             var lowerSearchText = searchText.ToLowerInvariant();
             var filtered = Sensors.Where(s =>
-                s.DisplayName.ToLowerInvariant().Contains(lowerSearchText) ||
+                (s.DisplayName?.ToLowerInvariant().Contains(lowerSearchText) ?? false) ||
+                (s.SensorType?.ToLowerInvariant().Contains(lowerSearchText) ?? false) ||
                 (s.Measurand?.QuantityName?.ToLowerInvariant().Contains(lowerSearchText) ?? false)
             ).ToList();
 
@@ -400,11 +410,15 @@ namespace SET09102_2024_5.ViewModels
                     .AsNoTracking()
                     .ToListAsync();
 
-                MainThread.BeginInvokeOnMainThread(() =>
+                _mainThreadService.BeginInvokeOnMainThread(() =>
                 {
                     Sensors.Clear();
                     foreach (var sensor in sensors)
                     {
+                        if (string.IsNullOrEmpty(sensor.DisplayName))
+                        {
+                            sensor.DisplayName = $"{sensor.SensorId} - {sensor.SensorType}";
+                        }
                         Sensors.Add(sensor);
                     }
 
@@ -416,7 +430,7 @@ namespace SET09102_2024_5.ViewModels
             }
             catch (Exception ex)
             {
-                await Application.Current.MainPage.DisplayAlert("Error", $"Failed to load sensors: {ex.Message}", "OK");
+                await _dialogService.DisplayErrorAsync($"Failed to load sensors: {ex.Message}");
             }
             finally
             {
@@ -451,6 +465,8 @@ namespace SET09102_2024_5.ViewModels
                         MinThreshold = 0,
                         MaxThreshold = 100
                     };
+
+                    Firmware = sensor.Firmware;
                 }
 
                 OnPropertyChanged(nameof(Configuration));
@@ -459,7 +475,7 @@ namespace SET09102_2024_5.ViewModels
             }
             catch (Exception ex)
             {
-                await Application.Current.MainPage.DisplayAlert("Error", $"Failed to load sensor details: {ex.Message}", "OK");
+                await _dialogService.DisplayErrorAsync($"Failed to load sensor details: {ex.Message}");
             }
             finally
             {
@@ -476,12 +492,11 @@ namespace SET09102_2024_5.ViewModels
             if (HasValidationErrors)
             {
                 var errors = string.Join("\n", ValidationErrors.Values);
-                await Application.Current.MainPage.DisplayAlert("Validation Errors",
-                    $"Please correct the following errors before saving:\n{errors}", "OK");
+                await _dialogService.DisplayErrorAsync($"Please correct the following errors before saving:\n{errors}", "Validation Errors");
                 return;
             }
 
-            bool confirmSave = await Application.Current.MainPage.DisplayAlert(
+            bool confirmSave = await _dialogService.DisplayConfirmationAsync(
                 "Confirm Save",
                 "Are you sure you want to save these changes?",
                 "Yes", "No");
@@ -522,12 +537,12 @@ namespace SET09102_2024_5.ViewModels
                     // Save changes
                     await _context.SaveChangesAsync();
                     await LoadSensorsAsync();
-                    await Application.Current.MainPage.DisplayAlert("Success", "Sensor settings saved successfully.", "OK");
+                    await _dialogService.DisplaySuccessAsync("Sensor settings saved successfully.");
                 }
             }
             catch (Exception ex)
             {
-                await Application.Current.MainPage.DisplayAlert("Error", $"Failed to save sensor settings: {ex.Message}", "OK");
+                await _dialogService.DisplayErrorAsync($"Failed to save sensor settings: {ex.Message}");
             }
             finally
             {
