@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Tests.Mocks;
 using Xunit;
 
 namespace SET09102_2024_5.Tests.ViewModels
@@ -81,74 +82,18 @@ namespace SET09102_2024_5.Tests.ViewModels
         }
 
 
-        // Test class for mocking the DbContext
+        // Test class for mocking the DbContext using MockDbSetFactory
         private class MockSensorMonitoringContext : SensorMonitoringContext
         {
             private readonly List<Sensor> _sensors;
-            private readonly Mock<DbSet<Sensor>> _mockSensorsDbSet;
 
             public MockSensorMonitoringContext(DbContextOptions<SensorMonitoringContext> options, List<Sensor> sensors)
                 : base(options)
             {
                 _sensors = sensors;
-                _mockSensorsDbSet = SetupDbSet(_sensors);
             }
 
-            public override DbSet<Sensor> Sensors => _mockSensorsDbSet.Object;
-
-            // Setup Include, AsNoTracking, and other EF operations
-            public DbSet<Sensor> SetupIncludeOperations()
-            {
-                var queryable = _sensors.AsQueryable();
-                _mockSensorsDbSet.As<IQueryable<Sensor>>().Setup(m => m.Provider).Returns(queryable.Provider);
-                _mockSensorsDbSet.As<IQueryable<Sensor>>().Setup(m => m.Expression).Returns(queryable.Expression);
-                _mockSensorsDbSet.As<IQueryable<Sensor>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
-                _mockSensorsDbSet.As<IQueryable<Sensor>>().Setup(m => m.GetEnumerator()).Returns(() => queryable.GetEnumerator());
-
-                // Setup for Include operations - returns itself to allow chaining
-                _mockSensorsDbSet.Setup(m => m.Include(It.IsAny<string>())).Returns(_mockSensorsDbSet.Object);
-                _mockSensorsDbSet.Setup(m => m.AsNoTracking()).Returns(_mockSensorsDbSet.Object);
-                _mockSensorsDbSet.Setup(m => m.ToListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(_sensors);
-
-                // Setup FirstOrDefaultAsync for queries
-                _mockSensorsDbSet.Setup(m => m.FirstOrDefaultAsync(
-                    It.IsAny<System.Linq.Expressions.Expression<Func<Sensor, bool>>>(),
-                    It.IsAny<CancellationToken>()))
-                    .ReturnsAsync((System.Linq.Expressions.Expression<Func<Sensor, bool>> predicate, CancellationToken token) =>
-                    {
-                        return _sensors.AsQueryable().FirstOrDefault(predicate);
-                    });
-
-                return _mockSensorsDbSet.Object;
-            }
-
-            private static Mock<DbSet<T>> SetupDbSet<T>(List<T> data) where T : class
-            {
-                var queryable = data.AsQueryable();
-                var mockSet = new Mock<DbSet<T>>();
-
-                mockSet.As<IQueryable<T>>().Setup(m => m.Provider).Returns(queryable.Provider);
-                mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
-                mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
-                mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(() => queryable.GetEnumerator());
-
-                // Setup async methods
-                mockSet.Setup(m => m.FindAsync(It.IsAny<object[]>())).Returns<object[]>(ids =>
-                {
-                    var id = (int)ids[0];
-                    return new ValueTask<T>(data.FirstOrDefault(e =>
-                    {
-                        var prop = typeof(T).GetProperty("SensorId");
-                        if (prop != null)
-                        {
-                            return (int)prop.GetValue(e) == id;
-                        }
-                        return false;
-                    }));
-                });
-
-                return mockSet;
-            }
+            public override DbSet<Sensor> Sensors => MockDbSetFactory.CreateMockDbSetWithAdvancedOperations<Sensor>(_sensors, "SensorId");
 
             public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
             {
@@ -223,10 +168,6 @@ namespace SET09102_2024_5.Tests.ViewModels
             Assert.Single(viewModel.FilteredSensors);
             Assert.Equal("Temperature", viewModel.FilteredSensors[0].SensorType);
         }
-
-        // The rest of your test methods remain unchanged, just remove _mockContext.Setup() calls
-        // and replace with casting to MockSensorMonitoringContext and calling SetupIncludeOperations()
-        // where needed
 
         [Fact]
         public void FilterSensors_WithMeasurandSearch_FiltersCorrectly()
@@ -490,8 +431,8 @@ namespace SET09102_2024_5.Tests.ViewModels
             // Arrange
             using var context = new SensorMonitoringContext(_options);
 
-            // Add test sensors to the in-memory database
-            await context.AddRangeAsync(_testSensors);  // Use a real in-memory database to avoid exceptions
+            // Add test sensors to the mock DB
+            await context.AddRangeAsync(_testSensors); 
             await context.SaveChangesAsync();
 
             var viewModel = new SensorManagementViewModel(
@@ -535,8 +476,8 @@ namespace SET09102_2024_5.Tests.ViewModels
             await task;
 
             // Assert
-            Assert.Empty(viewModel.Sensors); // Should still be empty
-            Assert.True(viewModel.IsLoading); // Should remain true
+            Assert.Empty(viewModel.Sensors); 
+            Assert.True(viewModel.IsLoading); 
         }
 
 
