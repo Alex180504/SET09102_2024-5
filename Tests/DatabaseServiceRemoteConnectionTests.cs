@@ -8,6 +8,7 @@ using SET09102_2024_5.Services;
 using System.IO;
 using System.Reflection;
 using Xunit;
+using SET09102_2024_5.Interfaces;
 
 namespace SET09102_2024_5.Tests
 {

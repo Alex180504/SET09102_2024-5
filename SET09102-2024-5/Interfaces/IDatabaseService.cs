@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SET09102_2024_5.Services
+namespace SET09102_2024_5.Interfaces
 {
     public interface IDatabaseService
     {
