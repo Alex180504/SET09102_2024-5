@@ -15,7 +15,6 @@
 
     <Grid RowDefinitions="Auto,*,Auto" Padding="10">
         <VerticalStackLayout Grid.Row="0" Spacing="15" Margin="0,0,0,15">
-            <Label Text="Configure settings for each sensor" HorizontalOptions="Center" />
 
             <Frame BorderColor="LightGray" Padding="10" HasShadow="True">
                 <Grid RowDefinitions="Auto,Auto">
