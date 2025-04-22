@@ -11,6 +11,9 @@ using System.Windows.Input;
 
 namespace SET09102_2024_5.ViewModels
 {
+    /// <summary>
+    /// ViewModel for managing sensor configuration settings
+    /// </summary>
     public class SensorManagementViewModel : BaseViewModel
     {
         private readonly SensorMonitoringContext _context;
@@ -26,16 +29,14 @@ namespace SET09102_2024_5.ViewModels
         private bool _isLoading;
         private bool _isSearching;
         private string _searchText;
+
         private List<string> _statusOptions = new List<string> { "Active", "Inactive", "Maintenance", "Error" };
 
         // Validation related fields
         private Dictionary<string, string> _validationErrors = new Dictionary<string, string>();
         private bool _hasValidationErrors;
 
-        public SensorManagementViewModel(
-            SensorMonitoringContext context,
-            IMainThreadService mainThreadService = null,
-            IDialogService dialogService = null)
+        public SensorManagementViewModel(SensorMonitoringContext context, IMainThreadService mainThreadService = null, IDialogService dialogService = null)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _mainThreadService = mainThreadService ?? new Services.MainThreadService();
@@ -62,6 +63,10 @@ namespace SET09102_2024_5.ViewModels
             await LoadSensorsAsync();
         }
 
+        /// <summary>
+        /// Indicates whether data loading operations are in progress
+        /// Controls command availability through CanExecute
+        /// </summary>
         public bool IsLoading
         {
             get => _isLoading;
@@ -92,13 +97,13 @@ namespace SET09102_2024_5.ViewModels
             get => _selectedSensor;
             set
             {
-                if (SetProperty(ref _selectedSensor, value))
+                if (SetProperty(ref _selectedSensor, value))    // Load sensor details when selected or reset all fields if null
                 {
                     IsSensorSelected = _selectedSensor != null;
                     if (_selectedSensor != null)
                     {
                         LoadSensorDetailsAsync();
-                        if (IsSearching)
+                        if (IsSearchActive)
                         {
                             HideSearchResults();
                         }
@@ -106,7 +111,7 @@ namespace SET09102_2024_5.ViewModels
                     else
                     {
                         Configuration = null;
-                        Firmware = null;
+                        FirmwareInfo = null;
                     }
 
                     ClearValidationErrors();
@@ -121,7 +126,7 @@ namespace SET09102_2024_5.ViewModels
             set => SetProperty(ref _searchText, value);
         }
 
-        public bool IsSearching
+        public bool IsSearchActive
         {
             get => _isSearching;
             set => SetProperty(ref _isSearching, value);
@@ -133,7 +138,7 @@ namespace SET09102_2024_5.ViewModels
             set => SetProperty(ref _configuration, value);
         }
 
-        public SensorFirmware Firmware
+        public SensorFirmware FirmwareInfo
         {
             get => _firmware;
             set => SetProperty(ref _firmware, value);
@@ -147,6 +152,9 @@ namespace SET09102_2024_5.ViewModels
 
         public List<string> StatusOptions => _statusOptions;
 
+        /// <summary>
+        /// Indicates if any validation errors exist that prevent saving changes to DB
+        /// </summary>
         public bool HasValidationErrors
         {
             get => _hasValidationErrors;
@@ -167,10 +175,13 @@ namespace SET09102_2024_5.ViewModels
         public ICommand ClearSearchCommand { get; }
         public ICommand ValidateCommand { get; }
 
+        /// <summary>
+        /// Filters sensors based on search text across DisplayName, SensorType, and Measurand
+        /// </summary>
         public void FilterSensors(string searchText)
         {
-            // Always show the filtered list when search control is active
-            IsSearching = true;
+            // Always show the filtered list when search bar is active
+            IsSearchActive = true;
             FilteredSensors.Clear();
 
             // If search is empty, show all sensors
@@ -204,7 +215,7 @@ namespace SET09102_2024_5.ViewModels
 
         public void HideSearchResults()
         {
-            IsSearching = false;
+            IsSearchActive = false;
         }
 
         private void ClearSearch()
@@ -213,9 +224,13 @@ namespace SET09102_2024_5.ViewModels
             HideSearchResults();
         }
 
+        /// <summary>
+        /// Shows all sensors in the search dropdown
+        /// Used when the search bar receives focus and no text is entered
+        /// </summary>
         public void ShowAllSensorsInSearch()
         {
-            IsSearching = true;
+            IsSearchActive = true;
             FilteredSensors.Clear();
             foreach (var sensor in Sensors)
             {
@@ -223,6 +238,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Special property for handling orientation setting with degree symbol
+        /// Parses user input and updates Configuration.Orientation accordingly
+        /// </summary>
         public string OrientationText
         {
             get => Configuration?.Orientation?.ToString() ?? string.Empty;
@@ -244,9 +263,13 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Validates a specific configuration field and updates validation errors
+        /// Called when a field loses focus in the UI
+        /// </summary>
         private void ValidateField(string fieldName)
         {
-            // Don't proceed with validation if Configuration is null
+            // Don't proceed with validation if Configuration is null (no sensor selected)
             if (Configuration == null) return;
 
             ClearValidationError(fieldName);
@@ -356,6 +379,9 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Adds a validation error for the specified property
+        /// </summary>
         private void AddValidationError(string propertyName, string errorMessage)
         {
             if (_validationErrors.ContainsKey(propertyName))
@@ -386,6 +412,9 @@ namespace SET09102_2024_5.ViewModels
             OnPropertyChanged(nameof(ValidationErrors));
         }
 
+        /// <summary>
+        /// Validates all configuration fields
+        /// </summary>
         private void ValidateAllFields()
         {
             ValidateField(nameof(Configuration.Latitude));
@@ -397,6 +426,10 @@ namespace SET09102_2024_5.ViewModels
             ValidateField(nameof(Configuration.MaxThreshold));
         }
 
+        /// <summary>
+        /// Loads all sensors from the database
+        /// Uses AsNoTracking for better performance when only reading data
+        /// </summary>
         private async Task LoadSensorsAsync()
         {
             if (IsLoading) return;
@@ -415,6 +448,7 @@ namespace SET09102_2024_5.ViewModels
                     Sensors.Clear();
                     foreach (var sensor in sensors)
                     {
+                        // Generate display name
                         if (string.IsNullOrEmpty(sensor.DisplayName))
                         {
                             sensor.DisplayName = $"{sensor.SensorId} - {sensor.SensorType}";
@@ -422,7 +456,7 @@ namespace SET09102_2024_5.ViewModels
                         Sensors.Add(sensor);
                     }
 
-                    if (IsSearching)
+                    if (IsSearchActive)
                     {
                         FilterSensors(SearchText);
                     }
@@ -438,6 +472,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Loads detailed configuration for the selected sensor
+        /// Creates a default configuration if none is found
+        /// </summary>
         private async Task LoadSensorDetailsAsync()
         {
             if (SelectedSensor == null) return;
@@ -463,14 +501,14 @@ namespace SET09102_2024_5.ViewModels
                         Orientation = 0,
                         MeasurementFrequency = 5,
                         MinThreshold = 0,
-                        MaxThreshold = 100
+                        MaxThreshold = 1
                     };
 
-                    Firmware = sensor.Firmware;
+                    FirmwareInfo = sensor.Firmware;
                 }
 
                 OnPropertyChanged(nameof(Configuration));
-                OnPropertyChanged(nameof(Firmware));
+                OnPropertyChanged(nameof(FirmwareInfo));
                 OnPropertyChanged(nameof(OrientationText));
             }
             catch (Exception ex)
@@ -483,6 +521,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Saves configuration changes to the database
+        /// Validates all fields before saving and shows confirmation dialog
+        /// </summary>
         private async Task SaveChangesAsync()
         {
             if (SelectedSensor == null || IsLoading) return;
@@ -520,11 +562,13 @@ namespace SET09102_2024_5.ViewModels
                     sensor.Status = SelectedSensor.Status;
                     if (sensor.Configuration == null)
                     {
+                        // Create new configuration if it doesn't exist
                         sensor.Configuration = Configuration;
                         _context.Add(Configuration);
                     }
                     else
                     {
+                        // Update existing configuration
                         sensor.Configuration.Latitude = Configuration.Latitude;
                         sensor.Configuration.Longitude = Configuration.Longitude;
                         sensor.Configuration.Altitude = Configuration.Altitude;

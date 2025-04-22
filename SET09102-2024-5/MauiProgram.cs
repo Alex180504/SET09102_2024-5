@@ -65,7 +65,6 @@ namespace SET09102_2024_5
                     {
                         System.Diagnostics.Debug.WriteLine($"Error configuring DbContext options: {ex.Message}");
                         // Still need to configure the options even if there's an error
-                        // Use a fallback version that won't require connection
                         var serverVersion = new MySqlServerVersion(new Version(8, 0, 0));
                         optionsBuilder.UseMySql(ConnectionString, serverVersion);
                     }
@@ -102,7 +101,6 @@ namespace SET09102_2024_5
             }
             catch (Exception ex)
             {
-                // Log the exception but don't crash
                 System.Diagnostics.Debug.WriteLine($"Application initialization error: {ex.Message}");
             }
 

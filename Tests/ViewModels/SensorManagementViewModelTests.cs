@@ -200,7 +200,7 @@ namespace SET09102_2024_5.Tests.ViewModels
             viewModel.FilterSensors("");
 
             // Assert
-            Assert.True(viewModel.IsSearching);
+            Assert.True(viewModel.IsSearchActive);
             Assert.Equal(_testSensors.Count, viewModel.FilteredSensors.Count);
         }
 
@@ -219,7 +219,7 @@ namespace SET09102_2024_5.Tests.ViewModels
             viewModel.FilterSensors("Temperature");
 
             // Assert
-            Assert.True(viewModel.IsSearching);
+            Assert.True(viewModel.IsSearchActive);
             Assert.Single(viewModel.FilteredSensors);
             Assert.Equal("Temperature", viewModel.FilteredSensors[0].SensorType);
         }
@@ -243,7 +243,7 @@ namespace SET09102_2024_5.Tests.ViewModels
             viewModel.FilterSensors("Humidity");
 
             // Assert
-            Assert.True(viewModel.IsSearching);
+            Assert.True(viewModel.IsSearchActive);
             Assert.Single(viewModel.FilteredSensors);
             Assert.Equal("Humidity", viewModel.FilteredSensors[0].Measurand.QuantityName);
         }
@@ -263,7 +263,7 @@ namespace SET09102_2024_5.Tests.ViewModels
             viewModel.FilterSensors("NoSuchSensor");
 
             // Assert
-            Assert.True(viewModel.IsSearching);
+            Assert.True(viewModel.IsSearchActive);
             Assert.Empty(viewModel.FilteredSensors);
         }
 
@@ -282,7 +282,7 @@ namespace SET09102_2024_5.Tests.ViewModels
             viewModel.FilterSensors("tEmPeRaTuRe");
 
             // Assert
-            Assert.True(viewModel.IsSearching);
+            Assert.True(viewModel.IsSearchActive);
             Assert.Single(viewModel.FilteredSensors);
             Assert.Equal("Temperature", viewModel.FilteredSensors[0].SensorType);
         }
@@ -292,13 +292,13 @@ namespace SET09102_2024_5.Tests.ViewModels
         {
             // Arrange
             var viewModel = CreateViewModel();
-            viewModel.IsSearching = true;
+            viewModel.IsSearchActive = true;
 
             // Act
             viewModel.HideSearchResults();
 
             // Assert
-            Assert.False(viewModel.IsSearching);
+            Assert.False(viewModel.IsSearchActive);
         }
 
         [Fact]
@@ -316,7 +316,7 @@ namespace SET09102_2024_5.Tests.ViewModels
             viewModel.ShowAllSensorsInSearch();
 
             // Assert
-            Assert.True(viewModel.IsSearching);
+            Assert.True(viewModel.IsSearchActive);
             Assert.Equal(_testSensors.Count, viewModel.FilteredSensors.Count);
         }
 
