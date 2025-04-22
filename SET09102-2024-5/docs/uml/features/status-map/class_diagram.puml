@@ -1,0 +1,73 @@
+@startuml
+package "Model" {
+  class Sensor {
+    +Guid Id
+    +double Latitude
+    +double Longitude
+    +string Status
+    +DateTime LastSeen
+  }
+  class Alert {
+    +Guid Id
+    +Guid SensorId
+    +string Type
+    +DateTime Timestamp
+    +string Message
+  }
+}
+
+package "Data" {
+  interface IRepository<T> {
+    +IEnumerable<T> GetAll()
+    +IEnumerable<T> GetUpdatesSince(DateTime since)
+  }
+  class SensorRepository {
+    +IEnumerable<Sensor> GetUpdatesSince(DateTime since)
+  }
+  class AlertRepository {
+    +IEnumerable<Alert> GetUpdatesSince(DateTime since)
+  }
+  IRepository <|.. SensorRepository
+  IRepository <|.. AlertRepository
+}
+
+package "Services" {
+  class PollingTimer {
+    +TimeSpan Interval
+    +event Action OnTick
+    +void Start()
+    +void Stop()
+  }
+  class SensorService {
+    -IRepository<Sensor> sensorRepo
+    -IRepository<Alert> alertRepo
+    -PollingTimer timer
+    +event Action<Sensor[]> OnSensorsUpdated
+    +event Action<Alert[]> OnAlertsUpdated
+    +void InitializePolling()
+    +void HandleTick()
+  }
+  SensorService --> SensorRepository
+  SensorService --> AlertRepository
+  SensorService --> PollingTimer : uses
+}
+
+package "ViewModel" {
+  class MapViewModel {
+    -SensorService sensorService
+    +ObservableCollection<Pin> SensorPins
+    +void LoadInitialSensors()
+    +void OnSensorsUpdated(Sensor[] s)
+    +void OnAlertsUpdated(Alert[] a)
+  }
+  MapViewModel --> SensorService
+}
+
+package "View" {
+  class MapPage {
+    +MapViewModel ViewModel
+    +void Initialize()
+  }
+  MapPage --> MapViewModel : DataContext
+}
+@enduml

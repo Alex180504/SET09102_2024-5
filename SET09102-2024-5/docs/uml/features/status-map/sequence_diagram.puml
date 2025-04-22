@@ -1,0 +1,24 @@
+@startuml
+actor User
+participant MapPage    as "View\n(MapPage)"
+participant MapVM      as "ViewModel\n(MapViewModel)"
+participant Service    as "Service\n(SensorService)"
+participant Timer      as "Service\n(PollingTimer)"
+participant SQLDB      as "AzureSQLDB"
+
+User -> MapPage : Launch()
+MapPage -> MapVM : Initialize()
+MapVM -> Service : LoadInitialSensors()
+Service -> SQLDB : SELECT * FROM Sensors
+SQLDB --> Service : List<Sensor>
+Service --> MapVM : OnSensorsUpdated(sensors)
+MapVM --> MapPage : Initial pins rendered
+
+== Polling every Interval ==
+Timer -> Service : OnTick()
+Service -> SQLDB : SELECT ... WHERE LastSeen > lastCheck
+SQLDB --> Service : sensorUpdates
+Service --> MapVM : OnSensorsUpdated(sensorUpdates)
+Service --> MapVM : OnAlertsUpdated(alertUpdates)
+MapVM --> MapPage : UpdatePins & ShowPopups
+@enduml
