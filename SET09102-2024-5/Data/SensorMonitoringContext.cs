@@ -87,8 +87,7 @@ namespace SET09102_2024_5.Data
                 entity.Property(e => e.Longitude).HasColumnName("longitude");
                 entity.Property(e => e.Altitude).HasColumnName("altitude");
                 entity.Property(e => e.Orientation).HasColumnName("orientation");
-                entity.Property(e => e.MeasurementFrequency).HasColumnName("measurment_frequency");
-                entity.Property(e => e.MinThreshold).HasColumnName("min_threshold");
+                entity.Property(e => e.MeasurementFrequency).HasColumnName("measurement_frequency");
                 entity.Property(e => e.MaxThreshold).HasColumnName("max_threshold");
 
                 entity.HasOne(c => c.Sensor)
