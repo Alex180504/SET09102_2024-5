@@ -73,7 +73,6 @@ INSERT INTO configuration (sensor_id, latitude, longitude, altitude, orientation
 (14, 56.1881, -3.1789, 35.9, 270, 15, 0, 50),
 (15, 55.4643, -2.8744, 120.3, 315, 15, 980, 1050); 
 
-
 -- Firmware information for each sensor
 INSERT INTO sensor_firmware (sensor_id, firmware_version, last_update_date) VALUES
 (1, 'v2.1.5', '2023-09-20'),
