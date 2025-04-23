@@ -1,4 +1,4 @@
-﻿// Models/Configuration.cs
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -9,7 +9,6 @@ namespace SET09102_2024_5.Models
         [Key]
         [ForeignKey("Sensor")]
         public int SensorId { get; set; }
-
         public float? Latitude { get; set; }
         public float? Longitude { get; set; }
         public float? Altitude { get; set; }

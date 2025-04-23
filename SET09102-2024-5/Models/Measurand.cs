@@ -6,7 +6,9 @@ namespace SET09102_2024_5.Models
     public class Measurand
     {
         [Key]
+
         public int MeasurandId { get; set; }
+
 
         [StringLength(100)]
         public string QuantityType { get; set; }

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
 using SET09102_2024_5.Models;
 
 namespace SET09102_2024_5.Data
@@ -9,7 +10,7 @@ namespace SET09102_2024_5.Data
             : base(options)
         {
         }
-
+        
         public virtual DbSet<Role> Roles { get; set; } = null!;
         public virtual DbSet<User> Users { get; set; } = null!;
         public virtual DbSet<Sensor> Sensors { get; set; } = null!;
@@ -20,6 +21,7 @@ namespace SET09102_2024_5.Data
         public virtual DbSet<Incident> Incidents { get; set; } = null!;
         public virtual DbSet<IncidentMeasurement> IncidentMeasurements { get; set; } = null!;
         public virtual DbSet<Configuration> Configurations { get; set; } = null!;
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -82,6 +84,7 @@ namespace SET09102_2024_5.Data
             {
                 entity.ToTable("configuration");
                 entity.HasKey(e => e.SensorId);
+
                 entity.Property(e => e.SensorId).HasColumnName("sensor_id");
                 entity.Property(e => e.Latitude).HasColumnName("latitude");
                 entity.Property(e => e.Longitude).HasColumnName("longitude");
@@ -89,7 +92,7 @@ namespace SET09102_2024_5.Data
                 entity.Property(e => e.Orientation).HasColumnName("orientation");
                 entity.Property(e => e.MeasurementFrequency).HasColumnName("measurement_frequency");
                 entity.Property(e => e.MaxThreshold).HasColumnName("max_threshold");
-
+                
                 entity.HasOne(c => c.Sensor)
                       .WithOne(s => s.Configuration)
                       .HasForeignKey<Configuration>(c => c.SensorId)
@@ -122,6 +125,7 @@ namespace SET09102_2024_5.Data
                 entity.HasOne(m => m.Sensor)
                       .WithMany(s => s.Measurements)
                       .HasForeignKey(m => m.SensorId)
+
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -143,6 +147,36 @@ namespace SET09102_2024_5.Data
                 entity.HasOne(m => m.Maintainer)
                       .WithMany(u => u.Maintenances)
                       .HasForeignKey(m => m.MaintainerId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Measurand>(entity =>
+            {
+                entity.ToTable("measurand");
+                entity.HasKey(e => e.QuantityId);
+                entity.Property(e => e.QuantityId).HasColumnName("quantity_id");
+                entity.Property(e => e.SensorId).HasColumnName("sensor_id");
+                entity.Property(e => e.QuantityType).HasColumnName("quantity_type").HasMaxLength(100);
+                entity.Property(e => e.QuantityName).HasColumnName("quantity_name").HasMaxLength(100);
+
+                entity.HasOne(p => p.Sensor)
+                      .WithMany(s => s.Measurands)
+                      .HasForeignKey(p => p.SensorId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Measurement>(entity =>
+            {
+                entity.ToTable("measurement");
+                entity.HasKey(e => e.MeasurementId);
+                entity.Property(e => e.MeasurementId).HasColumnName("measurement_id");
+                entity.Property(e => e.Timestamp).HasColumnName("timestamp");
+                entity.Property(e => e.Value).HasColumnName("value");
+                entity.Property(e => e.QuantityId).HasColumnName("quantity_id");
+
+                entity.HasOne(m => m.Measurand)
+                      .WithMany(q => q.Measurements)
+                      .HasForeignKey(m => m.QuantityId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
