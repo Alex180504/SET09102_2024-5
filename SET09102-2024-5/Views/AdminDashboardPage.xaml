@@ -1,64 +1,258 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:helpers="clr-namespace:SET09102_2024_5.Helpers"
              x:Class="SET09102_2024_5.Views.AdminDashboardPage"
-             Title="Administrator Dashboard">
+             Title="Administrator Dashboard"
+             BackgroundColor="{AppThemeBinding Light=#f5f5f5, Dark=#1f1f1f}">
 
+    <ContentPage.Resources>
+        <Style x:Key="CardStyle" TargetType="Frame">
+            <Setter Property="BorderColor" Value="{AppThemeBinding Light=#e0e0e0, Dark=#3e3e3e}" />
+            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=White, Dark=#2e2e2e}" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="HasShadow" Value="True" />
+            <Setter Property="Padding" Value="18" />
+            <Setter Property="Margin" Value="8,5" />
+            <Setter Property="Shadow">
+                <Shadow Brush="#66000000"
+                       Offset="0,4"
+                       Radius="8" />
+            </Setter>
+        </Style>
+        
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="TextColor" Value="White" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Margin" Value="0,8,0,0" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="HorizontalOptions" Value="Start" />
+        </Style>
+
+        <Style x:Key="CardTitleStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#232323, Dark=#e0e0e0}" />
+        </Style>
+
+        <Style x:Key="CardDescriptionStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#505050, Dark=#b0b0b0}" />
+            <Setter Property="LineBreakMode" Value="WordWrap" />
+            <Setter Property="MaxLines" Value="3" />
+        </Style>
+    </ContentPage.Resources>
+    
     <ScrollView>
-        <VerticalStackLayout Spacing="25" Padding="20">
-            <Label Text="Administrator Dashboard" 
-                   FontSize="28" 
-                   FontAttributes="Bold" 
-                   HorizontalOptions="Center"/>
+        <Grid Padding="16,12" RowSpacing="16" ColumnSpacing="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             
-            <Label Text="User Access Management" 
+            <!-- Header with Icon -->
+            <Border Grid.Row="0" 
+                    BackgroundColor="{AppThemeBinding Light=#3f51b5, Dark=#303f9f}"
+                    StrokeThickness="0"
+                    Stroke="{AppThemeBinding Light=#3949ab, Dark=#283593}"
+                    StrokeShape="RoundRectangle 12,12,12,12"
+                    Padding="20,24"
+                    Margin="0,0,0,8">
+                <Grid ColumnDefinitions="Auto,*">
+                    <Image Grid.Column="0"
+                           Source="dotnet_bot.png"
+                           HeightRequest="60"
+                           WidthRequest="60"
+                           VerticalOptions="Center" />
+                    
+                    <VerticalStackLayout Grid.Column="1" Margin="16,0,0,0" VerticalOptions="Center">
+                        <Label Text="Administrator Dashboard" 
+                               FontSize="26" 
+                               FontAttributes="Bold" 
+                               TextColor="White"/>
+                        <Label Text="Manage system access and user permissions" 
+                               FontSize="14" 
+                               TextColor="#e0e0e0"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+            
+            <!-- User Access Management Section -->
+            <Label Grid.Row="1"
+                   Text="User Access Management" 
                    FontSize="22" 
                    FontAttributes="Bold" 
-                   Margin="0,15,0,0"/>
+                   Margin="4,8,0,0"
+                   TextColor="{AppThemeBinding Light=#232323, Dark=#e0e0e0}"/>
+            
+            <!-- Cards Layout -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12">
+                <!-- Role Management Card -->
+                <Frame Grid.Column="0" Style="{StaticResource CardStyle}">
+                    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                        <Border Grid.Row="0"
+                                BackgroundColor="#2196F3"
+                                HeightRequest="3"
+                                HorizontalOptions="Start"
+                                WidthRequest="50"/>
+                                
+                        <VerticalStackLayout Grid.Row="1" Spacing="8">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="{x:Static helpers:MaterialIcons.AdminSettings}" 
+                                       FontFamily="MaterialIcons"
+                                       TextColor="#2196F3"
+                                       FontSize="22"
+                                       VerticalOptions="Center"/>
+                                <Label Text="Role Management" 
+                                       Style="{StaticResource CardTitleStyle}"/>
+                            </HorizontalStackLayout>
+                            
+                            <Label Text="Create and configure roles with specific access privileges to control what features and data users can access within the system." 
+                                   Style="{StaticResource CardDescriptionStyle}"/>
+                        </VerticalStackLayout>
+                        
+                        <Button Grid.Row="2"
+                                Text="Manage Roles" 
+                                x:Name="RoleManagementButton"
+                                BackgroundColor="#2196F3"
+                                Style="{StaticResource ActionButtonStyle}"
+                                Clicked="OnRoleManagementClicked">
+                            <Button.Shadow>
+                                <Shadow Brush="#402196F3"
+                                       Offset="0,2"
+                                       Radius="4" />
+                            </Button.Shadow>
+                        </Button>
+                    </Grid>
+                </Frame>
 
-            <Frame BorderColor="LightGray" 
-                   CornerRadius="10" 
-                   HasShadow="True" 
-                   Padding="15" 
-                   Margin="0,5,0,5">
-                <VerticalStackLayout Spacing="15">
-                    <Label Text="Role Management" 
-                           FontSize="18" 
-                           FontAttributes="Bold"/>
+                <!-- User Role Assignment Card -->
+                <Frame Grid.Column="1" Style="{StaticResource CardStyle}">
+                    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                        <Border Grid.Row="0"
+                                BackgroundColor="#4CAF50"
+                                HeightRequest="3"
+                                HorizontalOptions="Start"
+                                WidthRequest="50"/>
+                                
+                        <VerticalStackLayout Grid.Row="1" Spacing="8">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="{x:Static helpers:MaterialIcons.Group}" 
+                                       FontFamily="MaterialIcons"
+                                       TextColor="#4CAF50"
+                                       FontSize="22"
+                                       VerticalOptions="Center"/>
+                                <Label Text="User Role Assignment" 
+                                       Style="{StaticResource CardTitleStyle}"/>
+                            </HorizontalStackLayout>
+                            
+                            <Label Text="Assign appropriate roles to users to grant them the necessary permissions for their job functions." 
+                                   Style="{StaticResource CardDescriptionStyle}"/>
+                        </VerticalStackLayout>
+                        
+                        <Button Grid.Row="2"
+                                Text="Assign User Roles" 
+                                x:Name="UserRoleAssignmentButton"
+                                BackgroundColor="#4CAF50"
+                                Style="{StaticResource ActionButtonStyle}"
+                                Clicked="OnUserRoleAssignmentClicked">
+                            <Button.Shadow>
+                                <Shadow Brush="#404CAF50"
+                                       Offset="0,2"
+                                       Radius="4" />
+                            </Button.Shadow>
+                        </Button>
+                    </Grid>
+                </Frame>
+            </Grid>
+            
+            <!-- Additional System Management Section -->
+            <Frame Grid.Row="3" Style="{StaticResource CardStyle}" Margin="8,16,8,5">
+                <Grid RowDefinitions="Auto,Auto" RowSpacing="16">
+                    <Label Text="System Management" 
+                           FontSize="20" 
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=#232323, Dark=#e0e0e0}"/>
                     
-                    <Label Text="Create and configure roles with specific access privileges to control what features and data users can access within the system." 
-                           FontSize="14"/>
-                    
-                    <Button Text="Manage Roles" 
-                            x:Name="RoleManagementButton"
-                            BackgroundColor="#2196F3"
-                            TextColor="White"
-                            CornerRadius="5"
-                            Clicked="OnRoleManagementClicked" />
-                </VerticalStackLayout>
+                    <Frame Grid.Row="1" 
+                           BackgroundColor="{AppThemeBinding Light=#f8f8f8, Dark=#333333}" 
+                           BorderColor="Transparent" 
+                           CornerRadius="8" 
+                           Padding="16" 
+                           Margin="0">
+                        <HorizontalStackLayout Spacing="20" HorizontalOptions="Center">
+                            <VerticalStackLayout Spacing="5" HorizontalOptions="Center">
+                                <Border BackgroundColor="#FF9800"
+                                        StrokeThickness="0"
+                                        WidthRequest="50"
+                                        HeightRequest="50"
+                                        StrokeShape="RoundRectangle 25">
+                                    <Label Text="{x:Static helpers:MaterialIcons.Settings}"
+                                           FontFamily="MaterialIcons"
+                                           TextColor="White"
+                                           FontSize="26"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center"/>
+                                </Border>
+                                <Label Text="Settings" 
+                                       HorizontalOptions="Center"
+                                       FontSize="14"
+                                       TextColor="{AppThemeBinding Light=#505050, Dark=#b0b0b0}"/>
+                                <VerticalStackLayout.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnSettingsClicked" />
+                                </VerticalStackLayout.GestureRecognizers>
+                            </VerticalStackLayout>
+                            
+                            <VerticalStackLayout Spacing="5" HorizontalOptions="Center">
+                                <Border BackgroundColor="#9C27B0"
+                                        StrokeThickness="0"
+                                        WidthRequest="50"
+                                        HeightRequest="50"
+                                        StrokeShape="RoundRectangle 25">
+                                    <Label Text="{x:Static helpers:MaterialIcons.Report}"
+                                           FontFamily="MaterialIcons"
+                                           TextColor="White"
+                                           FontSize="26"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center"/>
+                                </Border>
+                                <Label Text="Reports" 
+                                       HorizontalOptions="Center"
+                                       FontSize="14"
+                                       TextColor="{AppThemeBinding Light=#505050, Dark=#b0b0b0}"/>
+                                <VerticalStackLayout.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnReportsClicked" />
+                                </VerticalStackLayout.GestureRecognizers>
+                            </VerticalStackLayout>
+                            
+                            <VerticalStackLayout Spacing="5" HorizontalOptions="Center">
+                                <Border BackgroundColor="#E91E63"
+                                        StrokeThickness="0"
+                                        WidthRequest="50"
+                                        HeightRequest="50"
+                                        StrokeShape="RoundRectangle 25">
+                                    <Label Text="{x:Static helpers:MaterialIcons.ContentCopy}"
+                                           FontFamily="MaterialIcons"
+                                           TextColor="White"
+                                           FontSize="26"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center"/>
+                                </Border>
+                                <Label Text="Audit" 
+                                       HorizontalOptions="Center"
+                                       FontSize="14"
+                                       TextColor="{AppThemeBinding Light=#505050, Dark=#b0b0b0}"/>
+                                <VerticalStackLayout.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnAuditClicked" />
+                                </VerticalStackLayout.GestureRecognizers>
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+                    </Frame>
+                </Grid>
             </Frame>
-
-            <Frame BorderColor="LightGray" 
-                   CornerRadius="10" 
-                   HasShadow="True" 
-                   Padding="15" 
-                   Margin="0,5,0,5">
-                <VerticalStackLayout Spacing="15">
-                    <Label Text="User Role Assignment" 
-                           FontSize="18" 
-                           FontAttributes="Bold"/>
-                    
-                    <Label Text="Assign appropriate roles to users to grant them the necessary permissions for their job functions." 
-                           FontSize="14"/>
-                    
-                    <Button Text="Assign User Roles" 
-                            x:Name="UserRoleAssignmentButton"
-                            BackgroundColor="#4CAF50"
-                            TextColor="White"
-                            CornerRadius="5"
-                            Clicked="OnUserRoleAssignmentClicked" />
-                </VerticalStackLayout>
-            </Frame>
-        </VerticalStackLayout>
+        </Grid>
     </ScrollView>
 </ContentPage>

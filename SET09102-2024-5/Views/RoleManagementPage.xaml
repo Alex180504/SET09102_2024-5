@@ -4,127 +4,454 @@
              xmlns:vm="clr-namespace:SET09102_2024_5.ViewModels"
              xmlns:models="clr-namespace:SET09102_2024_5.Models"
              xmlns:converters="clr-namespace:SET09102_2024_5.Converters"
+             xmlns:helpers="clr-namespace:SET09102_2024_5.Helpers"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:DataType="vm:RoleManagementViewModel"
              x:Class="SET09102_2024_5.Views.RoleManagementPage"
-             Title="Role Management">
+             Title="Role Management"
+             BackgroundColor="{AppThemeBinding Light=#f5f5f5, Dark=#1f1f1f}">
 
     <ContentPage.Resources>
         <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        
+        <Style x:Key="CardStyle" TargetType="Frame">
+            <Setter Property="BorderColor" Value="{AppThemeBinding Light=#e0e0e0, Dark=#3e3e3e}" />
+            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=White, Dark=#2e2e2e}" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="HasShadow" Value="True" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="0,8" />
+            <Setter Property="Shadow">
+                <Shadow Brush="#66000000"
+                       Offset="0,3"
+                       Radius="6" />
+            </Setter>
+        </Style>
+
+        <Style x:Key="SectionTitleStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#232323, Dark=#e0e0e0}" />
+            <Setter Property="Margin" Value="5,0,0,5" />
+        </Style>
+
+        <Style x:Key="FormLabelStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#505050, Dark=#b0b0b0}" />
+            <Setter Property="Margin" Value="5,0,0,3" />
+        </Style>
+
+        <Style x:Key="FormEntryStyle" TargetType="Entry">
+            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#f9f9f9, Dark=#383838}" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#202020, Dark=#e0e0e0}" />
+            <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light=#909090, Dark=#707070}" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+        </Style>
     </ContentPage.Resources>
 
-    <Grid ColumnDefinitions="*,*" Margin="10">
+    <Grid Padding="16" RowSpacing="10" ColumnSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        
+        <!-- Page Header -->
+        <Border Grid.Row="0" Grid.ColumnSpan="2"
+                BackgroundColor="{AppThemeBinding Light=#3f51b5, Dark=#303f9f}"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 12,12,12,12"
+                Padding="20"
+                Margin="0,0,0,12">
+            <Grid ColumnDefinitions="Auto,*">
+                <Label Text="{x:Static helpers:MaterialIcons.AdminSettings}" 
+                       FontFamily="MaterialIcons"
+                       TextColor="White"
+                       FontSize="32"
+                       VerticalOptions="Center"/>
+                       
+                <VerticalStackLayout Grid.Column="1" Margin="16,0,0,0">
+                    <Label Text="Role Management" 
+                           FontSize="24" 
+                           FontAttributes="Bold" 
+                           TextColor="White"/>
+                    <Label Text="Create and manage roles with specific access privileges" 
+                           FontSize="14" 
+                           TextColor="#e0e0e0"/>
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+
         <!-- Left Side: Roles List and Create New Role -->
-        <VerticalStackLayout Grid.Column="0" Spacing="10" Margin="0,0,5,0">
-            <Label Text="Roles" FontAttributes="Bold" FontSize="18" />
-            
+        <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" Margin="0,0,8,0">
             <!-- Create New Role Section -->
-            <Frame BorderColor="LightGray" Padding="10" Margin="0,0,0,10">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="Create New Role" FontAttributes="Bold" />
+            <Frame Grid.Row="0" Style="{StaticResource CardStyle}">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                    <HorizontalStackLayout Grid.Row="0" Spacing="8" Margin="0,0,0,12">
+                        <Label Text="{x:Static helpers:MaterialIcons.Add_Circle}" 
+                               FontFamily="MaterialIcons"
+                               TextColor="#2196F3"
+                               FontSize="24"
+                               VerticalOptions="Center"/>
+                        <Label Text="Create New Role" 
+                               FontSize="18" 
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#232323, Dark=#e0e0e0}"
+                               VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
                     
-                    <Entry Placeholder="Role Name" 
-                           Text="{Binding NewRoleName}" />
+                    <Label Grid.Row="1" 
+                           Text="Role Name" 
+                           Style="{StaticResource FormLabelStyle}"/>
                     
-                    <Entry Placeholder="Description" 
-                           Text="{Binding NewRoleDescription}" />
+                    <Border Grid.Row="2"
+                            Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#505050}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 6"
+                            Padding="5,0">
+                        <Entry Placeholder="Enter role name" 
+                               Text="{Binding NewRoleName}"
+                               BackgroundColor="Transparent"
+                               Margin="8,0" />
+                    </Border>
                     
-                    <Button Text="Create Role" 
+                    <Label Grid.Row="3" 
+                           Text="Description" 
+                           Style="{StaticResource FormLabelStyle}"
+                           Margin="5,10,0,3"/>
+                    
+                    <Border Grid.Row="4"
+                            Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#505050}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 6"
+                            Padding="5,0">
+                        <Entry Placeholder="Enter role description" 
+                               Text="{Binding NewRoleDescription}"
+                               BackgroundColor="Transparent"
+                               Margin="8,0" />
+                    </Border>
+                    
+                    <Button Grid.Row="5"
+                            Text="Create Role" 
                             Command="{Binding CreateRoleCommand}" 
                             BackgroundColor="#2196F3"
-                            TextColor="White" />
-                </VerticalStackLayout>
+                            TextColor="White"
+                            CornerRadius="8"
+                            Margin="0,16,0,0"
+                            HorizontalOptions="Start"
+                            Padding="20,8">
+                        <Button.Shadow>
+                            <Shadow Brush="#402196F3"
+                                   Offset="0,2"
+                                   Radius="4" />
+                        </Button.Shadow>
+                    </Button>
+                </Grid>
             </Frame>
             
             <!-- Roles List -->
-            <Frame BorderColor="LightGray" Padding="10" VerticalOptions="FillAndExpand">
-                <StackLayout>
-                    <Label Text="Select Role to Edit" />
-                    <CollectionView ItemsSource="{Binding Roles}"
+            <Frame Grid.Row="1" Style="{StaticResource CardStyle}" VerticalOptions="Fill">
+                <Grid RowDefinitions="Auto,*">
+                    <HorizontalStackLayout Grid.Row="0" Spacing="8" Margin="0,0,0,12">
+                        <Label Text="{x:Static helpers:MaterialIcons.Person}" 
+                               FontFamily="MaterialIcons"
+                               TextColor="#673AB7"
+                               FontSize="24"
+                               VerticalOptions="Center"/>
+                        <Label Text="Available Roles" 
+                               FontSize="18" 
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#232323, Dark=#e0e0e0}"
+                               VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+                    
+                    <Label Grid.Row="0" 
+                           Text="Select a role to edit"
+                           HorizontalOptions="End"
+                           VerticalOptions="Center"
+                           FontSize="14"
+                           TextColor="{AppThemeBinding Light=#707070, Dark=#a0a0a0}"/>
+                    
+                    <CollectionView Grid.Row="1"
+                                    ItemsSource="{Binding Roles}"
                                     SelectedItem="{Binding SelectedRole}"
                                     SelectionMode="Single"
                                     VerticalOptions="FillAndExpand">
                         <CollectionView.ItemTemplate>
                             <DataTemplate x:DataType="models:Role">
-                                <Frame Margin="2" BorderColor="LightGray" Padding="10">
-                                    <VerticalStackLayout>
-                                        <Label Text="{Binding RoleName}" FontAttributes="Bold" />
-                                        <Label Text="{Binding Description}" LineBreakMode="TailTruncation" />
-                                    </VerticalStackLayout>
-                                </Frame>
+                                <Border Margin="2,5" 
+                                        Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#505050}"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 8"
+                                        Padding="12">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <VerticalStackLayout Grid.Column="0">
+                                            <Label Text="{Binding RoleName}" 
+                                                   FontAttributes="Bold"
+                                                   FontSize="16"
+                                                   TextColor="{AppThemeBinding Light=#202020, Dark=#e0e0e0}"/>
+                                                   
+                                            <Label Text="{Binding Description}" 
+                                                   LineBreakMode="TailTruncation"
+                                                   FontSize="14"
+                                                   TextColor="{AppThemeBinding Light=#606060, Dark=#a0a0a0}"/>
+                                        </VerticalStackLayout>
+                                        
+                                        <Label Grid.Column="1" 
+                                               Text="{x:Static helpers:MaterialIcons.Arrow_Forward}" 
+                                               FontFamily="MaterialIcons"
+                                               TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"
+                                               FontSize="20"
+                                               VerticalOptions="Center"/>
+                                    </Grid>
+                                </Border>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="12">
+                                <Label Text="{x:Static helpers:MaterialIcons.Search}" 
+                                       FontFamily="MaterialIcons"
+                                       TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"
+                                       FontSize="48"
+                                       HorizontalOptions="Center"/>
+                                <Label Text="No Roles Found" 
+                                       FontSize="16"
+                                       TextColor="{AppThemeBinding Light=#757575, Dark=#909090}"
+                                       HorizontalOptions="Center"/>
+                                <Label Text="Create a new role to get started" 
+                                       FontSize="14"
+                                       TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"
+                                       HorizontalOptions="Center"/>
+                            </VerticalStackLayout>
+                        </CollectionView.EmptyView>
                     </CollectionView>
-                </StackLayout>
+                </Grid>
             </Frame>
-        </VerticalStackLayout>
+        </Grid>
         
         <!-- Right Side: Role Details and Privileges -->
-        <VerticalStackLayout Grid.Column="1" Margin="5,0,0,0" IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}">
-            <Label Text="Role Details" FontAttributes="Bold" FontSize="18" />
+        <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="Auto,*" Margin="8,0,0,0">
+            <!-- No Role Selected Message -->
+            <ContentView Grid.RowSpan="2" 
+                         IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}, ConverterParameter=True}">
+                <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="20">
+                    <Label Text="{x:Static helpers:MaterialIcons.Info}" 
+                           FontFamily="MaterialIcons"
+                           TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"
+                           FontSize="64"
+                           HorizontalOptions="Center"/>
+                    <Label Text="No Role Selected" 
+                           FontSize="20"
+                           TextColor="{AppThemeBinding Light=#757575, Dark=#909090}"
+                           HorizontalOptions="Center"/>
+                    <Label Text="Select a role from the list to view and edit its details" 
+                           FontSize="16"
+                           TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+            </ContentView>
             
-            <Frame BorderColor="LightGray" Padding="10" Margin="0,0,0,10">
-                <VerticalStackLayout Spacing="10">
-                    <Entry Placeholder="Role Name" 
-                           Text="{Binding SelectedRole.RoleName}" />
+            <!-- Role Details -->
+            <Frame Grid.Row="0" 
+                   Style="{StaticResource CardStyle}" 
+                   IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                    <HorizontalStackLayout Grid.Row="0" Spacing="8" Margin="0,0,0,12">
+                        <Label Text="{x:Static helpers:MaterialIcons.Edit}" 
+                               FontFamily="MaterialIcons"
+                               TextColor="#FF9800"
+                               FontSize="24"
+                               VerticalOptions="Center"/>
+                        <Label Text="Edit Role Details" 
+                               FontSize="18" 
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#232323, Dark=#e0e0e0}"
+                               VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
                     
-                    <Entry Placeholder="Description" 
-                           Text="{Binding SelectedRole.Description}" />
+                    <Label Grid.Row="1" 
+                           Text="Role Name" 
+                           Style="{StaticResource FormLabelStyle}"/>
                     
-                    <HorizontalStackLayout Spacing="10">
+                    <Border Grid.Row="2"
+                            Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#505050}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 6"
+                            Padding="5,0">
+                        <Entry Placeholder="Role name" 
+                               Text="{Binding SelectedRole.RoleName}"
+                               BackgroundColor="Transparent"
+                               Margin="8,0" />
+                    </Border>
+                    
+                    <Label Grid.Row="3" 
+                           Text="Description" 
+                           Style="{StaticResource FormLabelStyle}"
+                           Margin="5,10,0,3"/>
+                    
+                    <Border Grid.Row="4"
+                            Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#505050}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 6"
+                            Padding="5,0">
+                        <Entry Placeholder="Role description" 
+                               Text="{Binding SelectedRole.Description}"
+                               BackgroundColor="Transparent"
+                               Margin="8,0" />
+                    </Border>
+                    
+                    <HorizontalStackLayout Grid.Row="5" Spacing="12" Margin="0,16,0,0">
                         <Button Text="Save Changes" 
                                 Command="{Binding SaveRoleCommand}" 
                                 BackgroundColor="#4CAF50"
-                                TextColor="White" />
+                                TextColor="White"
+                                CornerRadius="8"
+                                Padding="16,8">
+                            <Button.Shadow>
+                                <Shadow Brush="#404CAF50"
+                                       Offset="0,2"
+                                       Radius="4" />
+                            </Button.Shadow>
+                        </Button>
                         
                         <Button Text="Delete Role" 
                                 Command="{Binding DeleteRoleCommand}" 
                                 BackgroundColor="#F44336"
-                                TextColor="White" />
+                                TextColor="White"
+                                CornerRadius="8"
+                                Padding="16,8">
+                            <Button.Shadow>
+                                <Shadow Brush="#40F44336"
+                                       Offset="0,2"
+                                       Radius="4" />
+                            </Button.Shadow>
+                        </Button>
                     </HorizontalStackLayout>
-                </VerticalStackLayout>
+                </Grid>
             </Frame>
             
-            <Label Text="Access Privileges" FontAttributes="Bold" FontSize="16" />
-            
-            <Frame BorderColor="LightGray" Padding="10" VerticalOptions="FillAndExpand">
-                <ScrollView>
-                    <CollectionView ItemsSource="{Binding RolePrivileges}"
-                                    SelectionMode="None">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="vm:AccessPrivilegeViewModel">
-                                <Grid Margin="2" Padding="5" ColumnDefinitions="Auto,*">
-                                    <CheckBox Grid.Column="0" 
-                                              IsChecked="{Binding IsAssigned}" 
-                                              VerticalOptions="Center">
-                                        <CheckBox.Behaviors>
-                                            <toolkit:EventToCommandBehavior
-                                                EventName="CheckedChanged"
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RoleManagementViewModel}}, Path=TogglePrivilegeCommand}"
-                                                CommandParameter="{Binding .}" />
-                                        </CheckBox.Behaviors>
-                                    </CheckBox>
-                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
-                                        <Label Text="{Binding AccessPrivilege.Name}" FontAttributes="Bold" />
-                                        <Label Text="{Binding AccessPrivilege.Description}" 
-                                               FontSize="Small" 
-                                               TextColor="Gray" />
-                                        <Label Text="{Binding AccessPrivilege.ModuleName}" 
-                                               FontSize="Small" 
-                                               TextColor="DarkGray" />
+            <!-- Access Privileges -->
+            <Frame Grid.Row="1" 
+                   Style="{StaticResource CardStyle}" 
+                   VerticalOptions="Fill" 
+                   IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}">
+                <Grid RowDefinitions="Auto,*">
+                    <HorizontalStackLayout Grid.Row="0" Spacing="8" Margin="0,0,0,12">
+                        <Label Text="{x:Static helpers:MaterialIcons.Lock}" 
+                               FontFamily="MaterialIcons"
+                               TextColor="#9C27B0"
+                               FontSize="24"
+                               VerticalOptions="Center"/>
+                        <Label Text="Access Privileges" 
+                               FontSize="18" 
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#232323, Dark=#e0e0e0}"
+                               VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+                    
+                    <Border Grid.Row="1"
+                            Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#505050}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 8"
+                            BackgroundColor="{AppThemeBinding Light=#f9f9f9, Dark=#383838}">
+                        <ScrollView>
+                            <CollectionView ItemsSource="{Binding RolePrivileges}"
+                                           SelectionMode="None">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:AccessPrivilegeViewModel">
+                                        <Grid Padding="10,12" ColumnDefinitions="Auto,*">
+                                            <Border Grid.Column="0"
+                                                    WidthRequest="40"
+                                                    HeightRequest="40"
+                                                    StrokeShape="RoundRectangle 20"
+                                                    BackgroundColor="{AppThemeBinding Light=#f1f1f1, Dark=#454545}"
+                                                    HorizontalOptions="Center"
+                                                    VerticalOptions="Center">
+                                                <CheckBox IsChecked="{Binding IsAssigned}" 
+                                                          VerticalOptions="Center"
+                                                          HorizontalOptions="Center"
+                                                          Color="{AppThemeBinding Light=#673AB7, Dark=#9575CD}">
+                                                    <CheckBox.Behaviors>
+                                                        <toolkit:EventToCommandBehavior
+                                                            EventName="CheckedChanged"
+                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RoleManagementViewModel}}, Path=TogglePrivilegeCommand}"
+                                                            CommandParameter="{Binding .}" />
+                                                    </CheckBox.Behaviors>
+                                                </CheckBox>
+                                            </Border>
+                                            
+                                            <VerticalStackLayout Grid.Column="1" 
+                                                                 VerticalOptions="Center" 
+                                                                 Margin="12,0,0,0">
+                                                <Label Text="{Binding AccessPrivilege.Name}" 
+                                                       FontAttributes="Bold"
+                                                       FontSize="16"
+                                                       TextColor="{AppThemeBinding Light=#202020, Dark=#e0e0e0}"/>
+                                                       
+                                                <Label Text="{Binding AccessPrivilege.Description}" 
+                                                       FontSize="14"
+                                                       TextColor="{AppThemeBinding Light=#606060, Dark=#b0b0b0}"/>
+                                                       
+                                                <Border BackgroundColor="{AppThemeBinding Light=#e3f2fd, Dark=#263238}"
+                                                        StrokeShape="RoundRectangle 12"
+                                                        Padding="8,4"
+                                                        HorizontalOptions="Start"
+                                                        Margin="0,4,0,0">
+                                                    <HorizontalStackLayout Spacing="6">
+                                                        <Label Text="{x:Static helpers:MaterialIcons.Module}" 
+                                                               FontFamily="MaterialIcons"
+                                                               TextColor="{AppThemeBinding Light=#2196F3, Dark=#64B5F6}"
+                                                               FontSize="14"
+                                                               VerticalOptions="Center"/>
+                                                        <Label Text="{Binding AccessPrivilege.ModuleName}" 
+                                                               FontSize="12"
+                                                               TextColor="{AppThemeBinding Light=#2196F3, Dark=#64B5F6}"/>
+                                                    </HorizontalStackLayout>
+                                                </Border>
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                                <CollectionView.EmptyView>
+                                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="12">
+                                        <Label Text="{x:Static helpers:MaterialIcons.NotAvailable}" 
+                                               FontFamily="MaterialIcons"
+                                               TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"
+                                               FontSize="48"
+                                               HorizontalOptions="Center"/>
+                                        <Label Text="No Privileges Available" 
+                                               FontSize="16"
+                                               TextColor="{AppThemeBinding Light=#757575, Dark=#909090}"
+                                               HorizontalOptions="Center"/>
                                     </VerticalStackLayout>
-                                </Grid>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </ScrollView>
+                                </CollectionView.EmptyView>
+                            </CollectionView>
+                        </ScrollView>
+                    </Border>
+                </Grid>
             </Frame>
-        </VerticalStackLayout>
+        </Grid>
         
-        <ActivityIndicator Grid.ColumnSpan="2" 
-                           IsRunning="{Binding IsBusy}" 
-                           IsVisible="{Binding IsBusy}"
-                           HorizontalOptions="Center" 
-                           VerticalOptions="Center" />
+        <!-- Loading Indicator -->
+        <Grid Grid.ColumnSpan="2" Grid.RowSpan="2" 
+              IsVisible="{Binding IsBusy}"
+              BackgroundColor="{AppThemeBinding Light=#80FFFFFF, Dark=#80000000}">
+            <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="12">
+                <ActivityIndicator IsRunning="{Binding IsBusy}" 
+                                   Color="{AppThemeBinding Light=#3f51b5, Dark=#7986CB}"
+                                   WidthRequest="40"
+                                   HeightRequest="40"/>
+                <Label Text="Loading..." 
+                       TextColor="{AppThemeBinding Light=#3f51b5, Dark=#7986CB}"
+                       HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+        </Grid>
     </Grid>
 </ContentPage>
