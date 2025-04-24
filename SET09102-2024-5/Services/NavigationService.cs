@@ -15,128 +15,91 @@ namespace SET09102_2024_5.Services
             _authService = authService;
         }
 
-        // Enhanced navigation helper method with improved route handling
+        // Simplified navigation helper method with improved route normalization
         private Task NavigateInternalAsync(string route, bool enableFlyout = false)
         {
             return MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                if (enableFlyout)
-                    await EnableFlyoutAsync();
-                else
-                    await DisableFlyoutAsync();
-                
                 try 
                 {
-                    // Normalize the route format for better compatibility
+                    // Set flyout behavior
+                    Shell.Current.FlyoutBehavior = enableFlyout ? FlyoutBehavior.Flyout : FlyoutBehavior.Disabled;
+                    
+                    // Normalize the route once
                     string normalizedRoute = NormalizeRoute(route);
                     await Shell.Current.GoToAsync(normalizedRoute);
                 }
                 catch (Exception ex)
                 {
-                    // Enhanced error handling for different navigation scenarios
-                    if (ex.Message.Contains("Global routes currently cannot be the only page on the stack"))
-                    {
-                        await HandleGlobalRouteError(route);
-                    }
-                    else if (ex.Message.Contains("No matching route found"))
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Route not found: {route}. Check if the route is registered in AppShell.");
-                        // Fallback to main page
-                        await Shell.Current.GoToAsync("//MainPage");
-                    }
-                    else
-                    {
-                        // For other types of navigation errors, log and rethrow
-                        System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
-                        throw;
-                    }
+                    // Handle all navigation errors in one place
+                    await HandleNavigationError(route, ex);
                 }
             });
         }
 
-        // Helper method to handle the specific global route error
-        private async Task HandleGlobalRouteError(string route)
+        // Consolidated navigation error handling
+        private async Task HandleNavigationError(string route, Exception ex)
         {
-            // Force navigation to MainPage first, then to the desired route
-            await Shell.Current.GoToAsync("//MainPage");
+            System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message} for route: {route}");
             
-            // Strip leading slashes for relative navigation after main page
-            string relativeRoute = route.TrimStart('/');
-            if (!string.IsNullOrEmpty(relativeRoute))
+            if (ex.Message.Contains("Global routes") || ex.Message.Contains("No matching route found"))
             {
-                await Task.Delay(100); // Small delay to ensure navigation stability
-                await Shell.Current.GoToAsync(relativeRoute);
+                // Handle common shell navigation issues by resetting to main page first
+                try
+                {
+                    await Shell.Current.GoToAsync("//MainPage");
+                    await Task.Delay(50); // Small delay for UI to catch up
+                    
+                    // Try relative navigation after resetting to main page
+                    string relativeRoute = route.TrimStart('/');
+                    if (!string.IsNullOrEmpty(relativeRoute))
+                    {
+                        await Shell.Current.GoToAsync(relativeRoute);
+                    }
+                }
+                catch (Exception fallbackEx)
+                {
+                    // If even the fallback fails, just log it
+                    System.Diagnostics.Debug.WriteLine($"Fallback navigation failed: {fallbackEx.Message}");
+                }
             }
         }
 
-        // Helper method to normalize route format
+        // Simplified route normalization
         private string NormalizeRoute(string route)
         {
-            // Strip any existing slashes to avoid confusion
+            if (string.IsNullOrEmpty(route))
+                return "//MainPage";
+                
+            // Strip any existing slashes
             string cleanRoute = route.TrimStart('/');
-
-            // Convert admin routes to use proper shell navigation syntax
-            if (RouteConstants.AdminRoutes.Any(r => r.TrimStart('/') == cleanRoute))
-            {
-                // Ensure admin routes use absolute paths with three slashes
-                return "///" + cleanRoute;
-            }
             
-            // Check if it's a public route
-            if (RouteConstants.PublicRoutes.Any(r => r.TrimStart('/') == cleanRoute))
-            {
-                // Use three slashes for public routes as well
-                return "///" + cleanRoute;
-            }
-            
-            // For main page, use three slashes
-            if (cleanRoute == "MainPage" || cleanRoute == RouteConstants.MainPage.TrimStart('/'))
-            {
-                return "///MainPage";
-            }
-            
-            // For any other routes, ensure they have proper three-slash prefix
-            return route.StartsWith("///") ? route : "///" + cleanRoute;
+            // All routes use absolute paths
+            return "///" + cleanRoute;
         }
 
         public Task NavigateToAsync(string route)
         {
-            // Use internal navigation with proper error handling
-            return NavigateInternalAsync(route, !RouteConstants.PublicRoutes.Contains(route));
+            bool isPublicRoute = RouteConstants.PublicRoutes.Any(r => 
+                route.EndsWith(r.TrimStart('/'), StringComparison.OrdinalIgnoreCase));
+                
+            return NavigateInternalAsync(route, !isPublicRoute);
         }
 
-        public Task NavigateToLoginAsync()
-        {
-            return NavigateInternalAsync(RouteConstants.Login, false);
-        }
+        public Task NavigateToLoginAsync() => NavigateInternalAsync(RouteConstants.Login, false);
 
-        public Task NavigateToRegisterAsync()
-        {
-            return NavigateInternalAsync(RouteConstants.Register, false);
-        }
+        public Task NavigateToRegisterAsync() => NavigateInternalAsync(RouteConstants.Register, false);
 
-        public Task NavigateToMainPageAsync()
-        {
-            return NavigateInternalAsync(RouteConstants.MainPage, true);
-        }
+        public Task NavigateToMainPageAsync() => NavigateInternalAsync(RouteConstants.MainPage, true);
 
-        // Optimized implementation for admin routes
-        public Task NavigateToAdminDashboardAsync()
-        {
-            return CheckAndNavigateAsync(RouteConstants.AdminDashboard);
-        }
+        // Consolidated implementation for admin routes
+        public Task NavigateToAdminDashboardAsync() => CheckAndNavigateAsync(RouteConstants.AdminDashboard);
         
-        public Task NavigateToRoleManagementAsync()
-        {
-            return CheckAndNavigateAsync(RouteConstants.RoleManagement);
-        }
+        public Task NavigateToRoleManagementAsync() => CheckAndNavigateAsync(RouteConstants.RoleManagement);
         
-        public Task NavigateToUserRoleManagementAsync()
-        {
-            return CheckAndNavigateAsync(RouteConstants.UserRoleManagement);
-        }
+        public Task NavigateToUserRoleManagementAsync() => CheckAndNavigateAsync(RouteConstants.UserRoleManagement);
 
-        // Enhanced navigation method with improved permission checking and error handling
+        // Optimized navigation with permission check
         private async Task CheckAndNavigateAsync(string route)
         {
             try
@@ -153,17 +116,15 @@ namespace SET09102_2024_5.Services
                     
                     if (currentUser == null)
                     {
-                        // Not logged in, redirect to login
                         await NavigateToLoginAsync();
                     }
                     else
                     {
-                        // Show access denied message with more details
+                        // Show access denied message
                         await MainThread.InvokeOnMainThreadAsync(async () =>
                         {
                             await Shell.Current.DisplayAlert("Access Denied", 
-                                "You don't have the required permissions to access this page. " +
-                                "Please contact an administrator if you need access.", "OK");
+                                "You don't have the required permissions to access this page.", "OK");
                             await NavigateToMainPageAsync();
                         });
                     }
@@ -175,44 +136,37 @@ namespace SET09102_2024_5.Services
                 await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
                     await Shell.Current.DisplayAlert("Navigation Error", 
-                        "An error occurred while navigating to the requested page. " +
-                        "Please try again.", "OK");
-                    System.Diagnostics.Debug.WriteLine($"Navigation error in CheckAndNavigateAsync: {ex.Message}");
-                    await NavigateToMainPageAsync();
+                        "An error occurred while navigating. Please try again.", "OK");
+                    System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
                 });
             }
         }
 
-        // Optimized to avoid unnecessary Task creation
-        public Task EnableFlyoutAsync()
-        {
-            return MainThread.InvokeOnMainThreadAsync(() => 
-                Shell.Current.FlyoutBehavior = FlyoutBehavior.Flyout);
-        }
+        // Simplified flyout behavior methods
+        public Task EnableFlyoutAsync() => 
+            MainThread.InvokeOnMainThreadAsync(() => Shell.Current.FlyoutBehavior = FlyoutBehavior.Flyout);
 
-        // Optimized to avoid unnecessary Task creation
-        public Task DisableFlyoutAsync()
-        {
-            return MainThread.InvokeOnMainThreadAsync(() => 
-                Shell.Current.FlyoutBehavior = FlyoutBehavior.Disabled);
-        }
+        public Task DisableFlyoutAsync() => 
+            MainThread.InvokeOnMainThreadAsync(() => Shell.Current.FlyoutBehavior = FlyoutBehavior.Disabled);
 
         public async Task<bool> CanNavigateToRouteAsync(string route)
         {
-            // Performance optimization: early return for public routes
-            if (RouteConstants.PublicRoutes.Any(r => route.Contains(r.Replace("/", ""))))
+            // Public routes are always accessible
+            if (RouteConstants.PublicRoutes.Any(r => 
+                route.EndsWith(r.TrimStart('/'), StringComparison.OrdinalIgnoreCase)))
+            {
                 return true;
+            }
                 
             // Check if user is authenticated
             var currentUser = await _authService.GetCurrentUserAsync();
             if (currentUser == null)
             {
-                return false; // Not authenticated and not a public route
+                return false;
             }
             
-            // Check admin routes with improved comparison
+            // Admin routes require administrator role
             if (RouteConstants.AdminRoutes.Any(r => 
-                route.Equals(r, StringComparison.OrdinalIgnoreCase) || 
                 route.EndsWith(r.TrimStart('/'), StringComparison.OrdinalIgnoreCase)))
             {
                 return await _authService.IsInRoleAsync(currentUser.UserId, "Administrator");

@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui.Controls;
 using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Models;
@@ -17,8 +18,8 @@ namespace SET09102_2024_5.ViewModels
         private readonly IRepository<Role> _roleRepository;
         private readonly IAuthService _authService;
 
-        public ObservableCollection<User> Users { get; set; }
-        public ObservableCollection<Role> Roles { get; set; }
+        public ObservableCollection<User> Users { get; } = new ObservableCollection<User>();
+        public ObservableCollection<Role> Roles { get; } = new ObservableCollection<Role>();
 
         private User _selectedUser;
         public User SelectedUser
@@ -33,6 +34,7 @@ namespace SET09102_2024_5.ViewModels
                     SelectedRole = Roles.FirstOrDefault(r => r.RoleId == _selectedUser.RoleId);
                 }
                 OnPropertyChanged(nameof(CanSaveChanges));
+                ((Command)SaveChangesCommand).ChangeCanExecute();
             }
         }
 
@@ -45,6 +47,7 @@ namespace SET09102_2024_5.ViewModels
                 _selectedRole = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CanSaveChanges));
+                ((Command)SaveChangesCommand).ChangeCanExecute();
             }
         }
 
@@ -52,6 +55,18 @@ namespace SET09102_2024_5.ViewModels
 
         public ICommand SaveChangesCommand { get; }
         public ICommand RefreshCommand { get; }
+        public ICommand SearchCommand { get; }
+        
+        private string _searchTerm;
+        public string SearchTerm
+        {
+            get => _searchTerm;
+            set
+            {
+                _searchTerm = value;
+                OnPropertyChanged();
+            }
+        }
 
         public UserRoleManagementViewModel(
             IRepository<User> userRepository,
@@ -62,81 +77,160 @@ namespace SET09102_2024_5.ViewModels
             _roleRepository = roleRepository;
             _authService = authService;
 
-            Users = new ObservableCollection<User>();
-            Roles = new ObservableCollection<Role>();
-
             SaveChangesCommand = new Command(async () => await SaveChanges(), () => CanSaveChanges);
             RefreshCommand = new Command(async () => await LoadData());
+            SearchCommand = new Command(async () => await FilterUsers());
 
-            LoadData();
+            // Load data on startup
+            Task.Run(async () => await LoadData());
         }
 
         private async Task LoadData()
         {
-            IsBusy = true;
+            if (IsBusy)
+                return;
+                
             try
             {
-                var users = await _userRepository.GetAllAsync();
+                StartBusy("Loading users and roles...");
+                
+                // Clear existing collections
                 Users.Clear();
-                foreach (var user in users)
-                {
-                    Users.Add(user);
-                }
-
-                var roles = await _roleRepository.GetAllAsync();
                 Roles.Clear();
-                foreach (var role in roles)
+                
+                // Load roles first
+                var roles = await _roleRepository.GetAllAsync().ConfigureAwait(false);
+                
+                // Load users with proper error handling
+                var users = await _userRepository.GetAllAsync().ConfigureAwait(false);
+                
+                // Update UI on main thread
+                await MainThread.InvokeOnMainThreadAsync(() =>
                 {
-                    Roles.Add(role);
-                }
+                    foreach (var role in roles)
+                    {
+                        Roles.Add(role);
+                    }
+                    
+                    foreach (var user in users)
+                    {
+                        Users.Add(user);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Application.Current.MainPage.DisplayAlert(
+                        "Error", 
+                        $"Failed to load user data: {ex.Message}", 
+                        "OK");
+                });
+                System.Diagnostics.Debug.WriteLine($"Error loading user data: {ex}");
             }
             finally
             {
-                IsBusy = false;
+                EndBusy("User Role Management");
+            }
+        }
+        
+        private async Task FilterUsers()
+        {
+            if (IsBusy)
+                return;
+                
+            try
+            {
+                StartBusy("Searching users...");
+                
+                if (string.IsNullOrWhiteSpace(SearchTerm))
+                {
+                    await LoadData().ConfigureAwait(false);
+                    return;
+                }
+                
+                // Keep existing roles
+                var allUsers = await _userRepository.GetAllAsync().ConfigureAwait(false);
+                
+                var term = SearchTerm.ToLower();
+                var filteredUsers = allUsers.Where(u => 
+                    u.FirstName?.ToLower().Contains(term) == true || 
+                    u.LastName?.ToLower().Contains(term) == true || 
+                    u.Email?.ToLower().Contains(term) == true).ToList();
+                    
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    Users.Clear();
+                    foreach (var user in filteredUsers)
+                    {
+                        Users.Add(user);
+                    }
+                });
+            }
+            finally
+            {
+                EndBusy("User Role Management");
             }
         }
 
         private async Task SaveChanges()
         {
-            if (SelectedUser == null || SelectedRole == null) return;
+            if (IsBusy || SelectedUser == null || SelectedRole == null)
+                return;
 
             // Prevent changing own role if current user is an admin
-            var currentUser = await _authService.GetCurrentUserAsync();
+            var currentUser = await _authService.GetCurrentUserAsync().ConfigureAwait(false);
             if (currentUser?.UserId == SelectedUser.UserId && 
                 currentUser?.Role.RoleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase) == true &&
                 !SelectedRole.RoleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
             {
-                await Application.Current.MainPage.DisplayAlert(
-                    "Warning", 
-                    "You cannot remove your own Administrator role.", 
-                    "OK");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Application.Current.MainPage.DisplayAlert(
+                        "Warning", 
+                        "You cannot remove your own Administrator role.", 
+                        "OK");
+                });
                 return;
             }
 
-            IsBusy = true;
             try
             {
+                StartBusy("Saving changes...");
+                
+                // Update role assignment
                 SelectedUser.RoleId = SelectedRole.RoleId;
-                SelectedUser.Role = SelectedRole; // Update the navigation property
+                SelectedUser.Role = SelectedRole;
 
                 _userRepository.Update(SelectedUser);
-                await _userRepository.SaveChangesAsync();
+                await _userRepository.SaveChangesAsync().ConfigureAwait(false);
 
-                await Application.Current.MainPage.DisplayAlert(
-                    "Success", 
-                    $"Role for user {SelectedUser.FirstName} {SelectedUser.LastName} updated successfully.", 
-                    "OK");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Application.Current.MainPage.DisplayAlert(
+                        "Success", 
+                        $"Role for user {SelectedUser.FirstName} {SelectedUser.LastName} updated successfully.", 
+                        "OK");
+                });
+                
+                // Refresh the data to ensure UI is up-to-date
+                await LoadData().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                await Application.Current.MainPage.DisplayAlert(
-                    "Error", 
-                    $"Failed to update user role: {ex.Message}", 
-                    "OK");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Application.Current.MainPage.DisplayAlert(
+                        "Error", 
+                        $"Failed to update user role: {ex.Message}", 
+                        "OK");
+                });
+                System.Diagnostics.Debug.WriteLine($"Error updating user role: {ex}");
             }
             finally
             {
-                IsBusy = false;
+                EndBusy("User Role Management");
             }
         }
     }
