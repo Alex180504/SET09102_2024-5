@@ -9,6 +9,8 @@ namespace SET09102_2024_5.Services
 {
     public interface IAuthService
     {
+        event EventHandler UserChanged;
+        
         Task<bool> RegisterUserAsync(string firstName, string lastName, string email, string password);
         Task<User> AuthenticateAsync(string email, string password);
         Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword);

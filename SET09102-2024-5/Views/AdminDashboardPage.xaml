@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SET09102_2024_5.Views.AdminDashboardPage"
+             Title="Administrator Dashboard">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="25" Padding="20">
+            <Label Text="Administrator Dashboard" 
+                   FontSize="28" 
+                   FontAttributes="Bold" 
+                   HorizontalOptions="Center"/>
+            
+            <Label Text="User Access Management" 
+                   FontSize="22" 
+                   FontAttributes="Bold" 
+                   Margin="0,15,0,0"/>
+
+            <Frame BorderColor="LightGray" 
+                   CornerRadius="10" 
+                   HasShadow="True" 
+                   Padding="15" 
+                   Margin="0,5,0,5">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Role Management" 
+                           FontSize="18" 
+                           FontAttributes="Bold"/>
+                    
+                    <Label Text="Create and configure roles with specific access privileges to control what features and data users can access within the system." 
+                           FontSize="14"/>
+                    
+                    <Button Text="Manage Roles" 
+                            x:Name="RoleManagementButton"
+                            BackgroundColor="#2196F3"
+                            TextColor="White"
+                            CornerRadius="5"
+                            Clicked="OnRoleManagementClicked" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BorderColor="LightGray" 
+                   CornerRadius="10" 
+                   HasShadow="True" 
+                   Padding="15" 
+                   Margin="0,5,0,5">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="User Role Assignment" 
+                           FontSize="18" 
+                           FontAttributes="Bold"/>
+                    
+                    <Label Text="Assign appropriate roles to users to grant them the necessary permissions for their job functions." 
+                           FontSize="14"/>
+                    
+                    <Button Text="Assign User Roles" 
+                            x:Name="UserRoleAssignmentButton"
+                            BackgroundColor="#4CAF50"
+                            TextColor="White"
+                            CornerRadius="5"
+                            Clicked="OnUserRoleAssignmentClicked" />
+                </VerticalStackLayout>
+            </Frame>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

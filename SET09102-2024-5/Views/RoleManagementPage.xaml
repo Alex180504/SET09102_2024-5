@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SET09102_2024_5.ViewModels"
+             xmlns:models="clr-namespace:SET09102_2024_5.Models"
+             xmlns:converters="clr-namespace:SET09102_2024_5.Converters"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:DataType="vm:RoleManagementViewModel"
+             x:Class="SET09102_2024_5.Views.RoleManagementPage"
+             Title="Role Management">
+
+    <ContentPage.Resources>
+        <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
+    </ContentPage.Resources>
+
+    <Grid ColumnDefinitions="*,*" Margin="10">
+        <!-- Left Side: Roles List and Create New Role -->
+        <VerticalStackLayout Grid.Column="0" Spacing="10" Margin="0,0,5,0">
+            <Label Text="Roles" FontAttributes="Bold" FontSize="18" />
+            
+            <!-- Create New Role Section -->
+            <Frame BorderColor="LightGray" Padding="10" Margin="0,0,0,10">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Create New Role" FontAttributes="Bold" />
+                    
+                    <Entry Placeholder="Role Name" 
+                           Text="{Binding NewRoleName}" />
+                    
+                    <Entry Placeholder="Description" 
+                           Text="{Binding NewRoleDescription}" />
+                    
+                    <Button Text="Create Role" 
+                            Command="{Binding CreateRoleCommand}" 
+                            BackgroundColor="#2196F3"
+                            TextColor="White" />
+                </VerticalStackLayout>
+            </Frame>
+            
+            <!-- Roles List -->
+            <Frame BorderColor="LightGray" Padding="10" VerticalOptions="FillAndExpand">
+                <StackLayout>
+                    <Label Text="Select Role to Edit" />
+                    <CollectionView ItemsSource="{Binding Roles}"
+                                    SelectedItem="{Binding SelectedRole}"
+                                    SelectionMode="Single"
+                                    VerticalOptions="FillAndExpand">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:Role">
+                                <Frame Margin="2" BorderColor="LightGray" Padding="10">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding RoleName}" FontAttributes="Bold" />
+                                        <Label Text="{Binding Description}" LineBreakMode="TailTruncation" />
+                                    </VerticalStackLayout>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </StackLayout>
+            </Frame>
+        </VerticalStackLayout>
+        
+        <!-- Right Side: Role Details and Privileges -->
+        <VerticalStackLayout Grid.Column="1" Margin="5,0,0,0" IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}">
+            <Label Text="Role Details" FontAttributes="Bold" FontSize="18" />
+            
+            <Frame BorderColor="LightGray" Padding="10" Margin="0,0,0,10">
+                <VerticalStackLayout Spacing="10">
+                    <Entry Placeholder="Role Name" 
+                           Text="{Binding SelectedRole.RoleName}" />
+                    
+                    <Entry Placeholder="Description" 
+                           Text="{Binding SelectedRole.Description}" />
+                    
+                    <HorizontalStackLayout Spacing="10">
+                        <Button Text="Save Changes" 
+                                Command="{Binding SaveRoleCommand}" 
+                                BackgroundColor="#4CAF50"
+                                TextColor="White" />
+                        
+                        <Button Text="Delete Role" 
+                                Command="{Binding DeleteRoleCommand}" 
+                                BackgroundColor="#F44336"
+                                TextColor="White" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+            
+            <Label Text="Access Privileges" FontAttributes="Bold" FontSize="16" />
+            
+            <Frame BorderColor="LightGray" Padding="10" VerticalOptions="FillAndExpand">
+                <ScrollView>
+                    <CollectionView ItemsSource="{Binding RolePrivileges}"
+                                    SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AccessPrivilegeViewModel">
+                                <Grid Margin="2" Padding="5" ColumnDefinitions="Auto,*">
+                                    <CheckBox Grid.Column="0" 
+                                              IsChecked="{Binding IsAssigned}" 
+                                              VerticalOptions="Center">
+                                        <CheckBox.Behaviors>
+                                            <toolkit:EventToCommandBehavior
+                                                EventName="CheckedChanged"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RoleManagementViewModel}}, Path=TogglePrivilegeCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </CheckBox.Behaviors>
+                                    </CheckBox>
+                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                        <Label Text="{Binding AccessPrivilege.Name}" FontAttributes="Bold" />
+                                        <Label Text="{Binding AccessPrivilege.Description}" 
+                                               FontSize="Small" 
+                                               TextColor="Gray" />
+                                        <Label Text="{Binding AccessPrivilege.ModuleName}" 
+                                               FontSize="Small" 
+                                               TextColor="DarkGray" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </ScrollView>
+            </Frame>
+        </VerticalStackLayout>
+        
+        <ActivityIndicator Grid.ColumnSpan="2" 
+                           IsRunning="{Binding IsBusy}" 
+                           IsVisible="{Binding IsBusy}"
+                           HorizontalOptions="Center" 
+                           VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

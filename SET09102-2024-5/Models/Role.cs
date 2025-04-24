@@ -10,7 +10,11 @@ namespace SET09102_2024_5.Models
     {
         public int RoleId { get; set; }
         public string RoleName { get; set; }
+        public string Description { get; set; } // Adding description field for roles
 
         public ICollection<User> Users { get; set; }
+        
+        // Many-to-many relationship with access privileges
+        public ICollection<RolePrivilege> RolePrivileges { get; set; }
     }
 }

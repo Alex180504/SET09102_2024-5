@@ -58,6 +58,7 @@ namespace SET09102_2024_5
             // Register services
             builder.Services.AddScoped<IDatabaseService, DatabaseService>();
             builder.Services.AddSingleton<IAuthService, AuthService>(); // Singleton to maintain auth state
+            builder.Services.AddSingleton<INavigationService, NavigationService>(); // Singleton for navigation service
 
             // Register app shell with navigation
             builder.Services.AddSingleton<AppShell>();
@@ -66,11 +67,20 @@ namespace SET09102_2024_5
             builder.Services.AddTransient<MainPageViewModel>();
             builder.Services.AddTransient<LoginViewModel>();
             builder.Services.AddTransient<RegisterViewModel>();
+            
+            // Register Admin ViewModels
+            builder.Services.AddTransient<RoleManagementViewModel>();
+            builder.Services.AddTransient<UserRoleManagementViewModel>();
 
             // Register Views
             builder.Services.AddTransient<MainPage>();
             builder.Services.AddTransient<LoginPage>();
             builder.Services.AddTransient<RegisterPage>();
+            
+            // Register Admin Views
+            builder.Services.AddTransient<AdminDashboardPage>();
+            builder.Services.AddTransient<RoleManagementPage>();
+            builder.Services.AddTransient<UserRoleManagementPage>();
 
 #if DEBUG
             builder.Logging.AddDebug();

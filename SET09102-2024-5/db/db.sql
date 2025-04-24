@@ -5,6 +5,24 @@ USE sensor_monitoring;
 CREATE TABLE role (
     role_id INT AUTO_INCREMENT PRIMARY KEY,
     role_name VARCHAR(100) NOT NULL,
+    description VARCHAR(255)
+);
+
+-- Access Privilege Table
+CREATE TABLE access_privilege (
+    access_privilege_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description VARCHAR(255),
+    module_name VARCHAR(100)
+);
+
+-- Role Privilege Table (Join table for roles and privileges)
+CREATE TABLE role_privilege (
+    role_id INT NOT NULL,
+    access_privilege_id INT NOT NULL,
+    PRIMARY KEY (role_id, access_privilege_id),
+    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE,
+    FOREIGN KEY (access_privilege_id) REFERENCES access_privilege(access_privilege_id) ON DELETE CASCADE
 );
 
 -- User Table

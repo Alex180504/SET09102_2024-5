@@ -36,20 +36,20 @@
                     <Entry Placeholder="Email Address"
                            Text="{Binding Email}"
                            Keyboard="Email" 
-                           IsEnabled="{Binding IsAuthenticating, Converter={StaticResource InvertedBoolConverter}}" />
+                           IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}" />
                     
                     <Entry Placeholder="Password"
                            Text="{Binding Password}"
                            IsPassword="True"
-                           IsEnabled="{Binding IsAuthenticating, Converter={StaticResource InvertedBoolConverter}}" />
+                           IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}" />
                     
                     <Button Text="Login" 
                             Command="{Binding LoginCommand}"
-                            IsEnabled="{Binding IsAuthenticating, Converter={StaticResource InvertedBoolConverter}}"
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
                             HorizontalOptions="Fill" />
                     
-                    <ActivityIndicator IsRunning="{Binding IsAuthenticating}" 
-                                      IsVisible="{Binding IsAuthenticating}" 
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" 
+                                      IsVisible="{Binding IsBusy}" 
                                       HorizontalOptions="Center" />
                     
                     <HorizontalStackLayout HorizontalOptions="Center" Spacing="5">
