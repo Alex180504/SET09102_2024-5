@@ -3,105 +3,336 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:SET09102_2024_5.ViewModels"
              xmlns:models="clr-namespace:SET09102_2024_5.Models"
+             xmlns:converters="clr-namespace:SET09102_2024_5.Converters"
+             xmlns:helpers="clr-namespace:SET09102_2024_5.Helpers"
              x:DataType="vm:UserRoleManagementViewModel"
              x:Class="SET09102_2024_5.Views.UserRoleManagementPage"
-             Title="User Role Management">
+             Title="User Role Management"
+             BackgroundColor="{AppThemeBinding Light=#f5f5f5, Dark=#1f1f1f}">
 
-    <Grid RowDefinitions="Auto,*" Margin="10" RowSpacing="10">
-        <!-- Header with refresh button -->
-        <HorizontalStackLayout Grid.Row="0" Spacing="10">
-            <Label Text="User Role Assignments" 
-                   FontSize="24" 
-                   FontAttributes="Bold" 
-                   VerticalOptions="Center" />
-            <Button Text="Refresh" 
-                    Command="{Binding RefreshCommand}" 
-                    HorizontalOptions="End" 
-                    BackgroundColor="#2196F3"
-                    TextColor="White" />
-        </HorizontalStackLayout>
+    <ContentPage.Resources>
+        <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        
+        <Style x:Key="CardStyle" TargetType="Frame">
+            <Setter Property="BorderColor" Value="{AppThemeBinding Light=#e0e0e0, Dark=#3e3e3e}" />
+            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=White, Dark=#2e2e2e}" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="HasShadow" Value="True" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="0,8" />
+            <Setter Property="Shadow">
+                <Shadow Brush="#66000000"
+                       Offset="0,3"
+                       Radius="6" />
+            </Setter>
+        </Style>
+
+        <Style x:Key="PageTitleStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#232323, Dark=#e0e0e0}" />
+        </Style>
+
+        <Style x:Key="SectionTitleStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#232323, Dark=#e0e0e0}" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+        </Style>
+
+        <Style x:Key="FormLabelStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#505050, Dark=#b0b0b0}" />
+            <Setter Property="Margin" Value="5,0,0,3" />
+        </Style>
+
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="TextColor" Value="White" />
+            <Setter Property="FontAttributes" Value="Bold" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid Padding="16" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        
+        <!-- Page Header -->
+        <Border Grid.Row="0"
+                BackgroundColor="{AppThemeBinding Light=#3f51b5, Dark=#303f9f}"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 12,12,12,12"
+                Padding="20"
+                Margin="0,0,0,8">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Label Grid.Column="0"
+                       Text="{x:Static helpers:MaterialIcons.Group}" 
+                       FontFamily="MaterialIcons"
+                       TextColor="White"
+                       FontSize="32"
+                       VerticalOptions="Center"/>
+                       
+                <VerticalStackLayout Grid.Column="1" Margin="16,0,0,0">
+                    <Label Text="User Role Management" 
+                           FontSize="24" 
+                           FontAttributes="Bold" 
+                           TextColor="White"/>
+                    <Label Text="Assign roles to control user access privileges" 
+                           FontSize="14" 
+                           TextColor="#e0e0e0"/>
+                </VerticalStackLayout>
+                
+                <Button Grid.Column="2"
+                        Text="Refresh" 
+                        Command="{Binding RefreshCommand}"
+                        BackgroundColor="#ffffff20"
+                        TextColor="White"
+                        BorderColor="White"
+                        BorderWidth="1"
+                        CornerRadius="8"
+                        HorizontalOptions="End"
+                        VerticalOptions="Center">
+                    <Button.Shadow>
+                        <Shadow Brush="#40000000"
+                               Offset="0,2"
+                               Radius="4" />
+                    </Button.Shadow>
+                </Button>
+            </Grid>
+        </Border>
         
         <!-- Main content with user list and role selection -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="10">
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="16">
             <!-- Left side - User list -->
-            <Frame Grid.Column="0" BorderColor="LightGray" Padding="10">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="Select User" FontAttributes="Bold" FontSize="16" />
-                    <CollectionView ItemsSource="{Binding Users}"
-                                    SelectedItem="{Binding SelectedUser}"
-                                    SelectionMode="Single">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="models:User">
-                                <Frame Margin="2" BorderColor="LightGray" Padding="10">
-                                    <Grid ColumnDefinitions="*,Auto">
-                                        <VerticalStackLayout Grid.Column="0">
-                                            <Label Text="{Binding Email}" FontAttributes="Bold" />
-                                            <Label>
+            <Frame Grid.Column="0" Style="{StaticResource CardStyle}">
+                <Grid RowDefinitions="Auto,*">
+                    <HorizontalStackLayout Grid.Row="0" Spacing="8" Margin="0,0,0,12">
+                        <Label Text="{x:Static helpers:MaterialIcons.Person}" 
+                               FontFamily="MaterialIcons"
+                               TextColor="#673AB7"
+                               FontSize="24"
+                               VerticalOptions="Center"/>
+                        <Label Text="Users" 
+                               Style="{StaticResource SectionTitleStyle}"
+                               VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+
+                    <Border Grid.Row="1"
+                            Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#505050}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 8"
+                            BackgroundColor="{AppThemeBinding Light=#f9f9f9, Dark=#383838}">
+                        <CollectionView ItemsSource="{Binding Users}"
+                                        SelectedItem="{Binding SelectedUser}"
+                                        SelectionMode="Single"
+                                        Margin="1">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:User">
+                                    <Grid Padding="12" 
+                                          ColumnDefinitions="*,Auto" 
+                                          BackgroundColor="{AppThemeBinding Light=Transparent, Dark=Transparent}">
+                                        <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                            <StackLayout Orientation="Horizontal">
+                                                <Label Text="{x:Static helpers:MaterialIcons.Mail}" 
+                                                       FontFamily="MaterialIcons"
+                                                       TextColor="{AppThemeBinding Light=#2196F3, Dark=#64B5F6}"
+                                                       FontSize="18"
+                                                       VerticalOptions="Center"
+                                                       Margin="0,0,8,0"/>
+                                                <Label Text="{Binding Email}" 
+                                                       FontAttributes="Bold"
+                                                       TextColor="{AppThemeBinding Light=#202020, Dark=#e0e0e0}"
+                                                       FontSize="16" />
+                                            </StackLayout>
+                                            <Label Margin="26,0,0,0">
                                                 <Label.FormattedText>
                                                     <FormattedString>
-                                                        <Span Text="{Binding FirstName}" />
+                                                        <Span Text="{Binding FirstName}" 
+                                                              TextColor="{AppThemeBinding Light=#606060, Dark=#b0b0b0}"/>
                                                         <Span Text=" " />
-                                                        <Span Text="{Binding LastName}" />
+                                                        <Span Text="{Binding LastName}" 
+                                                              TextColor="{AppThemeBinding Light=#606060, Dark=#b0b0b0}"/>
                                                     </FormattedString>
                                                 </Label.FormattedText>
                                             </Label>
                                         </VerticalStackLayout>
-                                        <Label Grid.Column="1" 
-                                               Text="{Binding Role.RoleName}" 
-                                               TextColor="DarkGray" 
-                                               VerticalOptions="Center" />
+                                        
+                                        <Border Grid.Column="1"
+                                                BackgroundColor="{AppThemeBinding Light=#e3f2fd, Dark=#263238}"
+                                                StrokeShape="RoundRectangle 12"
+                                                Padding="8,4"
+                                                HorizontalOptions="End"
+                                                VerticalOptions="Center">
+                                            <Label Text="{Binding Role.RoleName}" 
+                                                   TextColor="{AppThemeBinding Light=#2196F3, Dark=#64B5F6}"
+                                                   FontSize="12"
+                                                   FontAttributes="Bold" />
+                                        </Border>
                                     </Grid>
-                                </Frame>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </VerticalStackLayout>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                            <CollectionView.ItemsLayout>
+                                <LinearItemsLayout Orientation="Vertical" ItemSpacing="1" />
+                            </CollectionView.ItemsLayout>
+                            <CollectionView.EmptyView>
+                                <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="12">
+                                    <Label Text="{x:Static helpers:MaterialIcons.Search}" 
+                                           FontFamily="MaterialIcons"
+                                           TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"
+                                           FontSize="48"
+                                           HorizontalOptions="Center"/>
+                                    <Label Text="No Users Found" 
+                                           FontSize="16"
+                                           TextColor="{AppThemeBinding Light=#757575, Dark=#909090}"
+                                           HorizontalOptions="Center"/>
+                                </VerticalStackLayout>
+                            </CollectionView.EmptyView>
+                        </CollectionView>
+                    </Border>
+                </Grid>
             </Frame>
 
             <!-- Right side - Role assignment -->
-            <Frame Grid.Column="1" BorderColor="LightGray" Padding="10">
-                <VerticalStackLayout Spacing="10" 
-                                     IsEnabled="{Binding SelectedUser, Converter={StaticResource StringNotNullOrEmptyConverter}}">
-                    <Label Text="Assign Role" FontAttributes="Bold" FontSize="16" />
+            <Frame Grid.Column="1" Style="{StaticResource CardStyle}">
+                <!-- No User Selected Message -->
+                <ContentView IsVisible="{Binding SelectedUser, Converter={StaticResource StringNotNullOrEmptyConverter}, ConverterParameter=True}">
+                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="20">
+                        <Label Text="{x:Static helpers:MaterialIcons.Search}" 
+                               FontFamily="MaterialIcons"
+                               TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"
+                               FontSize="64"
+                               HorizontalOptions="Center"/>
+                        <Label Text="No User Selected" 
+                               FontSize="20"
+                               TextColor="{AppThemeBinding Light=#757575, Dark=#909090}"
+                               HorizontalOptions="Center"/>
+                        <Label Text="Select a user from the list to assign a role" 
+                               FontSize="16"
+                               TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"
+                               HorizontalOptions="Center"
+                               HorizontalTextAlignment="Center"/>
+                    </VerticalStackLayout>
+                </ContentView>
+                
+                <!-- User Details and Role Assignment -->
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" 
+                      IsVisible="{Binding SelectedUser, Converter={StaticResource StringNotNullOrEmptyConverter}}">
+                    <HorizontalStackLayout Grid.Row="0" Spacing="8" Margin="0,0,0,16">
+                        <Label Text="{x:Static helpers:MaterialIcons.Edit}" 
+                               FontFamily="MaterialIcons"
+                               TextColor="#FF9800"
+                               FontSize="24"
+                               VerticalOptions="Center"/>
+                        <Label Text="Assign Role" 
+                               Style="{StaticResource SectionTitleStyle}"
+                               VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
                     
-                    <Label>
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Selected User: " FontAttributes="Bold" />
-                                <Span Text="{Binding SelectedUser.FirstName}" />
-                                <Span Text=" " />
-                                <Span Text="{Binding SelectedUser.LastName}" />
-                                <Span Text=" (" />
-                                <Span Text="{Binding SelectedUser.Email}" />
-                                <Span Text=")" />
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
+                    <Border Grid.Row="1" 
+                            BackgroundColor="{AppThemeBinding Light=#f1f1f1, Dark=#333333}"
+                            StrokeShape="RoundRectangle 8"
+                            Padding="16"
+                            Margin="0,0,0,20">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Selected User" 
+                                   FontAttributes="Bold"
+                                   FontSize="14"
+                                   TextColor="{AppThemeBinding Light=#606060, Dark=#b0b0b0}"/>
+                                   
+                            <Label FontSize="18" TextColor="{AppThemeBinding Light=#303030, Dark=#e0e0e0}" Margin="0,4,0,0">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="{Binding SelectedUser.FirstName}" FontAttributes="Bold" />
+                                        <Span Text=" " />
+                                        <Span Text="{Binding SelectedUser.LastName}" FontAttributes="Bold" />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                            
+                            <Label Text="{Binding SelectedUser.Email}" 
+                                   TextColor="{AppThemeBinding Light=#2196F3, Dark=#64B5F6}"/>
+                        </VerticalStackLayout>
+                    </Border>
                     
-                    <Label Text="Select Role:" Margin="0,10,0,0" />
-                    <Picker ItemsSource="{Binding Roles}"
-                            ItemDisplayBinding="{Binding RoleName}"
-                            SelectedItem="{Binding SelectedRole}" />
+                    <Label Grid.Row="2" 
+                           Text="Select Role" 
+                           Style="{StaticResource FormLabelStyle}" 
+                           Margin="5,0,0,8"/>
                     
-                    <Label Text="{Binding SelectedRole.Description}" 
-                           TextColor="Gray"
-                           IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}" />
+                    <Border Grid.Row="3"
+                            Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#505050}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 8"
+                            Padding="8,0"
+                            Margin="0,0,0,16">
+                        <Picker ItemsSource="{Binding Roles}"
+                                ItemDisplayBinding="{Binding RoleName}"
+                                SelectedItem="{Binding SelectedRole}"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light=#303030, Dark=#e0e0e0}"
+                                HorizontalOptions="Fill" />
+                    </Border>
                     
-                    <Button Text="Save Changes" 
+                    <Border Grid.Row="4"
+                            BackgroundColor="{AppThemeBinding Light=#e3f2fd, Dark=#263238}"
+                            StrokeShape="RoundRectangle 8"
+                            Padding="12"
+                            Margin="0,0,0,20"
+                            IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}">
+                        <VerticalStackLayout Spacing="8">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="{x:Static helpers:MaterialIcons.Info}" 
+                                       FontFamily="MaterialIcons"
+                                       TextColor="{AppThemeBinding Light=#2196F3, Dark=#64B5F6}"
+                                       FontSize="20"
+                                       VerticalOptions="Center"/>
+                                <Label Text="Role Description" 
+                                       FontAttributes="Bold"
+                                       FontSize="14"
+                                       TextColor="{AppThemeBinding Light=#2196F3, Dark=#64B5F6}"
+                                       VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding SelectedRole.Description}" 
+                                   TextColor="{AppThemeBinding Light=#303030, Dark=#e0e0e0}"
+                                   LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
+                    </Border>
+                    
+                    <Button Grid.Row="5"
+                            Text="Save Changes" 
                             Command="{Binding SaveChangesCommand}" 
                             IsEnabled="{Binding CanSaveChanges}"
+                            Style="{StaticResource ActionButtonStyle}"
                             BackgroundColor="#4CAF50"
-                            TextColor="White"
-                            Margin="0,20,0,0" />
-                </VerticalStackLayout>
+                            HorizontalOptions="Start"
+                            Margin="0,8,0,0">
+                        <Button.Shadow>
+                            <Shadow Brush="#404CAF50"
+                                   Offset="0,2"
+                                   Radius="4" />
+                        </Button.Shadow>
+                    </Button>
+                </Grid>
             </Frame>
         </Grid>
         
-        <!-- Activity indicator -->
-        <ActivityIndicator Grid.RowSpan="2" 
-                           IsRunning="{Binding IsBusy}" 
-                           IsVisible="{Binding IsBusy}"
-                           HorizontalOptions="Center" 
-                           VerticalOptions="Center" />
+        <!-- Loading Indicator -->
+        <Grid Grid.RowSpan="2" 
+              IsVisible="{Binding IsBusy}"
+              BackgroundColor="{AppThemeBinding Light=#80FFFFFF, Dark=#80000000}">
+            <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="12">
+                <ActivityIndicator IsRunning="{Binding IsBusy}" 
+                                   Color="{AppThemeBinding Light=#3f51b5, Dark=#7986CB}"
+                                   WidthRequest="40"
+                                   HeightRequest="40"/>
+                <Label Text="Loading..." 
+                       TextColor="{AppThemeBinding Light=#3f51b5, Dark=#7986CB}"
+                       HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+        </Grid>
     </Grid>
 </ContentPage>

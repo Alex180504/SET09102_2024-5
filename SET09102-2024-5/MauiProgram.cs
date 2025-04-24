@@ -7,6 +7,7 @@ using SET09102_2024_5.ViewModels;
 using SET09102_2024_5.Views;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Caching.Memory;
 using System.Reflection;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
@@ -31,6 +32,7 @@ namespace SET09102_2024_5
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                    fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
                 });
 
             // Load configuration
@@ -80,8 +82,11 @@ namespace SET09102_2024_5
                 // Register database initialization service
                 builder.Services.AddSingleton<IDatabaseInitializationService, DatabaseInitializationService>();
 
-                // Register repositories
-                builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            // Add memory cache for repository optimization
+            builder.Services.AddMemoryCache();
+
+            // Register repositories
+            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
             // Register services
             builder.Services.AddScoped<IDatabaseService, DatabaseService>();
