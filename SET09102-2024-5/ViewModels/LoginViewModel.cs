@@ -1,36 +1,36 @@
 using System;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SET09102_2024_5.Services;
-using SET09102_2024_5.Views;
 
 namespace SET09102_2024_5.ViewModels
 {
     public partial class LoginViewModel : BaseViewModel
     {
         private readonly IAuthService _authService;
+        private readonly INavigationService _navigationService;
         
         [ObservableProperty]
-        private string email = string.Empty;
+        private string _email = string.Empty;
         
         [ObservableProperty]
-        private string password = string.Empty;
+        private string _password = string.Empty;
         
         [ObservableProperty]
-        private string errorMessage = string.Empty;
-        
-        [ObservableProperty]
-        private bool isAuthenticating;
+        private string _errorMessage = string.Empty;
 
-        public ICommand RegisterCommand { get; }
-
-        public LoginViewModel(IAuthService authService)
+        public LoginViewModel(IAuthService authService, INavigationService navigationService)
         {
             _authService = authService;
-            RegisterCommand = new AsyncRelayCommand(NavigateToRegistrationAsync);
+            _navigationService = navigationService;
             Title = "Login";
+        }
+
+        [RelayCommand]
+        private async Task RegisterAsync()
+        {
+            await _navigationService.NavigateToRegisterAsync();
         }
 
         [RelayCommand]
@@ -42,21 +42,24 @@ namespace SET09102_2024_5.ViewModels
                 return;
             }
 
-            IsAuthenticating = true;
-            
             try
             {
+                StartBusy("Logging in...");
+                
                 var user = await _authService.AuthenticateAsync(Email, Password);
                 
                 if (user != null)
                 {
+                    // Explicitly set the current user to ensure UserChanged event is triggered
+                    _authService.SetCurrentUser(user);
+                    
                     // Reset fields
                     Email = string.Empty;
                     Password = string.Empty;
                     ErrorMessage = string.Empty;
                     
-                    // Navigate to the main page after successful authentication
-                    await Shell.Current.GoToAsync("//MainPage");
+                    // Navigate to the main page using the navigation service
+                    await _navigationService.NavigateToMainPageAsync();
                 }
                 else
                 {
@@ -69,14 +72,8 @@ namespace SET09102_2024_5.ViewModels
             }
             finally
             {
-                IsAuthenticating = false;
+                EndBusy("Login");
             }
-        }
-        
-        private async Task NavigateToRegistrationAsync()
-        {
-            // Navigate to registration page
-            await Shell.Current.GoToAsync("//RegisterPage");
         }
     }
 }

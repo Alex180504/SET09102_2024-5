@@ -10,16 +10,17 @@ namespace SET09102_2024_5.Data
         {
         }
 
-        public virtual DbSet<Role> Roles { get; set; } = null!;
-        public virtual DbSet<User> Users { get; set; } = null!;
-        public virtual DbSet<Sensor> Sensors { get; set; } = null!;
-        public virtual DbSet<SensorFirmware> SensorFirmwares { get; set; } = null!;
-        public virtual DbSet<Measurand> Measurands { get; set; } = null!;
-        public virtual DbSet<Maintenance> Maintenances { get; set; } = null!;
-        public virtual DbSet<Measurement> Measurements { get; set; } = null!;
-        public virtual DbSet<Incident> Incidents { get; set; } = null!;
-        public virtual DbSet<IncidentMeasurement> IncidentMeasurements { get; set; } = null!;
-        public virtual DbSet<Configuration> Configurations { get; set; } = null!;
+        public DbSet<Role> Roles { get; set; } = null!;
+        public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Sensor> Sensors { get; set; } = null!;
+        public DbSet<ConfigurationSetting> ConfigurationSettings { get; set; } = null!;
+        public DbSet<Maintenance> Maintenances { get; set; } = null!;
+        public DbSet<PhysicalQuantity> PhysicalQuantities { get; set; } = null!;
+        public DbSet<Measurement> Measurements { get; set; } = null!;
+        public DbSet<Incident> Incidents { get; set; } = null!;
+        public DbSet<IncidentMeasurement> IncidentMeasurements { get; set; } = null!;
+        public DbSet<AccessPrivilege> AccessPrivileges { get; set; } = null!;
+        public DbSet<RolePrivilege> RolePrivileges { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,6 +32,7 @@ namespace SET09102_2024_5.Data
                 entity.HasKey(e => e.RoleId);
                 entity.Property(e => e.RoleId).HasColumnName("role_id");
                 entity.Property(e => e.RoleName).HasColumnName("role_name").IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
             });
 
             modelBuilder.Entity<User>(entity =>
@@ -178,6 +180,34 @@ namespace SET09102_2024_5.Data
                 entity.HasOne(im => im.Incident)
                       .WithMany(i => i.IncidentMeasurements)
                       .HasForeignKey(im => im.IncidentId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<AccessPrivilege>(entity =>
+            {
+                entity.ToTable("access_privilege");
+                entity.HasKey(e => e.AccessPrivilegeId);
+                entity.Property(e => e.AccessPrivilegeId).HasColumnName("access_privilege_id");
+                entity.Property(e => e.Name).HasColumnName("name").IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
+                entity.Property(e => e.ModuleName).HasColumnName("module_name").HasMaxLength(100);
+            });
+
+            modelBuilder.Entity<RolePrivilege>(entity => 
+            {
+                entity.ToTable("role_privilege");
+                entity.HasKey(e => new { e.RoleId, e.AccessPrivilegeId });
+                entity.Property(e => e.RoleId).HasColumnName("role_id");
+                entity.Property(e => e.AccessPrivilegeId).HasColumnName("access_privilege_id");
+
+                entity.HasOne(rp => rp.Role)
+                      .WithMany(r => r.RolePrivileges)
+                      .HasForeignKey(rp => rp.RoleId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(rp => rp.AccessPrivilege)
+                      .WithMany(ap => ap.RolePrivileges)
+                      .HasForeignKey(rp => rp.AccessPrivilegeId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
         }

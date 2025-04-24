@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SET09102_2024_5.ViewModels"
+             xmlns:models="clr-namespace:SET09102_2024_5.Models"
+             x:DataType="vm:UserRoleManagementViewModel"
+             x:Class="SET09102_2024_5.Views.UserRoleManagementPage"
+             Title="User Role Management">
+
+    <Grid RowDefinitions="Auto,*" Margin="10" RowSpacing="10">
+        <!-- Header with refresh button -->
+        <HorizontalStackLayout Grid.Row="0" Spacing="10">
+            <Label Text="User Role Assignments" 
+                   FontSize="24" 
+                   FontAttributes="Bold" 
+                   VerticalOptions="Center" />
+            <Button Text="Refresh" 
+                    Command="{Binding RefreshCommand}" 
+                    HorizontalOptions="End" 
+                    BackgroundColor="#2196F3"
+                    TextColor="White" />
+        </HorizontalStackLayout>
+        
+        <!-- Main content with user list and role selection -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="10">
+            <!-- Left side - User list -->
+            <Frame Grid.Column="0" BorderColor="LightGray" Padding="10">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Select User" FontAttributes="Bold" FontSize="16" />
+                    <CollectionView ItemsSource="{Binding Users}"
+                                    SelectedItem="{Binding SelectedUser}"
+                                    SelectionMode="Single">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:User">
+                                <Frame Margin="2" BorderColor="LightGray" Padding="10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <VerticalStackLayout Grid.Column="0">
+                                            <Label Text="{Binding Email}" FontAttributes="Bold" />
+                                            <Label>
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding FirstName}" />
+                                                        <Span Text=" " />
+                                                        <Span Text="{Binding LastName}" />
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" 
+                                               Text="{Binding Role.RoleName}" 
+                                               TextColor="DarkGray" 
+                                               VerticalOptions="Center" />
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Right side - Role assignment -->
+            <Frame Grid.Column="1" BorderColor="LightGray" Padding="10">
+                <VerticalStackLayout Spacing="10" 
+                                     IsEnabled="{Binding SelectedUser, Converter={StaticResource StringNotNullOrEmptyConverter}}">
+                    <Label Text="Assign Role" FontAttributes="Bold" FontSize="16" />
+                    
+                    <Label>
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="Selected User: " FontAttributes="Bold" />
+                                <Span Text="{Binding SelectedUser.FirstName}" />
+                                <Span Text=" " />
+                                <Span Text="{Binding SelectedUser.LastName}" />
+                                <Span Text=" (" />
+                                <Span Text="{Binding SelectedUser.Email}" />
+                                <Span Text=")" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                    
+                    <Label Text="Select Role:" Margin="0,10,0,0" />
+                    <Picker ItemsSource="{Binding Roles}"
+                            ItemDisplayBinding="{Binding RoleName}"
+                            SelectedItem="{Binding SelectedRole}" />
+                    
+                    <Label Text="{Binding SelectedRole.Description}" 
+                           TextColor="Gray"
+                           IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}" />
+                    
+                    <Button Text="Save Changes" 
+                            Command="{Binding SaveChangesCommand}" 
+                            IsEnabled="{Binding CanSaveChanges}"
+                            BackgroundColor="#4CAF50"
+                            TextColor="White"
+                            Margin="0,20,0,0" />
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+        
+        <!-- Activity indicator -->
+        <ActivityIndicator Grid.RowSpan="2" 
+                           IsRunning="{Binding IsBusy}" 
+                           IsVisible="{Binding IsBusy}"
+                           HorizontalOptions="Center" 
+                           VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

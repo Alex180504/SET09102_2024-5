@@ -40,6 +40,24 @@
             Route="MainPage" />
     </FlyoutItem>
 
+    <!-- Admin Section - Directly accessible from menu when user has Admin role -->
+    <FlyoutItem Title="Administration" IsVisible="{Binding IsAdmin}">
+        <Tab Title="Admin Panel">
+            <ShellContent
+                Title="Admin Dashboard"
+                ContentTemplate="{DataTemplate views:AdminDashboardPage}"
+                Route="AdminDashboardPage" />
+            <ShellContent
+                Title="Role Management"
+                ContentTemplate="{DataTemplate views:RoleManagementPage}"
+                Route="RoleManagementPage" />
+            <ShellContent
+                Title="User Role Assignment"
+                ContentTemplate="{DataTemplate views:UserRoleManagementPage}"
+                Route="UserRoleManagementPage" />
+        </Tab>
+    </FlyoutItem>
+
     <!-- Log Out Option -->
     <MenuItem Text="Log Out" 
               IconImageSource="logout.png"
