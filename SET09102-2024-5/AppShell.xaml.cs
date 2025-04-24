@@ -35,16 +35,9 @@ public partial class AppShell : Shell, INotifyPropertyChanged
         _authService = authService;
         _navigationService = navigationService;
         
-        // Register routes for navigation
-        Routing.RegisterRoute(nameof(MainPage), typeof(MainPage));
-        Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
-        Routing.RegisterRoute(nameof(RegisterPage), typeof(RegisterPage));
+        // Register routes using a centralized approach
+        RegisterRoutes();
         
-        // Register admin routes
-        Routing.RegisterRoute(nameof(AdminDashboardPage), typeof(AdminDashboardPage));
-        Routing.RegisterRoute(nameof(RoleManagementPage), typeof(RoleManagementPage));
-        Routing.RegisterRoute(nameof(UserRoleManagementPage), typeof(UserRoleManagementPage));
-
         // Set binding context for logout command and IsAdmin property
         BindingContext = this;
 
@@ -55,6 +48,20 @@ public partial class AppShell : Shell, INotifyPropertyChanged
         _ = CheckAdminStatus();
     }
 
+    // Centralized route registration to avoid redundancy
+    private void RegisterRoutes()
+    {
+        // Register standard routes
+        Routing.RegisterRoute(nameof(MainPage), typeof(MainPage));
+        Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
+        Routing.RegisterRoute(nameof(RegisterPage), typeof(RegisterPage));
+        
+        // Register admin routes
+        Routing.RegisterRoute(nameof(AdminDashboardPage), typeof(AdminDashboardPage));
+        Routing.RegisterRoute(nameof(RoleManagementPage), typeof(RoleManagementPage));
+        Routing.RegisterRoute(nameof(UserRoleManagementPage), typeof(UserRoleManagementPage));
+    }
+
     private async void OnUserChanged(object? sender, EventArgs e)
     {
         await CheckAdminStatus();
@@ -63,14 +70,7 @@ public partial class AppShell : Shell, INotifyPropertyChanged
     private async Task CheckAdminStatus()
     {
         var currentUser = await _authService.GetCurrentUserAsync();
-        if (currentUser != null)
-        {
-            IsAdmin = await _authService.IsInRoleAsync(currentUser.UserId, "Administrator");
-        }
-        else
-        {
-            IsAdmin = false;
-        }
+        IsAdmin = currentUser != null && await _authService.IsInRoleAsync(currentUser.UserId, "Administrator");
     }
 
     [RelayCommand]
@@ -95,9 +95,10 @@ public partial class AppShell : Shell, INotifyPropertyChanged
                 return;
             }
 
-            // Use async operation properly to prevent UI thread blocking
+            // Defer to NavigationService for permission checks
             Task.Run(async () => {
                 try {
+                    // Use existing navigation service method to check permissions
                     bool canNavigate = await _navigationService.CanNavigateToRouteAsync(targetPage);
                     
                     if (!canNavigate)
@@ -106,20 +107,20 @@ public partial class AppShell : Shell, INotifyPropertyChanged
                         args.Cancel();
                         
                         var currentUser = await _authService.GetCurrentUserAsync();
-                        if (currentUser == null)
-                        {
-                            // Redirect to login if not authenticated
-                            await _navigationService.NavigateToLoginAsync();
-                        }
-                        else
-                        {
-                            // Show access denied message for authenticated users without proper permissions
-                            await MainThread.InvokeOnMainThreadAsync(async () => {
+                        await MainThread.InvokeOnMainThreadAsync(async () => {
+                            if (currentUser == null)
+                            {
+                                // Redirect to login if not authenticated
+                                await _navigationService.NavigateToLoginAsync();
+                            }
+                            else
+                            {
+                                // Show access denied message for authenticated users without proper permissions
                                 await Shell.Current.DisplayAlert("Access Denied", 
                                     "You don't have the required permissions to access this page.", "OK");
                                 await _navigationService.NavigateToMainPageAsync();
-                            });
-                        }
+                            }
+                        });
                     }
                     else if (!IsPublicRoute(targetPage))
                     {
@@ -130,14 +131,12 @@ public partial class AppShell : Shell, INotifyPropertyChanged
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Navigation error: {ex}");
-                    // Log the error but don't crash the app
                 }
             });
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Shell navigation error: {ex}");
-            // Log the error but don't crash the app
         }
     }
     

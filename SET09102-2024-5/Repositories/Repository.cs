@@ -4,39 +4,35 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using System.Collections.Concurrent;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace SET09102_2024_5.Data.Repositories
 {
     public class Repository<T> : IRepository<T> where T : class
     {
         protected readonly SensorMonitoringContext _context;
-        private static readonly ConcurrentDictionary<string, object> _cache = new ConcurrentDictionary<string, object>();
+        private readonly IMemoryCache _cache;
         private readonly TimeSpan _cacheExpiration = TimeSpan.FromMinutes(5);
 
-        public Repository(SensorMonitoringContext context)
+        public Repository(SensorMonitoringContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         public async Task<T> GetByIdAsync(int id)
         {
             string cacheKey = $"{typeof(T).Name}_id_{id}";
-            if (_cache.TryGetValue(cacheKey, out var cachedItem))
+            
+            if (!_cache.TryGetValue(cacheKey, out T entity))
             {
-                return (T)cachedItem;
-            }
-
-            var entity = await _context.Set<T>().FindAsync(id).ConfigureAwait(false);
-            if (entity != null)
-            {
-                // Add to cache with expiration
-                _cache.TryAdd(cacheKey, entity);
-                // Schedule removal from cache
-                _ = Task.Delay(_cacheExpiration).ContinueWith(_ => {
-                    object? removed;
-                    _cache.TryRemove(cacheKey, out removed);
-                });
+                entity = await _context.Set<T>().FindAsync(id).ConfigureAwait(false);
+                if (entity != null)
+                {
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetSlidingExpiration(_cacheExpiration);
+                    _cache.Set(cacheKey, entity, cacheOptions);
+                }
             }
             
             return entity;
@@ -45,31 +41,29 @@ namespace SET09102_2024_5.Data.Repositories
         public async Task<IEnumerable<T>> GetAllAsync()
         {
             string cacheKey = $"{typeof(T).Name}_all";
-            if (_cache.TryGetValue(cacheKey, out var cachedItems))
+            
+            if (!_cache.TryGetValue(cacheKey, out IEnumerable<T> entities))
             {
-                return (IEnumerable<T>)cachedItems;
-            }
-
-            // Use AsNoTracking for read-only scenarios which improves performance
-            var entities = await _context.Set<T>()
-                .AsNoTracking()
-                .ToListAsync()
-                .ConfigureAwait(false);
+                // Use AsNoTracking for read-only scenarios which improves performance
+                entities = await _context.Set<T>()
+                    .AsNoTracking()
+                    .ToListAsync()
+                    .ConfigureAwait(false);
                 
-            // Add to cache with expiration
-            _cache.TryAdd(cacheKey, entities);
-            // Schedule removal from cache
-            _ = Task.Delay(_cacheExpiration).ContinueWith(_ => {
-                object? removed;
-                _cache.TryRemove(cacheKey, out removed);
-            });
+                if (entities != null)
+                {
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetSlidingExpiration(_cacheExpiration);
+                    _cache.Set(cacheKey, entities, cacheOptions);
+                }
+            }
             
             return entities;
         }
 
         public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
         {
-            // Use AsNoTracking for read-only queries to improve performance
+            // Don't cache query results as they're likely to be different each time
             return await _context.Set<T>()
                 .AsNoTracking()
                 .Where(predicate)
@@ -115,13 +109,15 @@ namespace SET09102_2024_5.Data.Repositories
         // Helper method to invalidate cache for this entity type
         private void InvalidateCache()
         {
-            // Remove all cached items for this entity type
-            var keysToRemove = _cache.Keys.Where(k => k.StartsWith($"{typeof(T).Name}_")).ToList();
-            foreach (var key in keysToRemove)
-            {
-                object? removed;
-                _cache.TryRemove(key, out removed);
-            }
+            // Create a pattern to remove related cache entries for this type
+            var pattern = $"{typeof(T).Name}_";
+            
+            // Remove all matching entries
+            // We can't enumerate through IMemoryCache directly, so we'll use a more targeted approach
+            _cache.Remove($"{pattern}all");
+            
+            // For applications that need more granular cache invalidation, consider implementing
+            // a cache key tracking system to keep track of all cache keys by entity type
         }
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.Maui.Controls;
+using SET09102_2024_5.Services;
 using System;
 using System.Threading.Tasks;
 
@@ -6,9 +7,12 @@ namespace SET09102_2024_5.Views;
 
 public partial class AdminDashboardPage : ContentPage
 {
-    public AdminDashboardPage()
+    private readonly INavigationService _navigationService;
+
+    public AdminDashboardPage(INavigationService navigationService)
     {
         InitializeComponent();
+        _navigationService = navigationService;
     }
 
     // Apply animations when the page appears
@@ -18,17 +22,13 @@ public partial class AdminDashboardPage : ContentPage
         {
             base.OnAppearing();
             
-            // Start all animations with elements initially invisible
+            // Apply entrance animation
             this.Opacity = 0;
-            
-            // Fade in the entire page
             await this.FadeTo(1, 250, Easing.CubicOut);
-            
-            // Additional initialization if needed
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Error", $"An error occurred while loading the Admin Dashboard: {ex.Message}", "OK");
+            System.Diagnostics.Debug.WriteLine($"Animation error: {ex.Message}");
         }
     }
 
@@ -38,13 +38,14 @@ public partial class AdminDashboardPage : ContentPage
         
         try
         {
-            // Use absolute path for navigation
-            await Shell.Current.GoToAsync($"///{nameof(RoleManagementPage)}");
+            await _navigationService.NavigateToRoleManagementAsync();
         }
         catch (Exception ex)
         {
-            // Display error to help with debugging
-            await DisplayAlert("Navigation Error", $"Could not navigate to Role Management: {ex.Message}", "OK");
+            await DisplayAlert("Navigation Error", 
+                $"Could not navigate to Role Management: {ex.Message}", "OK");
+            
+            System.Diagnostics.Debug.WriteLine($"Navigation error: {ex}");
         }
     }
 
@@ -54,13 +55,14 @@ public partial class AdminDashboardPage : ContentPage
         
         try
         {
-            // Use absolute path for navigation
-            await Shell.Current.GoToAsync($"///{nameof(UserRoleManagementPage)}");
+            await _navigationService.NavigateToUserRoleManagementAsync();
         }
         catch (Exception ex)
         {
-            // Display error to help with debugging
-            await DisplayAlert("Navigation Error", $"Could not navigate to User Role Management: {ex.Message}", "OK");
+            await DisplayAlert("Navigation Error", 
+                $"Could not navigate to User Role Management: {ex.Message}", "OK");
+            
+            System.Diagnostics.Debug.WriteLine($"Navigation error: {ex}");
         }
     }
     
