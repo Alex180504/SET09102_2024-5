@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Moq;
 using SET09102_2024_5.Data;
 using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Models;
@@ -8,18 +7,14 @@ using SET09102_2024_5.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using Tests.Mocks;
 using Xunit;
 
 namespace SET09102_2024_5.Tests.ViewModels
 {
     public class SensorManagementViewModelTests
     {
-        private readonly SensorMonitoringContext _mockContext;
         private readonly List<Sensor> _testSensors;
-        private readonly DbContextOptions<SensorMonitoringContext> _options;
         private readonly MockMainThreadService _mockMainThreadService;
         private readonly MockDialogService _mockDialogService;
 
@@ -60,45 +55,51 @@ namespace SET09102_2024_5.Tests.ViewModels
                 }
             };
 
-            // Create in-memory database for testing
-            _options = new DbContextOptionsBuilder<SensorMonitoringContext>()
-                .UseInMemoryDatabase(databaseName: "TestSensorDb_" + Guid.NewGuid().ToString())
-                .Options;
-
-            // Create and set up the context
-            _mockContext = new MockSensorMonitoringContext(_options, _testSensors);
-
             // Initialize mock services
             _mockMainThreadService = new MockMainThreadService();
             _mockDialogService = new MockDialogService();
         }
 
-        private SensorManagementViewModel CreateViewModel()
+        private SensorMonitoringContext CreateDbContext(string dbName = null)
         {
+            // Create a unique database name if none provided
+            dbName ??= $"TestSensorDb_{Guid.NewGuid()}";
+
+            var options = new DbContextOptionsBuilder<SensorMonitoringContext>()
+                .UseInMemoryDatabase(databaseName: dbName)
+                .Options;
+
+            var context = new SensorMonitoringContext(options);
+
+            // Clear database to ensure a clean state
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
+
+            return context;
+        }
+
+        private async Task<SensorManagementViewModel> CreateViewModelWithDataAsync(string dbName = null)
+        {
+            var context = CreateDbContext(dbName);
+
+            // Add test sensors
+            await context.Sensors.AddRangeAsync(_testSensors);
+            await context.SaveChangesAsync();
+
             return new SensorManagementViewModel(
-                _mockContext,
+                context,
                 _mockMainThreadService,
                 _mockDialogService);
         }
 
-
-        // Test class for mocking the DbContext using MockDbSetFactory
-        private class MockSensorMonitoringContext : SensorMonitoringContext
+        private SensorManagementViewModel CreateViewModel(string dbName = null)
         {
-            private readonly List<Sensor> _sensors;
+            var context = CreateDbContext(dbName);
 
-            public MockSensorMonitoringContext(DbContextOptions<SensorMonitoringContext> options, List<Sensor> sensors)
-                : base(options)
-            {
-                _sensors = sensors;
-            }
-
-            public override DbSet<Sensor> Sensors => MockDbSetFactory.CreateMockDbSetWithAdvancedOperations<Sensor>(_sensors, "SensorId");
-
-            public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-            {
-                return await Task.FromResult(1); // Mock successful save
-            }
+            return new SensorManagementViewModel(
+                context,
+                _mockMainThreadService,
+                _mockDialogService);
         }
 
         [Fact]
@@ -129,12 +130,11 @@ namespace SET09102_2024_5.Tests.ViewModels
             Assert.Throws<ArgumentNullException>(() => new SensorManagementViewModel(null));
         }
 
-
         [Fact]
-        public void FilterSensors_WithEmptySearch_ShowsAllSensors()
+        public async Task FilterSensors_WithEmptySearch_ShowsAllSensors()
         {
             // Arrange
-            var viewModel = CreateViewModel();
+            var viewModel = await CreateViewModelWithDataAsync();
             viewModel.Sensors.Clear();
             foreach (var sensor in _testSensors)
             {
@@ -150,10 +150,10 @@ namespace SET09102_2024_5.Tests.ViewModels
         }
 
         [Fact]
-        public void FilterSensors_WithValidSearch_FiltersCorrectly()
+        public async Task FilterSensors_WithValidSearch_FiltersCorrectly()
         {
             // Arrange
-            var viewModel = CreateViewModel();
+            var viewModel = await CreateViewModelWithDataAsync();
             viewModel.Sensors.Clear();
             foreach (var sensor in _testSensors)
             {
@@ -170,10 +170,10 @@ namespace SET09102_2024_5.Tests.ViewModels
         }
 
         [Fact]
-        public void FilterSensors_WithMeasurandSearch_FiltersCorrectly()
+        public async Task FilterSensors_WithMeasurandSearch_FiltersCorrectly()
         {
             // Arrange
-            var viewModel = CreateViewModel();
+            var viewModel = await CreateViewModelWithDataAsync();
             viewModel.Sensors.Clear();
             foreach (var sensor in _testSensors)
             {
@@ -190,10 +190,10 @@ namespace SET09102_2024_5.Tests.ViewModels
         }
 
         [Fact]
-        public void FilterSensors_WithNoMatches_ReturnsEmptyList()
+        public async Task FilterSensors_WithNoMatches_ReturnsEmptyList()
         {
             // Arrange
-            var viewModel = CreateViewModel();
+            var viewModel = await CreateViewModelWithDataAsync();
             viewModel.Sensors.Clear();
             foreach (var sensor in _testSensors)
             {
@@ -209,10 +209,10 @@ namespace SET09102_2024_5.Tests.ViewModels
         }
 
         [Fact]
-        public void FilterSensors_WithCaseInsensitiveSearch_FiltersCorrectly()
+        public async Task FilterSensors_WithCaseInsensitiveSearch_FiltersCorrectly()
         {
             // Arrange
-            var viewModel = CreateViewModel();
+            var viewModel = await CreateViewModelWithDataAsync();
             viewModel.Sensors.Clear();
             foreach (var sensor in _testSensors)
             {
@@ -243,10 +243,10 @@ namespace SET09102_2024_5.Tests.ViewModels
         }
 
         [Fact]
-        public void ShowAllSensorsInSearch_ShowsAllSensorsInFilteredSensors()
+        public async Task ShowAllSensorsInSearch_ShowsAllSensorsInFilteredSensors()
         {
             // Arrange
-            var viewModel = CreateViewModel();
+            var viewModel = await CreateViewModelWithDataAsync();
             viewModel.Sensors.Clear();
             foreach (var sensor in _testSensors)
             {
@@ -409,10 +409,10 @@ namespace SET09102_2024_5.Tests.ViewModels
         }
 
         [Fact]
-        public void HasValidationErrors_WhenSet_UpdatesSaveChangesCommandCanExecute()
+        public async Task HasValidationErrors_WhenSet_UpdatesSaveChangesCommandCanExecute()
         {
             // Arrange
-            var viewModel = CreateViewModel();
+            var viewModel = await CreateViewModelWithDataAsync();
             viewModel.SelectedSensor = _testSensors[0];  // Need a selected sensor
             viewModel.IsLoading = false;                 // Not loading
 
@@ -429,10 +429,11 @@ namespace SET09102_2024_5.Tests.ViewModels
         public async Task LoadSensorsCommand_ShouldLoadSensorsWhenExecuted()
         {
             // Arrange
-            using var context = new SensorMonitoringContext(_options);
+            var dbName = $"TestSensorDb_{Guid.NewGuid()}";
+            var context = CreateDbContext(dbName);
 
-            // Add test sensors to the mock DB
-            await context.AddRangeAsync(_testSensors); 
+            // Add test sensors to the in-memory DB
+            await context.Sensors.AddRangeAsync(_testSensors);
             await context.SaveChangesAsync();
 
             var viewModel = new SensorManagementViewModel(
@@ -444,7 +445,7 @@ namespace SET09102_2024_5.Tests.ViewModels
 
             // Act
             viewModel.LoadSensorsCommand.Execute(null);
-            await Task.Delay(100);
+            await Task.Delay(100); // Small delay to let async operation complete
 
             // Assert
             Assert.Equal(_testSensors.Count, viewModel.Sensors.Count);
@@ -454,9 +455,11 @@ namespace SET09102_2024_5.Tests.ViewModels
         public async Task LoadSensorsAsync_WhenIsLoadingIsTrue_DoesNotLoadSensors()
         {
             // Arrange
-            using var context = new SensorMonitoringContext(_options);  // Use a real in-memory database to avoid exceptions
+            var dbName = $"TestSensorDb_{Guid.NewGuid()}";
+            var context = CreateDbContext(dbName);
 
-            await context.AddRangeAsync(_testSensors);
+            // Add test sensors to the in-memory DB
+            await context.Sensors.AddRangeAsync(_testSensors);
             await context.SaveChangesAsync();
 
             var viewModel = new SensorManagementViewModel(
@@ -467,7 +470,7 @@ namespace SET09102_2024_5.Tests.ViewModels
             viewModel.Sensors.Clear();
             viewModel.IsLoading = true;
 
-            // Act
+            // Act - Call the private method using reflection
             var method = typeof(SensorManagementViewModel).GetMethod(
                 "LoadSensorsAsync",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -476,11 +479,8 @@ namespace SET09102_2024_5.Tests.ViewModels
             await task;
 
             // Assert
-            Assert.Empty(viewModel.Sensors); 
-            Assert.True(viewModel.IsLoading); 
+            Assert.Empty(viewModel.Sensors);
+            Assert.True(viewModel.IsLoading);
         }
-
-
-
     }
 }
