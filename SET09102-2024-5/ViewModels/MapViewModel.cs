@@ -7,7 +7,8 @@ using Mapsui.Providers;      // for MemoryProvider
 using Mapsui.Styles;         // for SymbolStyle
 using Mapsui.UI;             // for BitmapRegistry
 using SET09102_2024_5.Services;
-using Microsoft.Maui.ApplicationModel;  // for MainThread
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Extensions.Logging;  // for MainThread
 
 namespace SET09102_2024_5.ViewModels
 {
@@ -17,10 +18,12 @@ namespace SET09102_2024_5.ViewModels
 
         readonly SensorService _sensorService;
         readonly int _defaultPin, _warningPin, _criticalPin;
+        private readonly ILogger<MapViewModel> _logger;
 
-        public MapViewModel(SensorService sensorService)
+        public MapViewModel(SensorService sensorService, ILogger<MapViewModel> logger)
         {
             _sensorService = sensorService;
+            _logger = logger;
 
             // register pin images once (returns int IDs) :contentReference[oaicite:4]{index=4}
             var asm = typeof(MapViewModel).Assembly;
@@ -48,6 +51,32 @@ namespace SET09102_2024_5.ViewModels
                 await RefreshAsync();
                 await _sensorService.StartAsync(TimeSpan.FromSeconds(5));
             });
+            _ = DumpAllSensorsAsync();
+        }
+        private async Task DumpAllSensorsAsync()
+        {
+            try
+            {
+                var all = await _sensorService.GetAllWithConfigurationAsync();
+                _logger.LogInformation("=== SENSOR DUMP BEGIN ===");
+                foreach (var s in all)
+                {
+                    _logger.LogInformation(
+                        "Sensor {Id}: Type={Type}, Status={Status}, " +
+                        "Lat={Lat}, Lon={Lon}",
+                        s.SensorId,
+                        s.SensorType,
+                        s.Status,
+                        s.Configuration?.Latitude,
+                        s.Configuration?.Longitude
+                    );
+                }
+                _logger.LogInformation("=== SENSOR DUMP END ({Count} sensors) ===", all.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to read sensor data");
+            }
         }
 
         private async Task RefreshAsync()
