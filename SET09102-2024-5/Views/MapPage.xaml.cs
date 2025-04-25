@@ -1,43 +1,34 @@
 using Microsoft.Maui.Controls;
-using Mapsui.UI.Maui;      // for MapControl
-using Mapsui.Tiling;       // for OpenStreetMap
-using Mapsui;              // for MPoint
-using Mapsui.Layers;       // for MemoryLayer
-using Mapsui.Styles;       // for SymbolStyle
+using Mapsui.UI.Maui;
 using SET09102_2024_5.ViewModels;
-using Mapsui.UI;
 
 namespace SET09102_2024_5.Views
 {
     public partial class MapPage : ContentPage
     {
+        private readonly MapViewModel _vm;
+
         public MapPage(MapViewModel vm)
         {
             InitializeComponent();
-            BindingContext = vm;
+            BindingContext = _vm = vm;
 
-            var mapControl = new Mapsui.UI.Maui.MapControl();
+            // Hook up the VM’s Map instance
+            MapControl.Map = _vm.Map;
+        }
 
-            // 1) Add free OpenStreetMap tiles
-            mapControl.Map?.Layers.Add(Mapsui.Tiling.OpenStreetMap.CreateTileLayer());
-            Content = mapControl;
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            // Kick off loading + polling
+            await _vm.InitializeAsync();
+        }
 
-            // 2) Add your live sensor layer
-            mapControl.Map?.Layers.Add(vm.SensorLayer);
-
-            // 3) Zoom to the extent of your sensors, or show world if empty
-            var extent = vm.SensorLayer.Extent; // MRect?
-            if (extent != null)
-            {
-                // ZoomToBox replaces old NavigateTo :contentReference[oaicite:1]{index=1}
-                mapControl.Map?.Navigator.ZoomToBox(extent, MBoxFit.Fit);
-            }
-            else
-            {
-                mapControl.Map?.Navigator.ZoomToBox(
-                  new MRect(-180, -90, 180, 90), // world
-                  MBoxFit.Fit);
-            }
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+            // Stop polling and unsubscribe
+            _vm.Stop();
         }
     }
 }

@@ -1,117 +1,191 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
-using Mapsui;                // for MPoint
-using Mapsui.Layers;         // for MemoryLayer, IFeature
-using Mapsui.Providers;      // for MemoryProvider
-using Mapsui.Styles;         // for SymbolStyle
-using Mapsui.UI;             // for BitmapRegistry
+using Mapsui;
+using Mapsui.Layers;
+using Mapsui.Styles;
+using Mapsui.Tiling;
+using Mapsui.UI;
+using Microsoft.Maui.Storage;            // FileSystem.OpenAppPackageFileAsync
+using Microsoft.Extensions.Logging;
+using SET09102_2024_5.Interfaces;
+using SET09102_2024_5.Models;
 using SET09102_2024_5.Services;
-using Microsoft.Maui.ApplicationModel;
-using Microsoft.Extensions.Logging;  // for MainThread
+using Map = Mapsui.Map;
+using MPoint = Mapsui.MPoint;
 
 namespace SET09102_2024_5.ViewModels
 {
-    public class MapViewModel
+    public class MapViewModel : IDisposable
     {
-        public MemoryLayer SensorLayer { get; }
+        public Map Map { get; }
 
-        readonly SensorService _sensorService;
-        readonly int _defaultPin, _warningPin, _criticalPin;
+        // A dedicated layer just for pins
+        private readonly MemoryLayer _pinLayer;
+
+        // Default pin style
+        private SymbolStyle _defaultStyle;
+
+        private readonly SensorService _sensorService;
+        private readonly IMainThreadService _mainThread;
         private readonly ILogger<MapViewModel> _logger;
 
-        public MapViewModel(SensorService sensorService, ILogger<MapViewModel> logger)
+        // Prevent overlapping RefreshAsync calls
+        private readonly SemaphoreSlim _refreshLock = new(1, 1);
+
+        // Keep the default‐pin stream alive until Dispose()
+        private readonly List<Stream> _pinStreams = new();
+
+        public MapViewModel(
+            SensorService sensorService,
+            IMainThreadService mainThread,
+            ILogger<MapViewModel> logger)
         {
             _sensorService = sensorService;
+            _mainThread = mainThread;
             _logger = logger;
 
-            // register pin images once (returns int IDs) :contentReference[oaicite:4]{index=4}
-            var asm = typeof(MapViewModel).Assembly;
-            _defaultPin = BitmapRegistry.Instance.Register(asm, "SET09102_2024_5.Resources.Images.pin_default.svg");
-            _warningPin = BitmapRegistry.Instance.Register(asm, "SET09102_2024_5.Resources.Images.pin_warning.svg");
-            _criticalPin = BitmapRegistry.Instance.Register(asm, "SET09102_2024_5.Resources.Images.pin_critical.svg");
+            // 1) Create the Map + base OSM layer
+            Map = new Map();
+            Map.Layers.Add(OpenStreetMap.CreateTileLayer());
 
-            SensorLayer = new MemoryLayer
+            // 2) Prepare an empty pin layer (no style here; each feature has its own)
+            _pinLayer = new MemoryLayer("Pins")
             {
-                Name = "Sensors",
-                Features = Enumerable.Empty<IFeature>(),
-                Style = new SymbolStyle
-                {
-                    BitmapId = _defaultPin,
-                    SymbolScale = 0.5
-                }
+                Features = Enumerable.Empty<IFeature>()
+            };
+            Map.Layers.Add(_pinLayer);
+        }
+
+        /// <summary>
+        /// Call from your page’s OnAppearing(): registers the default pin,
+        /// does an initial draw, subscribes to updates, and starts polling.
+        /// </summary>
+        public async Task InitializeAsync()
+        {
+            // 1) Load & register the default pin PNG
+            var defaultPinId = await RegisterDefaultPinAsync("pin_default.png");
+            if (defaultPinId <= 0)
+                throw new InvalidOperationException("Failed to register default pin.");
+
+            // 2) Cache the default pin style (smaller scale so it isn’t huge)
+            _defaultStyle = new SymbolStyle
+            {
+                BitmapId = defaultPinId,
+                SymbolScale = 0.2
             };
 
-            // refresh whenever sensors update
-            _sensorService.OnSensorUpdated += (_, __) =>
-                MainThread.BeginInvokeOnMainThread(async () => await RefreshAsync());
+            // 3) First draw and subscribe to sensor updates
+            _sensorService.OnSensorUpdated += OnSensorUpdated;
+            await RefreshAsync();
 
-            _ = Task.Run(async () =>
-            {
-                await RefreshAsync();
-                await _sensorService.StartAsync(TimeSpan.FromSeconds(5));
-            });
-            _ = DumpAllSensorsAsync();
+            // 4) Start built-in polling (fires OnSensorUpdated)
+            _ = _sensorService.StartAsync(TimeSpan.FromSeconds(5));
         }
-        private async Task DumpAllSensorsAsync()
+
+        /// <summary>
+        /// Opens the MAUI asset, copies it into a MemoryStream,
+        /// registers it, and keeps the stream alive.
+        /// </summary>
+        private async Task<int> RegisterDefaultPinAsync(string fileName)
         {
-            try
+            // Try bare filename, then under Resources/Images/
+            var tryPaths = new[]
             {
-                var all = await _sensorService.GetAllWithConfigurationAsync();
-                _logger.LogInformation("=== SENSOR DUMP BEGIN ===");
-                foreach (var s in all)
+        fileName,
+        Path.Combine("Resources", "Images", fileName)
+    };
+
+            foreach (var path in tryPaths)
+            {
+                try
                 {
-                    _logger.LogInformation(
-                        "Sensor {Id}: Type={Type}, Status={Status}, " +
-                        "Lat={Lat}, Lon={Lon}",
-                        s.SensorId,
-                        s.SensorType,
-                        s.Status,
-                        s.Configuration?.Latitude,
-                        s.Configuration?.Longitude
-                    );
+                    using var raw = await FileSystem.OpenAppPackageFileAsync(path);
+                    var ms = new MemoryStream();
+                    await raw.CopyToAsync(ms);
+                    ms.Position = 0;
+                    var id = BitmapRegistry.Instance.Register(ms);
+                    if (id > 0)
+                    {
+                        _pinStreams.Add(ms);   // keep the stream alive
+                        _logger.LogInformation($"Registered pin from '{path}' = ID {id}");
+                        return id;
+                    }
+                    _logger.LogWarning($"BitmapRegistry.Register returned {id} for '{path}'");
+                    ms.Dispose();
                 }
-                _logger.LogInformation("=== SENSOR DUMP END ({Count} sensors) ===", all.Count);
+                catch (FileNotFoundException)
+                {
+                    _logger.LogWarning($"Pin asset not found at '{path}'");
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to read sensor data");
-            }
+
+            _logger.LogError($"Could not find '{fileName}' in any of: {string.Join(", ", tryPaths)}");
+            return -1;
+        }
+
+        private void OnSensorUpdated(Sensor _, DateTime? __)
+        {
+            // Ensure only one RefreshAsync is running at once
+            _mainThread.BeginInvokeOnMainThread(async () => await RefreshAsync());
         }
 
         private async Task RefreshAsync()
         {
-            var sensors = await _sensorService.GetAllWithConfigurationAsync();
+            if (!await _refreshLock.WaitAsync(0))
+                return;
 
-            var features = sensors.Select(s =>
+            try
             {
-                // cast float? → double
-                var lon = s.Configuration.Longitude ?? 0.0;
-                var lat = s.Configuration.Latitude ?? 0.0;
+                var sensors = await _sensorService.GetAllWithConfigurationAsync();
 
-                var pf = new PointFeature(new MPoint(lon, lat))
-                {
-                    ["Status"] = s.Status
-                };
+                // Build one feature per sensor, all using the same default style
+                var features = sensors
+                    .Where(s => s.Configuration?.Latitude.HasValue == true
+                             && s.Configuration?.Longitude.HasValue == true)
+                    .Select(s =>
+                    {
+                        var lon = s.Configuration.Longitude.Value;
+                        var lat = s.Configuration.Latitude.Value;
 
-                var bmp = s.Status switch
-                {
-                    "Critical" => _criticalPin,
-                    "Warning" => _warningPin,
-                    _ => _defaultPin
-                };
+                        var pf = new PointFeature(new MPoint(lon, lat));
+                        pf.Styles.Add(_defaultStyle);
+                        return (IFeature)pf;
+                    })
+                    .ToList();
 
-                pf.Styles.Add(new SymbolStyle
-                {
-                    BitmapId = bmp,
-                    SymbolScale = 0.5
-                });
+                // Swap into the pin layer
+                _pinLayer.Features = features;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to refresh pin layer");
+            }
+            finally
+            {
+                _refreshLock.Release();
+            }
+        }
 
-                return pf as IFeature;
-            })
-            .ToList();
+        /// <summary>
+        /// Stops live updates but leaves the internal semaphore & streams intact
+        /// so InitializeAsync can be called again later.
+        /// </summary>
+        public void Stop()
+        {
+            _sensorService.OnSensorUpdated -= OnSensorUpdated;
+            // don’t dispose _refreshLock or streams here
+        }
 
-            SensorLayer.Features = features;  // replaces DataSource in v5 :contentReference[oaicite:5]{index=5}
+        public void Dispose()
+        {
+            _sensorService.OnSensorUpdated -= OnSensorUpdated;
+            _refreshLock.Dispose();
+            foreach (var s in _pinStreams) s.Dispose();
+            _pinStreams.Clear();
         }
     }
 }

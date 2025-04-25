@@ -6,7 +6,9 @@
     x:Class="SET09102_2024_5.Views.MapPage"
     Title="Sensor Status Map">
 
-    <!-- this is the v4+ MapControl in Mapsui.UI.Maui -->
-    <mapsui:MapControl x:Name="MapControl" />
-
+    <ContentPage.Content>
+        <mapsui:MapControl
+      x:Name="MapControl"
+      Map="{Binding Map}" />
+    </ContentPage.Content>
 </ContentPage>

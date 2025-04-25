@@ -1,65 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
+using SET09102_2024_5.Data;
+using SET09102_2024_5.Data.Repositories;
 
-namespace SET09102_2024_5.Data.Repositories
+public class Repository<T> : IRepository<T> where T : class
 {
-    public class Repository<T> : IRepository<T> where T : class
-    {
-        protected readonly SensorMonitoringContext _context;
+    protected readonly SensorMonitoringContext _context;
 
-        public Repository(SensorMonitoringContext context)
-        {
-            _context = context;
-        }
+    public Repository(SensorMonitoringContext context) => _context = context;
 
-        public async Task<T> GetByIdAsync(int id)
-        {
-            return await _context.Set<T>().FindAsync(id);
-        }
-
-        public async Task<IEnumerable<T>> GetAllAsync()
-        {
-            return await _context.Set<T>().ToListAsync();
-        }
-
-        public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
-        {
-            return await _context.Set<T>().Where(predicate).ToListAsync();
-        }
-
-        public async Task AddAsync(T entity)
-        {
-            await _context.Set<T>().AddAsync(entity);
-        }
-
-        public async Task AddRangeAsync(IEnumerable<T> entities)
-        {
-            await _context.Set<T>().AddRangeAsync(entities);
-        }
-
-        public void Update(T entity)
-        {
-            _context.Set<T>().Update(entity);
-        }
-
-        public void Remove(T entity)
-        {
-            _context.Set<T>().Remove(entity);
-        }
-
-        public void RemoveRange(IEnumerable<T> entities)
-        {
-            _context.Set<T>().RemoveRange(entities);
-        }
-
-        public async Task<int> SaveChangesAsync()
-        {
-            return await _context.SaveChangesAsync();
-        }
-    }
+    public Task<T> GetByIdAsync(int id) => _context.Set<T>().FindAsync(id).AsTask();
+    public Task<IEnumerable<T>> GetAllAsync() => _context.Set<T>().ToListAsync().ContinueWith(t => (IEnumerable<T>)t.Result);
+    public Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> pred) => _context.Set<T>().Where(pred).ToListAsync().ContinueWith(t => (IEnumerable<T>)t.Result);
+    public Task AddAsync(T e) => _context.Set<T>().AddAsync(e).AsTask();
+    public Task AddRangeAsync(IEnumerable<T> es) => _context.Set<T>().AddRangeAsync(es);
+    public void Update(T e) => _context.Set<T>().Update(e);
+    public void Remove(T e) => _context.Set<T>().Remove(e);
+    public void RemoveRange(IEnumerable<T> es) => _context.Set<T>().RemoveRange(es);
+    public Task<int> SaveChangesAsync() => _context.SaveChangesAsync();
 }

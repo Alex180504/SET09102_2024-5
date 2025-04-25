@@ -92,5 +92,10 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	</ItemGroup>
+	<ItemGroup>
+		<MauiAsset Include="Resources\Images\pin_default.png" />
+		<MauiAsset Include="Resources\Images\pin_warning.png" />
+		<MauiAsset Include="Resources\Images\pin_critical.png" />
+	</ItemGroup>
 
 </Project>

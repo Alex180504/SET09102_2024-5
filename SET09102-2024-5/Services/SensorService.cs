@@ -8,20 +8,17 @@ namespace SET09102_2024_5.Services
 {
     public class SensorService
     {
-        private readonly IRepository<Sensor> _sensorRepo;
+        private readonly ISensorRepository _sensorRepo;
 
         public event Action<Sensor, DateTime?>? OnSensorUpdated;
 
-        public SensorService(IRepository<Sensor> sensorRepo)
+        public SensorService(ISensorRepository sensorRepo)
         {
             _sensorRepo = sensorRepo;
         }
 
-        public async Task<List<Sensor>> GetAllWithConfigurationAsync()
-        {
-            // assumes your repository eagerly loads Configuration via Include
-            return (await _sensorRepo.GetAllAsync()).ToList();
-        }
+        public Task<List<Sensor>> GetAllWithConfigurationAsync()
+           => _sensorRepo.GetAllWithConfigurationAsync();
 
         public async Task StartAsync(TimeSpan pollingInterval)
         {
