@@ -1,4 +1,3 @@
-﻿// Models/Measurement.cs (updated)
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -15,10 +14,11 @@ namespace SET09102_2024_5.Models
         public float? Value { get; set; }
 
         [Required]
-        public int QuantityId { get; set; }
+        public int SensorId { get; set; }
 
-        [ForeignKey("QuantityId")]
-        public Measurand Measurand { get; set; }
+        [ForeignKey("SensorId")]
+        public Sensor Sensor { get; set; }
+
 
         public ICollection<IncidentMeasurement> IncidentMeasurements { get; set; }
     }

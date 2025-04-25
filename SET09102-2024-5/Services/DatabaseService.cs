@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 using Microsoft.EntityFrameworkCore;
 using SET09102_2024_5.Data;
+using SET09102_2024_5.Interfaces;
 
 namespace SET09102_2024_5.Services
 {

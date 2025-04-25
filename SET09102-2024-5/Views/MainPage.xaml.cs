@@ -7,7 +7,6 @@ namespace SET09102_2024_5.Views
         public MainPage()
         {
             InitializeComponent();
-            // BindingContext is already set in XAML
         }
     }
 }

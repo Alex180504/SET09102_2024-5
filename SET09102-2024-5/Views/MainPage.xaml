@@ -35,6 +35,13 @@
                 SemanticProperties.Hint="Counts the number of times you click"
                 Command="{Binding IncrementCountCommand}"
                 HorizontalOptions="Fill" />
+
+            <Button
+                Text="Manage Sensors"
+                Command="{Binding NavigateToSensorManagementCommand}"
+                BackgroundColor="#28a745"
+                TextColor="White"
+                HorizontalOptions="Fill" />
         </VerticalStackLayout>
     </ScrollView>
 

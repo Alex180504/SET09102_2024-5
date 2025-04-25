@@ -11,6 +11,7 @@ namespace SET09102_2024_5.ViewModels
         public MainPageViewModel()
         {
             IncrementCountCommand = new Command(OnIncrementCount);
+            NavigateToSensorManagementCommand = new Command(OnNavigateToSensorManagement);
         }
 
         public int Count
@@ -28,10 +29,16 @@ namespace SET09102_2024_5.ViewModels
         public string CounterText => Count == 1 ? $"Clicked {Count} time" : $"Clicked {Count} times";
 
         public ICommand IncrementCountCommand { get; }
+        public ICommand NavigateToSensorManagementCommand { get; }
 
         private void OnIncrementCount()
         {
             Count++;
+        }
+
+        private async void OnNavigateToSensorManagement()
+        {
+            await Shell.Current.GoToAsync("SensorManagementPage");
         }
     }
 }

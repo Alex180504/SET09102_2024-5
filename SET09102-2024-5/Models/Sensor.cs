@@ -1,7 +1,7 @@
-﻿// Models/Sensor.cs (updated)
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SET09102_2024_5.Models
 {
@@ -18,10 +18,18 @@ namespace SET09102_2024_5.Models
 
         public DateTime? DeploymentDate { get; set; }
 
-        // Updated relationships
+        [Required]
+        public int MeasurandId { get; set; }
+
+        [ForeignKey("MeasurandId")]
+        public Measurand Measurand { get; set; }
+
         public Configuration Configuration { get; set; }
         public SensorFirmware Firmware { get; set; }
-        public ICollection<Measurand> Measurands { get; set; }
+        public ICollection<Measurement> Measurements { get; set; }
         public ICollection<Maintenance> Maintenances { get; set; }
+
+        [NotMapped]
+        public string DisplayName { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿DROP DATABASE IF EXISTS sensor_monitoring;
+DROP DATABASE IF EXISTS sensor_monitoring;
 
 CREATE DATABASE IF NOT EXISTS sensor_monitoring;
 USE sensor_monitoring;
@@ -46,13 +46,12 @@ CREATE TABLE configuration (
     latitude FLOAT,
     longitude FLOAT,
     altitude FLOAT,
-    orientation VARCHAR(50),
+    orientation INT,
     measurment_frequency INT,
     min_threshold FLOAT,
     max_threshold FLOAT,
     FOREIGN KEY (sensor_id) REFERENCES sensor(sensor_id) ON DELETE CASCADE
 );
-
 
 -- Sensor Firmware Table
 CREATE TABLE sensor_firmware (

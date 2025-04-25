@@ -55,23 +55,23 @@ INSERT INTO sensor (sensor_id, sensor_type, status, deployment_date, measurand_i
 (14, 'Hydreon RG-11', 'Active', '2023-10-10', 14),
 (15, 'Bosch BMP388', 'Maintenance', '2023-09-15', 15);
 
--- Configuration for sensors (latitude, longitude, altitude, etc.) - remove reading_format
+-- Configuration for sensors
 INSERT INTO configuration (sensor_id, latitude, longitude, altitude, orientation, measurment_frequency, min_threshold, max_threshold) VALUES
-(1, 55.9533, -3.1883, 80.5, 'North', 15, 0, 100),     -- PM2.5 in Edinburgh
-(2, 55.8642, -4.2518, 40.2, 'Northeast', 10, 350, 2000), -- CO2 in Glasgow
-(3, 57.1497, -2.0943, 65.0, 'East', 30, 0, 150),         -- Ozone in Aberdeen
-(4, 56.4907, -2.9977, 22.3, 'South', 15, 0, 200),        -- NO2 in Dundee
-(5, 55.7772, -4.0558, 50.1, 'West', 30, 0, 200),         -- SO2 in Motherwell
-(6, 56.1165, -3.9369, 15.2, 'Southwest', 60, 0, 14),     -- pH in Falkirk
-(7, 55.9419, -3.2096, 10.5, 'Southeast', 60, 0, 20),     -- Turbidity in Edinburgh River
-(8, 57.4796, -4.2249, 5.3, 'Northwest', 30, 0, 15),      -- DO in Inverness
-(9, 55.8415, -4.4638, 8.7, 'East', 60, 0, 2000),         -- Conductivity in Paisley
-(10, 56.0011, -3.7849, 12.4, 'North', 60, -5, 30),       -- Water Temp in Linlithgow
-(11, 55.8279, -4.4314, 25.6, 'South', 15, -30, 50),      -- Air Temp in Glasgow
-(12, 55.9928, -3.1712, 40.8, 'East', 15, 0, 100),        -- Humidity in Edinburgh
-(13, 57.6500, -3.3167, 10.2, 'Northeast', 10, 0, 150),   -- Wind Speed in Elgin
-(14, 56.1881, -3.1789, 35.9, 'West', 15, 0, 50),         -- Precipitation in Dunfermline
-(15, 55.4643, -2.8744, 120.3, 'Northwest', 15, 980, 1050); -- Pressure in Galashiels
+(1, 55.9533, -3.1883, 80.5, 0, 15, 0, 100),    
+(2, 55.8642, -4.2518, 40.2, 45, 10, 350, 2000), 
+(3, 57.1497, -2.0943, 65.0, 90, 30, 0, 150),  
+(4, 56.4907, -2.9977, 22.3, 180, 15, 0, 200),
+(5, 55.7772, -4.0558, 50.1, 270, 30, 0, 200),
+(6, 56.1165, -3.9369, 15.2, 225, 60, 0, 14),    
+(7, 55.9419, -3.2096, 10.5, 135, 60, 0, 20), 
+(8, 57.4796, -4.2249, 5.3, 315, 30, 0, 15),   
+(9, 55.8415, -4.4638, 8.7, 90, 60, 0, 2000),
+(10, 56.0011, -3.7849, 12.4, 0, 60, -5, 30),  
+(11, 55.8279, -4.4314, 25.6, 180, 15, -30, 50),
+(12, 55.9928, -3.1712, 40.8, 90, 15, 0, 100),
+(13, 57.6500, -3.3167, 10.2, 45, 10, 0, 150),
+(14, 56.1881, -3.1789, 35.9, 270, 15, 0, 50),
+(15, 55.4643, -2.8744, 120.3, 315, 15, 980, 1050); 
 
 -- Firmware information for each sensor
 INSERT INTO sensor_firmware (sensor_id, firmware_version, last_update_date) VALUES

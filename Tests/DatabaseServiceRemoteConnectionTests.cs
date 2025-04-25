@@ -8,6 +8,7 @@ using SET09102_2024_5.Services;
 using System.IO;
 using System.Reflection;
 using Xunit;
+using SET09102_2024_5.Interfaces;
 
 namespace SET09102_2024_5.Tests
 {
@@ -59,6 +60,8 @@ namespace SET09102_2024_5.Tests
             catch (Exception ex)
             {
                 Assert.True(false, $"Database connection test failed with exception: {ex.Message}");
+            }
+
         }
 
         [Fact]
@@ -72,6 +75,24 @@ namespace SET09102_2024_5.Tests
             {
                 Assert.Fail($"Database initialization failed with exception: {ex.Message}");
             }
+        }
+
+        [Fact]
+        public void GetLastErrorMessage_WhenNoError_ReturnsEmptyString()
+        {
+            // Arrange
+            // Use in-memory database for this test
+            var options = new DbContextOptionsBuilder<SensorMonitoringContext>()
+                .UseInMemoryDatabase(databaseName: "GetLastErrorMessageTest")
+                .Options;
+            var dbContext = new SensorMonitoringContext(options);
+            var service = new DatabaseInitializationService(dbContext);
+
+            // Act
+            var result = service.GetLastErrorMessage();
+
+            // Assert
+            Assert.Equal(string.Empty, result);
         }
 
         private static string ExtractSslCertificateForTest()

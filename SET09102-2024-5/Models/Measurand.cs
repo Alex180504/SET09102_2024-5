@@ -1,18 +1,14 @@
-﻿// Models/Measurand.cs
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SET09102_2024_5.Models
 {
     public class Measurand
     {
         [Key]
-        public int QuantityId { get; set; }
 
-        [Required]
-        public int SensorId { get; set; }
+        public int MeasurandId { get; set; }
+
 
         [StringLength(100)]
         public string QuantityType { get; set; }
@@ -20,9 +16,13 @@ namespace SET09102_2024_5.Models
         [StringLength(100)]
         public string QuantityName { get; set; }
 
-        [ForeignKey("SensorId")]
-        public Sensor Sensor { get; set; }
+        [StringLength(20)]
+        public string Symbol { get; set; }
 
+        [StringLength(50)]
+        public string Unit { get; set; }
+
+        public ICollection<Sensor> Sensors { get; set; }
         public ICollection<Measurement> Measurements { get; set; }
     }
 }
