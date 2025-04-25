@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using System.Reflection;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
+using SkiaSharp.Views.Maui.Controls.Hosting;
 using CommunityToolkit.Maui;
 using SET09102_2024_5.Interfaces;
 
@@ -27,6 +28,7 @@ namespace SET09102_2024_5
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseSkiaSharp()
                 .UseMauiCommunityToolkit()
                 .ConfigureFonts(fonts =>
                 {
@@ -79,13 +81,24 @@ namespace SET09102_2024_5
 
                 // Register repositories
                 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            // Register repositories
+            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            builder.Services.AddScoped<ISensorRepository, SensorRepository>();
+            builder.Services.AddScoped<IMeasurementRepository, MeasurementRepository>();
 
+            // Register services
+            builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+            builder.Services.AddSingleton<PollingTimer>();
+            builder.Services.AddSingleton<SensorService>();
                 // Register services
                 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
 
                 // Register ViewModels
                 builder.Services.AddTransient<MainPageViewModel>();
                 builder.Services.AddTransient<SensorManagementViewModel>();
+            // Register ViewModels
+            builder.Services.AddTransient<MainPageViewModel>();
+            builder.Services.AddTransient<MapViewModel>();
 
                 // Register Views
                 builder.Services.AddTransient<MainPage>();
@@ -94,6 +107,9 @@ namespace SET09102_2024_5
                 builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
                 builder.Services.AddSingleton<IDialogService, DialogService>();
                 builder.Services.AddSingleton<INavigationService, NavigationService>();
+            // Register Views
+            builder.Services.AddTransient<MapPage>();
+            builder.Services.AddTransient<MainPage>();
 
 #if DEBUG
                 builder.Logging.AddDebug();
