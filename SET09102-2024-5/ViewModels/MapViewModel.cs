@@ -56,7 +56,8 @@ namespace SET09102_2024_5.ViewModels
             // 2) Prepare an empty pin layer
             _pinLayer = new MemoryLayer("Pins")
             {
-                Features = Enumerable.Empty<IFeature>()
+                Features = Enumerable.Empty<IFeature>(),
+                IsMapInfoLayer = true
             };
             Map.Layers.Add(_pinLayer);
         }
