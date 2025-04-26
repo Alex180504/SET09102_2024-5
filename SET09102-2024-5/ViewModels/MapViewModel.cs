@@ -157,11 +157,8 @@ namespace SET09102_2024_5.ViewModels
             if (sensor == null) return;
 
             // Get latest measurement
-            var all = await _measurementRepo.FindAsync(m => m.SensorId == sensorId);
-            var last = all
-                .Where(m => m.Timestamp.HasValue)
-                .OrderByDescending(m => m.Timestamp.Value)
-                .FirstOrDefault();
+            var last = await _measurementRepo.GetLatestForSensorAsync(sensorId);
+
 
             // Check staleness & thresholds
             var freq = sensor.Configuration?.MeasurementFrequency ?? 0;
