@@ -95,7 +95,7 @@
 	<ItemGroup>
 		<MauiAsset Include="Resources\Images\pin_default.png" />
 		<MauiAsset Include="Resources\Images\pin_warning.png" />
-		<MauiAsset Include="Resources\Images\pin_critical.png" />
+		<MauiAsset Include="Resources\Images\pin_neutral.png" />
 	</ItemGroup>
 
 </Project>

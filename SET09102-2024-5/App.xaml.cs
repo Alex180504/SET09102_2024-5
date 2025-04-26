@@ -14,7 +14,16 @@ namespace SET09102_2024_5
 
         public App(IDatabaseInitializationService dbInitService)
         {
-            InitializeComponent();
+            try
+            {
+                InitializeComponent();
+            }
+            catch (Exception ex)
+            {
+                // This will show you exactly what XAML error is happening
+                System.Diagnostics.Debug.WriteLine("App XAML load failed: " + ex);
+                throw;
+            }
             _dbInitService = dbInitService;
 
             MainPage = new AppShell();

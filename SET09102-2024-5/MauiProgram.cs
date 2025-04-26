@@ -88,6 +88,7 @@ namespace SET09102_2024_5
                 builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
                 builder.Services.AddScoped<SensorService>();
                 builder.Services.AddSingleton<PollingTimer>();
+                builder.Services.AddSingleton<IDialogService, DialogService>();
 
                 // ViewModels & Views
                 builder.Services.AddTransient<MainPageViewModel>();
