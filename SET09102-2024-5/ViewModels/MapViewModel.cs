@@ -56,7 +56,8 @@ namespace SET09102_2024_5.ViewModels
             _pinLayer = new MemoryLayer("Pins")
             {
                 Features = Enumerable.Empty<IFeature>(),
-                IsMapInfoLayer = true
+                IsMapInfoLayer = true,
+                Style = null
             };
             Map.Layers.Add(_pinLayer);
 
@@ -75,9 +76,9 @@ namespace SET09102_2024_5.ViewModels
             var neutralId = await RegisterPinAsync("pin_neutral.png");
 
             // Build a SymbolStyle per status
-            _statusStyles["Active"] = new SymbolStyle { BitmapId = okId, SymbolScale = 0.2 };
-            _statusStyles["Warning"] = new SymbolStyle { BitmapId = warnId, SymbolScale = 0.2 };
-            _statusStyles["Inactive"] = new SymbolStyle { BitmapId = neutralId, SymbolScale = 0.2 };
+            _statusStyles["Active"] = new SymbolStyle { BitmapId = okId, SymbolScale = 0.1 };
+            _statusStyles["Warning"] = new SymbolStyle { BitmapId = warnId, SymbolScale = 0.1 };
+            _statusStyles["Inactive"] = new SymbolStyle { BitmapId = neutralId, SymbolScale = 0.1 };
             _statusStyles["Maintenance"] = _statusStyles["Inactive"];
 
             // Subscribe & initial draw & start polling
