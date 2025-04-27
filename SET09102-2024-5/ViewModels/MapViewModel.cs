@@ -132,6 +132,7 @@ namespace SET09102_2024_5.ViewModels
 
                 // Swap new features into the layer
                 _pinLayer.Features = features;
+                Map.Refresh();
             }
             catch (Exception ex)
             {
