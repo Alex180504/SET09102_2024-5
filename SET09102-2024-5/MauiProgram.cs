@@ -86,7 +86,7 @@ namespace SET09102_2024_5
                 // Services (scoped, not singleton)
                 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
                 builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
-                builder.Services.AddScoped<SensorService>();
+                builder.Services.AddScoped<ISensorService, SensorService>();
                 builder.Services.AddSingleton<IDialogService, DialogService>();
 
                 // ViewModels & Views

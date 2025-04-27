@@ -1,13 +1,17 @@
 ﻿using SET09102_2024_5.Data.Repositories;
+using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Models;
 
 namespace SET09102_2024_5.Services
 {
-    public class SensorService
+    public class SensorService : ISensorService
     {
         private readonly ISensorRepository _sensorRepo;
 
-        public event Action<Sensor, DateTime?>? OnSensorUpdated;
+        public event Action<Sensor, DateTime?> OnSensorUpdated;
+
+        // Raised if an exception is thrown inside the polling loop.
+        public event Action<Exception> OnError;
 
         public SensorService(ISensorRepository sensorRepo)
         {
@@ -19,14 +23,25 @@ namespace SET09102_2024_5.Services
 
         public async Task StartAsync(TimeSpan pollingInterval, CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                var list = await GetAllWithConfigurationAsync();
-                foreach (var s in list)
-                    OnSensorUpdated?.Invoke(s, null);
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    var list = await GetAllWithConfigurationAsync();
+                    foreach (var s in list)
+                        OnSensorUpdated?.Invoke(s, null);
 
-                // Pass the token so Delay will end early if cancellation is requested
-                await Task.Delay(pollingInterval, cancellationToken);
+                    await Task.Delay(pollingInterval, cancellationToken);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // expected on cancellation—swallow
+            }
+            catch (Exception ex)
+            {
+                OnError?.Invoke(ex);
+                throw;
             }
         }
     }

@@ -1,4 +1,5 @@
-﻿using Mapsui;
+﻿using System.Windows.Input;
+using Mapsui;
 using Mapsui.Layers;
 using Mapsui.Projections;
 using Mapsui.Styles;
@@ -7,18 +8,22 @@ using Microsoft.Extensions.Logging;
 using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Models;
-using SET09102_2024_5.Services;
 using Map = Mapsui.Map;
 
 namespace SET09102_2024_5.ViewModels
 {
-    public class MapViewModel : IDisposable
+    public class MapViewModel : BaseViewModel, IDisposable
     {
+
+        public ICommand RefreshCommand { get; }
+        public bool HasError { get; private set; }
+        public string ErrorMessage { get; private set; }
+
         public Map Map { get; }
 
         private readonly CancellationTokenSource _pollingCts = new();
         private readonly MemoryLayer _pinLayer;
-        private readonly SensorService _sensorService;
+        private readonly ISensorService _sensorService;
         private readonly IMainThreadService _mainThread;
         private readonly IMeasurementRepository _measurementRepo;
         private readonly IDialogService _dialogService;
@@ -30,7 +35,7 @@ namespace SET09102_2024_5.ViewModels
         private List<Sensor> _currentSensors = new();
 
         public MapViewModel(
-            SensorService sensorService,
+            ISensorService sensorService,
             IMainThreadService mainThread,
             IMeasurementRepository measurementRepo,
             IDialogService dialogService,
@@ -41,6 +46,15 @@ namespace SET09102_2024_5.ViewModels
             _measurementRepo = measurementRepo;
             _dialogService = dialogService;
             _logger = logger;
+
+            // wire up error handling
+            _sensorService.OnError += ex =>
+            {
+                HasError = true;
+                ErrorMessage = $"Polling error: {ex.Message}";
+                OnPropertyChanged(nameof(HasError));
+                OnPropertyChanged(nameof(ErrorMessage));
+            };
 
             // Initialize the map and add OSM base layer
             Map = new Map();
@@ -57,6 +71,8 @@ namespace SET09102_2024_5.ViewModels
 
             // Hook up the map‐tap event
             Map.Info += OnMapInfo;
+
+            RefreshCommand = new Command(async () => await SafeRefreshAsync());
         }
 
         public async Task InitializeAsync()
@@ -73,8 +89,27 @@ namespace SET09102_2024_5.ViewModels
 
             // Subscribe to sensor updates, draw initial pins, start polling
             _sensorService.OnSensorUpdated += OnSensorUpdated;
-            await RefreshAsync();
+            await SafeRefreshAsync();
+
+            // start cancellable polling
             _ = _sensorService.StartAsync(TimeSpan.FromSeconds(5), _pollingCts.Token);
+        }
+
+        private async Task SafeRefreshAsync()
+        {
+            try
+            {
+                HasError = false;
+                OnPropertyChanged(nameof(HasError));
+                await RefreshAsync();
+            }
+            catch (Exception ex)
+            {
+                HasError = true;
+                ErrorMessage = $"Refresh failed: {ex.Message}";
+                OnPropertyChanged(nameof(HasError));
+                OnPropertyChanged(nameof(ErrorMessage));
+            }
         }
 
         private void OnSensorUpdated(Sensor _, DateTime? __) =>
