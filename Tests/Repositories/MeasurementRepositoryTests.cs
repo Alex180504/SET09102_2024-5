@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Moq;
 using SET09102_2024_5.Data;
 using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Models;
@@ -126,6 +127,19 @@ namespace SET09102_2024_5.Tests.Repositories
 
             var none = await repo.GetLatestForSensorAsync(99);
             Assert.Null(none);
+        }
+
+        [Fact]
+        public async Task GetSinceAsync_WithRepositoryException_Throws()
+        {
+            // simulate DB error by mocking context to throw when accessing Measurements
+            var mockCtx = new Mock<SensorMonitoringContext>(new DbContextOptions<SensorMonitoringContext>());
+            mockCtx.Setup(c => c.Measurements).Throws(new Exception("db failure"));
+
+            var repo = new MeasurementRepository(mockCtx.Object);
+
+            await Assert.ThrowsAsync<Exception>(async () =>
+                await repo.GetSinceAsync(DateTime.UtcNow));
         }
     }
 }
