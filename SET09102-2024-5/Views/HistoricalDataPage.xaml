@@ -7,9 +7,6 @@
     x:Class="SET09102_2024_5.Features.HistoricalData.HistoricalDataPage"
     Title="Historical Data">
 
-    <ContentPage.BindingContext>
-        <viewmodels:HistoricalDataViewModel />
-    </ContentPage.BindingContext>
 
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="16">
@@ -28,9 +25,16 @@
                 ItemsSource="{Binding SensorSites}" 
                 SelectedItem="{Binding SelectedSensorSite}" />
 
+            <!-- Parameter Dropdown -->
+            <Label Text="Select Parameter:" />
+            <Picker
+                Title="Choose parameter"
+                ItemsSource="{Binding ParameterTypes}"
+                SelectedItem="{Binding SelectedParameter}" />
+
             <wv:WebView
                 x:Name="ChartWebView"
-                HeightRequest="250"
+                HeightRequest="500"
                 HorizontalOptions="FillAndExpand" />
             
             <!-- Data Table -->
@@ -38,21 +42,19 @@
             <CollectionView ItemsSource="{Binding DataPoints}">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Label Text="{Binding Timestamp, StringFormat='{0:yyyy-MM-dd HH:mm:ss}'}" Grid.Column="0"/>
-                            
-                            <Label Text="{Binding Value1}" Grid.Column="1"/>
-                            <Label Text="{Binding Value2}" Grid.Column="2"/>
-                            <Label Text="{Binding Value3}" Grid.Column="3"/>
-                            <Label Text="{Binding Value4}" Grid.Column="4"/>
-                        </Grid>
+                        <StackLayout Orientation="Horizontal" Spacing="12">
+                            <Label Text="{Binding Timestamp, StringFormat='{0:yyyy-MM-dd HH:mm:ss}'}" WidthRequest="140"/>
+                            <StackLayout Orientation="Horizontal" BindableLayout.ItemsSource="{Binding Values}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackLayout Orientation="Vertical" Padding="0,0,8,0">
+                                            <Label Text="{Binding Key}" FontSize="Micro"/>
+                                            <Label Text="{Binding Value}" FontSize="Micro"/>
+                                        </StackLayout>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </StackLayout>
+                        </StackLayout>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

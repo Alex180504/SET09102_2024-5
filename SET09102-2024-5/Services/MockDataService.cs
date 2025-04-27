@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;             // ← for Path, File
+using System.Linq;           // ← for Enumerable.Range, .Select, .First
 using System.Threading.Tasks;
+using ClosedXML.Excel;
 using SET09102_2024_5.Models;
 using SET09102_2024_5.Services;
-using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Packaging;
-using System.Data;
 
 namespace SET09102_2024_5.Services
 {
@@ -22,13 +21,14 @@ namespace SET09102_2024_5.Services
                 "Weather" => "Weather.xlsx",
                 _ => throw new ArgumentException("Unknown category")
             };
+
             // Build path to Data folder
             var dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
             var filePath = Path.Combine(dataDir, fileName);
             if (!File.Exists(filePath))
                 throw new FileNotFoundException($"Data file not found: {filePath}");
 
-            var list = new List<EnvironmentalDataModel>();
+            // Read the file and parse data
             return await Task.Run(() =>
             {
                 var list = new List<EnvironmentalDataModel>();
@@ -53,8 +53,7 @@ namespace SET09102_2024_5.Services
                 int timeCol = isWeather ? -1 : headerRow.CellsUsed()
                     .First(c => c.GetString().Trim().Equals("Time", StringComparison.OrdinalIgnoreCase))
                     .Address.ColumnNumber;
-
-                
+   
                 // Find the very last column in the sheet
                 int lastCol = ws.LastColumnUsed().ColumnNumber();
 
@@ -64,16 +63,19 @@ namespace SET09102_2024_5.Services
                     .Where(ci => ci != dateCol && ci != timeCol)
                     .ToList();
 
+                // Read header-names for each measure column
+                var headerNames = measureCols.Select(ci => ws.Row(headerIndex).Cell(ci).GetString().Trim()).ToList();
+
                 // Process data rows after header
                 foreach (var row in ws.Rows(headerIndex + 1, ws.LastRowUsed().RowNumber()))
                 {
                     // 1) read raw strings
                     var dateRaw = row.Cell(dateCol).GetString().Trim();
                     var timeRaw = isWeather ? "" : row.Cell(timeCol).GetString().Trim();
-                    
+
                     // 2) skip any row missing date (or time for Air/Water)
                     if (string.IsNullOrWhiteSpace(dateRaw) || (!isWeather && string.IsNullOrWhiteSpace(timeRaw)))
-                            continue;
+                        continue;
 
                     DateTime timestamp;
                     if (isWeather)
@@ -95,33 +97,28 @@ namespace SET09102_2024_5.Services
                         if (!TimeSpan.TryParse(timeText, out var timePart)) continue;
                         timestamp = datePart + timePart;
                     }
-                    
-                    // Parse values
-                    var values = measureCols.Select(ci =>
-                    {
-                        var cell = row.Cell(ci);
-                        if (cell.DataType == XLDataType.Number)
-                            return cell.GetDouble();
-                        var txt = cell.GetString().Trim();
-                        return double.TryParse(txt, out var d) ? d : 0.0;
-                    }).ToArray();
 
-                    double val1 = values.ElementAtOrDefault(0);
-                    double val2 = values.ElementAtOrDefault(1);
-                    double val3 = values.ElementAtOrDefault(2);
-                    double val4 = values.ElementAtOrDefault(3);
-
-                    list.Add(new EnvironmentalDataModel
+                    // build the dictionary
+                    var model = new EnvironmentalDataModel
                     {
                         Timestamp = timestamp,
-                        Value1 = val1,
-                        Value2 = val2,
-                        Value3 = val3,
-                        Value4 = val4,
-                    });
+                        SensorSite = site,
+                        DataCategory = category
+                    };
+
+                    for (int i = 0; i < measureCols.Count; i++)
+                    {
+                        var colIndex = measureCols[i];
+                        var param = headerNames[i];
+                        var cell = row.Cell(colIndex);
+                        double dval = cell.DataType == XLDataType.Number
+                            ? cell.GetDouble()
+                            : double.TryParse(cell.GetString().Trim(), out var dd) ? dd : 0;
+                        model.Values[param] = dval;
+                    }
+                    list.Add(model);
                 }
-                // Sort ascending
-                return list.OrderBy(dp => dp.Timestamp).ToList();
+                return list;
             });
         }
     }

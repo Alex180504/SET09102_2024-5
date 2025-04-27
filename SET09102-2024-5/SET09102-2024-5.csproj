@@ -75,7 +75,8 @@
   
   <!-- Include web chart so it is treated as a MauiAsset -->
   <ItemGroup>
-    <MauiAsset Include="Resources/Raw/chart.html" />
+    <MauiAsset Include="Resources\Raw\chart.html" />
+    <MauiAsset Include="Resources\Raw\chart.umd.min.js" />
     
     <None Include="Data\*.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
