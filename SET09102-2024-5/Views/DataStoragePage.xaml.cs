@@ -9,4 +9,13 @@ public partial class DataStoragePage : ContentPage
         InitializeComponent();
         BindingContext = viewModel;
     }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        if (BindingContext is DataStorageViewModel vm)
+        {
+            await vm.LoadBackupsAsync();
+        }
+    }
 }
