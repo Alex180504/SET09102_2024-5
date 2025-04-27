@@ -1,49 +1,40 @@
 @startuml
-skinparam classAttributeIconSize 0
-
-class AdministratorViewModel {
-  +ICommand BackupNowCommand
-  +ICommand ConfigureScheduleCommand
-  +Task InitializeAsync()
-}
-
 interface IBackupService {
-  +Task BackupDatabaseAsync(string path, CancellationToken ct)
+  +Task BackupNowAsync()
+  +Task<IEnumerable<BackupInfo>> ListBackupsAsync()
+  +Task PruneBackupsAsync(int keepLatest)
+  +Task RestoreAsync(string backupFile)
 }
 
-class BackupService {
-  -DbContext _ctx
-  +Task BackupDatabaseAsync(string path, CancellationToken ct)
+class SqlServerBackupService {
+  -string _connectionString
+  +SqlServerBackupService(string connectionString)
+  +Task BackupNowAsync()
+  +Task<IEnumerable<BackupInfo>> ListBackupsAsync()
+  +Task PruneBackupsAsync(int keepLatest)
+  +Task RestoreAsync(string backupFile)
 }
 
-interface IBackupScheduler {
-  +void Start(TimeSpan interval, CancellationToken ct)
-  +void Stop()
+class BackupOptions {
+  +TimeSpan ScheduleTime
+  +int KeepLatestBackups
+  +string BackupFolder
 }
 
-class BackupScheduler {
+class SchedulerService {
   -IBackupService _backupService
-  -Timer _timer
-  +void Start(TimeSpan interval, CancellationToken ct)
-  +void Stop()
+  -BackupOptions _options
+  +SchedulerService(IBackupService, BackupOptions)
+  +void Start()
 }
 
-class BackupRecord {
-  +int BackupRecordId
-  +DateTime Timestamp
-  +string FilePath
-  +bool Success
-  +string? ErrorMessage
+class BackupInfo {
+  +string FileName
+  +DateTime CreatedOn
 }
 
-class SensorMonitoringContext {
-  +DbSet<BackupRecord> BackupRecords
-  -- existing DbSets --
-}
+IBackupService <|.. SqlServerBackupService
+SchedulerService --> IBackupService
+SchedulerService --> BackupOptions
 
-AdministratorViewModel --> IBackupService
-AdministratorViewModel --> IBackupScheduler
-BackupService ..|> IBackupService
-BackupScheduler ..|> IBackupScheduler
-SensorMonitoringContext --> BackupRecord
 @enduml

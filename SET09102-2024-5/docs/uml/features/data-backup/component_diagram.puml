@@ -1,0 +1,25 @@
+﻿@startuml
+package "MAUI App" {
+  [DataStoragePage]
+  [DataStorageViewModel]
+  [BackupOptions]
+  [SchedulerService]
+  [IBackupService]
+  [SqlServerBackupService]
+}
+
+package "Database" {
+  [SQL Server Database]
+}
+
+package "Notification" {
+  [EmailService]
+}
+
+DataStoragePage --> DataStorageViewModel : uses
+DataStorageViewModel --> IBackupService : invokes
+IBackupService <|.. SqlServerBackupService
+SqlServerBackupService --> "SQL Server Database" : BACKUP DATABASE
+SchedulerService --> IBackupService : scheduled invoke
+SqlServerBackupService --> EmailService : on failure notify
+@enduml

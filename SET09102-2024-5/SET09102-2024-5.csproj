@@ -76,6 +76,7 @@
 	<!-- Include env variables file in the build -->
 	<ItemGroup>
 		<None Remove="appsettings.json" />
+		<Compile Include="docs\uml\features\data-backup\component_diagram.puml" />
 		<EmbeddedResource Include="appsettings.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</EmbeddedResource>
