@@ -35,12 +35,10 @@ jobs:
             ${{ runner.os }}-dotnet-workloads-
 
       - name: Install .NET MAUI workloads
-        run: |
-          dotnet workload install maui-android maui-ios maui-windows
+        run: dotnet workload install maui-android maui-ios maui-windows
 
       - name: Restore NuGet packages
-        run: |
-          dotnet restore SET09102_2024-5/SET09102_2024-5.csproj
+        run: dotnet restore
 
       - name: Build for Android
         if: ${{ matrix.target == 'android' }}
