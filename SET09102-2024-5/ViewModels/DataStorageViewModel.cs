@@ -31,6 +31,7 @@ namespace SET09102_2024_5.ViewModels
         public ICommand BackupCommand { get; }
         public ICommand SaveSettingsCommand { get; }
         public ICommand RestoreCommand { get; }
+        public ICommand OpenFolderCommand { get; }
 
         public TimeSpan ScheduleTime
         {
@@ -76,6 +77,20 @@ namespace SET09102_2024_5.ViewModels
                     await _dialog.DisplaySuccessAsync("Database restored");
                 }
             }, () => SelectedBackup != null);
+
+            OpenFolderCommand = new Command(async () =>
+            {
+                try
+                {
+                    // Open the backup folder in the system file browser
+                    var uri = new Uri(System.IO.Path.Combine(_options.BackupFolder));
+                    await Launcher.OpenAsync(uri);
+                }
+                catch (Exception ex)
+                {
+                    await _dialog.DisplayErrorAsync($"Failed to open folder: {ex.Message}");
+                }
+            });
         }
 
         public async Task LoadBackupsAsync()
