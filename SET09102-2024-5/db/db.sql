@@ -5,8 +5,13 @@ USE sensor_monitoring;
 CREATE TABLE role (
     role_id INT AUTO_INCREMENT PRIMARY KEY,
     role_name VARCHAR(100) NOT NULL,
-    description VARCHAR(255)
+    description VARCHAR(255),
+    is_protected BOOLEAN NOT NULL DEFAULT FALSE
 );
+
+-- Seed the Administrator role
+INSERT INTO role (role_name, description, is_protected) 
+VALUES ('Administrator', 'Full system access with all privileges', TRUE);
 
 -- Access Privilege Table
 CREATE TABLE access_privilege (
@@ -108,6 +113,7 @@ CREATE TABLE incident_measurement (
     FOREIGN KEY (incident_id) REFERENCES incident(incident_id) ON DELETE CASCADE
 );
 
+-- App User Creation
 CREATE USER IF NOT EXISTS 'sensor_app'@'localhost' IDENTIFIED BY '165456678';
 GRANT SELECT, INSERT, UPDATE, DELETE ON sensor_monitoring.* TO 'sensor_app'@'localhost';
 FLUSH PRIVILEGES;

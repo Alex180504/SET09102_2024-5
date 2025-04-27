@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SET09102_2024_5.Views.Controls.PageHeaderView"
+             x:Name="this">
+
+    <Border Style="{StaticResource PageHeaderStyle}"
+            BackgroundColor="{Binding BackgroundColor, Source={x:Reference this}}">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+            <Label Grid.Column="0"
+                   Text="{Binding IconText, Source={x:Reference this}}"
+                   FontFamily="MaterialIcons"
+                   TextColor="White"
+                   FontSize="32"
+                   VerticalOptions="Center"/>
+
+            <VerticalStackLayout Grid.Column="1" Margin="16,0,0,0">
+                <Label Text="{Binding Title, Source={x:Reference this}}"
+                       FontSize="24"
+                       FontAttributes="Bold"
+                       TextColor="White"/>
+                <Label Text="{Binding Subtitle, Source={x:Reference this}}"
+                       FontSize="14"
+                       TextColor="#e0e0e0"
+                       IsVisible="{Binding Subtitle, Source={x:Reference this}, Converter={StaticResource StringNotNullOrEmptyConverter}}"/>
+            </VerticalStackLayout>
+
+            <Button Grid.Column="2"
+                    Text="{Binding ActionIconText, Source={x:Reference this}}"
+                    FontFamily="MaterialIcons"
+                    Command="{Binding ActionCommand, Source={x:Reference this}}"
+                    BackgroundColor="Transparent"
+                    TextColor="White"
+                    FontSize="24"
+                    Padding="8"
+                    VerticalOptions="Center"
+                    HorizontalOptions="End"
+                    IsVisible="{Binding ActionIconText, Source={x:Reference this}, Converter={StaticResource StringNotNullOrEmptyConverter}}"/>
+        </Grid>
+    </Border>
+</ContentView>

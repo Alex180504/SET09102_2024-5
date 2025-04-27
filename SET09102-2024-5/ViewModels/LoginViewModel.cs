@@ -17,9 +17,6 @@ namespace SET09102_2024_5.ViewModels
         [ObservableProperty]
         private string _password = string.Empty;
         
-        [ObservableProperty]
-        private string _errorMessage = string.Empty;
-
         public LoginViewModel(IAuthService authService, INavigationService navigationService)
         {
             _authService = authService;
@@ -28,24 +25,19 @@ namespace SET09102_2024_5.ViewModels
         }
 
         [RelayCommand]
-        private async Task RegisterAsync()
-        {
-            await _navigationService.NavigateToRegisterAsync();
-        }
+        private Task RegisterAsync() => _navigationService.NavigateToRegisterAsync();
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanLogin))]
         private async Task LoginAsync()
         {
-            if (string.IsNullOrEmpty(Email) || string.IsNullOrEmpty(Password))
+            if (!CanLogin())
             {
                 ErrorMessage = "Email and password are required.";
                 return;
             }
 
-            try
+            await ExecuteAsync(async () =>
             {
-                StartBusy("Logging in...");
-                
                 var user = await _authService.AuthenticateAsync(Email, Password);
                 
                 if (user != null)
@@ -56,7 +48,7 @@ namespace SET09102_2024_5.ViewModels
                     // Reset fields
                     Email = string.Empty;
                     Password = string.Empty;
-                    ErrorMessage = string.Empty;
+                    ClearError();
                     
                     // Navigate to the main page using the navigation service
                     await _navigationService.NavigateToMainPageAsync();
@@ -65,15 +57,13 @@ namespace SET09102_2024_5.ViewModels
                 {
                     ErrorMessage = "Invalid email or password.";
                 }
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = $"Authentication error: {ex.Message}";
-            }
-            finally
-            {
-                EndBusy("Login");
-            }
+            }, "Logging in...", "Authentication error", "Login");
         }
+        
+        private bool CanLogin() => !string.IsNullOrEmpty(Email) && !string.IsNullOrEmpty(Password);
+
+        // This ensures the login button enabled state updates when properties change
+        partial void OnEmailChanged(string value) => LoginCommand.NotifyCanExecuteChanged();
+        partial void OnPasswordChanged(string value) => LoginCommand.NotifyCanExecuteChanged();
     }
 }

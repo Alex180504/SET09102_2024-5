@@ -3,10 +3,11 @@ using System.Threading.Tasks;
 
 namespace SET09102_2024_5.Services
 {
-    public interface INavigationService
+    public interface INavigationService : IBaseService
     {
         // Basic navigation
         Task NavigateToAsync(string route);
+        Task GoBackAsync();
         
         // Authentication-related navigation
         Task NavigateToLoginAsync();

@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using SET09102_2024_5.Models;
 
 namespace SET09102_2024_5.Services
 {
-    public interface IAuthService
+    public interface IAuthService : IBaseService
     {
         event EventHandler UserChanged;
         
@@ -17,6 +15,8 @@ namespace SET09102_2024_5.Services
         Task<bool> HasPermissionAsync(int userId, string permissionName);
         Task<bool> IsInRoleAsync(int userId, string roleName);
         Task<User> GetCurrentUserAsync();
+        Task<bool> IsAuthenticatedAsync();
+        Task<List<string>> GetUserPermissionsAsync(int userId);
         void SetCurrentUser(User user);
         void Logout();
     }

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:helpers="clr-namespace:SET09102_2024_5.Helpers">
+
+    <!-- Card Styles -->
+    <Style x:Key="CardStyle" TargetType="Frame">
+        <Setter Property="BorderColor" Value="{AppThemeBinding Light=#e0e0e0, Dark=#3e3e3e}"/>
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=White, Dark=#2e2e2e}"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="HasShadow" Value="True"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0,8"/>
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#66000000" Offset="0,3" Radius="6"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="CardHeaderStyle" TargetType="Grid">
+        <Setter Property="Padding" Value="16"/>
+    </Style>
+
+    <!-- Text Styles -->
+    <Style x:Key="SectionTitleStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FontAttributes" Value="Bold"/>
+        <Setter Property="TextColor" Value="White"/>
+        <Setter Property="VerticalOptions" Value="Center"/>
+    </Style>
+
+    <Style x:Key="HeaderIconStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="24"/>
+        <Setter Property="TextColor" Value="White"/>
+        <Setter Property="FontFamily" Value="MaterialIcons"/>
+        <Setter Property="VerticalOptions" Value="Center"/>
+    </Style>
+
+    <Style x:Key="FormLabelStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="TextColor" Value="{AppThemeBinding Light=#505050, Dark=#b0b0b0}"/>
+        <Setter Property="Margin" Value="5,0,0,3"/>
+    </Style>
+
+    <!-- Button Styles -->
+    <Style x:Key="ActionButtonStyle" TargetType="Button">
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="16,8"/>
+        <Setter Property="TextColor" Value="White"/>
+        <Setter Property="FontAttributes" Value="Bold"/>
+    </Style>
+
+    <Style x:Key="PrimaryActionButton" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#2196F3, Dark=#1976D2}"/>
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#402196F3" Offset="0,2" Radius="4"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SuccessActionButton" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#4CAF50, Dark=#388E3C}"/>
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#404CAF50" Offset="0,2" Radius="4"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="DangerActionButton" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#F44336, Dark=#D32F2F}"/>
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#40F44336" Offset="0,2" Radius="4"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Border Styles -->
+    <Style x:Key="FormBorderStyle" TargetType="Border">
+        <Setter Property="Stroke" Value="{AppThemeBinding Light=#e0e0e0, Dark=#505050}"/>
+        <Setter Property="StrokeThickness" Value="1"/>
+        <Setter Property="StrokeShape" Value="RoundRectangle 6"/>
+        <Setter Property="Padding" Value="5,0"/>
+    </Style>
+
+    <!-- Page Header Style -->
+    <Style x:Key="PageHeaderStyle" TargetType="Border">
+        <Setter Property="StrokeThickness" Value="0"/>
+        <Setter Property="StrokeShape" Value="RoundRectangle 12"/>
+        <Setter Property="Padding" Value="20"/>
+        <Setter Property="Margin" Value="0,0,0,16"/>
+    </Style>
+
+    <!-- Empty State Styles -->
+    <Style x:Key="EmptyStateIconStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="MaterialIcons"/>
+        <Setter Property="TextColor" Value="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"/>
+        <Setter Property="FontSize" Value="48"/>
+        <Setter Property="HorizontalOptions" Value="Center"/>
+    </Style>
+
+    <Style x:Key="EmptyStateTitleStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="TextColor" Value="{AppThemeBinding Light=#757575, Dark=#909090}"/>
+        <Setter Property="HorizontalOptions" Value="Center"/>
+    </Style>
+
+    <Style x:Key="EmptyStateSubtitleStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="TextColor" Value="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"/>
+        <Setter Property="HorizontalOptions" Value="Center"/>
+        <Setter Property="HorizontalTextAlignment" Value="Center"/>
+    </Style>
+
+</ResourceDictionary>

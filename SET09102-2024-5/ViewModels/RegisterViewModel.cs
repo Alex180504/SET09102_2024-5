@@ -9,44 +9,40 @@ namespace SET09102_2024_5.ViewModels
     public partial class RegisterViewModel : BaseViewModel
     {
         private readonly IAuthService _authService;
+        private readonly INavigationService _navigationService;
         
         [ObservableProperty]
-        private string firstName = string.Empty;
+        private string _firstName = string.Empty;
         
         [ObservableProperty]
-        private string lastName = string.Empty;
+        private string _lastName = string.Empty;
         
         [ObservableProperty]
-        private string email = string.Empty;
+        private string _email = string.Empty;
         
         [ObservableProperty]
-        private string password = string.Empty;
+        private string _password = string.Empty;
         
         [ObservableProperty]
-        private string confirmPassword = string.Empty;
+        private string _confirmPassword = string.Empty;
         
         [ObservableProperty]
-        private string errorMessage = string.Empty;
-        
-        [ObservableProperty]
-        private bool isRegistering;
-        
-        [ObservableProperty]
-        private bool registrationSuccessful;
+        private bool _registrationSuccessful;
 
-        public RegisterViewModel(IAuthService authService)
+        [ObservableProperty]
+        private bool _isRegistering;
+
+        public RegisterViewModel(IAuthService authService, INavigationService navigationService)
         {
             _authService = authService;
+            _navigationService = navigationService;
             Title = "Register";
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanRegister))]
         private async Task RegisterAsync()
         {
-            // Validate input
-            if (string.IsNullOrEmpty(FirstName) || string.IsNullOrEmpty(LastName) ||
-                string.IsNullOrEmpty(Email) || string.IsNullOrEmpty(Password) || 
-                string.IsNullOrEmpty(ConfirmPassword))
+            if (!CanRegister())
             {
                 ErrorMessage = "All fields are required.";
                 return;
@@ -60,7 +56,7 @@ namespace SET09102_2024_5.ViewModels
 
             IsRegistering = true;
             
-            try
+            await ExecuteAsync(async () => 
             {
                 var success = await _authService.RegisterUserAsync(
                     FirstName, LastName, Email, Password);
@@ -76,31 +72,37 @@ namespace SET09102_2024_5.ViewModels
                     Email = string.Empty;
                     Password = string.Empty;
                     ConfirmPassword = string.Empty;
-                    ErrorMessage = string.Empty;
+                    ClearError();
                     
-                    // Optional: Navigate back to login or directly to another page
-                    await Task.Delay(2000); // Show success message for 2 seconds
-                    await Shell.Current.GoToAsync("//LoginPage");
+                    // Show success message briefly before navigation
+                    await Task.Delay(1500);
+                    await _navigationService.NavigateToLoginAsync();
                 }
                 else
                 {
                     ErrorMessage = "Registration failed. Email may already be in use.";
                 }
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = $"Registration error: {ex.Message}";
-            }
-            finally
-            {
-                IsRegistering = false;
-            }
+            }, "Registering account...", "Registration error", "Register");
+            
+            IsRegistering = false;
         }
         
         [RelayCommand]
-        private async Task GoToLoginAsync()
-        {
-            await Shell.Current.GoToAsync("//LoginPage");
-        }
+        private Task GoToLoginAsync() => _navigationService.NavigateToLoginAsync();
+        
+        private bool CanRegister() => 
+            !string.IsNullOrEmpty(FirstName) && 
+            !string.IsNullOrEmpty(LastName) &&
+            !string.IsNullOrEmpty(Email) && 
+            !string.IsNullOrEmpty(Password) && 
+            !string.IsNullOrEmpty(ConfirmPassword) &&
+            !IsRegistering;
+            
+        // Update command can execute state when properties change
+        partial void OnFirstNameChanged(string value) => RegisterCommand.NotifyCanExecuteChanged();
+        partial void OnLastNameChanged(string value) => RegisterCommand.NotifyCanExecuteChanged();
+        partial void OnEmailChanged(string value) => RegisterCommand.NotifyCanExecuteChanged();
+        partial void OnPasswordChanged(string value) => RegisterCommand.NotifyCanExecuteChanged();
+        partial void OnConfirmPasswordChanged(string value) => RegisterCommand.NotifyCanExecuteChanged();
     }
 }

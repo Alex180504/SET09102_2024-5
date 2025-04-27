@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Maui.Storage;
@@ -18,12 +17,15 @@ namespace SET09102_2024_5.Services
     public class AuthService : IAuthService
     {
         private readonly SensorMonitoringContext _dbContext;
+        private readonly ILoggingService _loggingService;
         private User _currentUser;
         private Task _initializationTask;
+        private bool _isInitialized = false;
         
         // Keys for storing authentication data
         private const string UserIdKey = "AuthUserId";
         private const string UserEmailKey = "AuthUserEmail";
+        private const string AuthCategory = "Authentication";
 
         public event EventHandler UserChanged;
 
@@ -32,34 +34,50 @@ namespace SET09102_2024_5.Services
             UserChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        public AuthService(SensorMonitoringContext dbContext)
+        public AuthService(SensorMonitoringContext dbContext, ILoggingService loggingService)
         {
             _dbContext = dbContext;
-            
-            // Initialize the authentication state properly with awaitable task
+            _loggingService = loggingService;
+        }
+
+        public async Task InitializeAsync()
+        {
+            if (_isInitialized)
+                return;
+                
+            _loggingService.Info("Initializing authentication service", AuthCategory);
             _initializationTask = InitializeAuthenticationAsync();
+            
+            try
+            {
+                await _initializationTask;
+                _isInitialized = true;
+                _loggingService.Info("Authentication service initialized successfully", AuthCategory);
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error("Failed to initialize authentication", ex, AuthCategory);
+                throw;
+            }
+            finally
+            {
+                _initializationTask = null;
+            }
+        }
+        
+        public async Task CleanupAsync()
+        {
+            _loggingService.Info("Cleaning up authentication service", AuthCategory);
+            // No specific cleanup needed for this service
+            await Task.CompletedTask;
         }
         
         // Public method to ensure authentication is initialized before proceeding
         public async Task EnsureInitializedAsync()
         {
-            if (_initializationTask != null)
+            if (!_isInitialized)
             {
-                try
-                {
-                    await _initializationTask;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Authentication initialization error: {ex.Message}");
-                    // Reinitialize in case of failure
-                    _initializationTask = InitializeAuthenticationAsync();
-                    await _initializationTask;
-                }
-                finally
-                {
-                    _initializationTask = null;
-                }
+                await InitializeAsync();
             }
         }
         
@@ -68,6 +86,8 @@ namespace SET09102_2024_5.Services
         {
             try
             {
+                _loggingService.Debug("Loading saved authentication session", AuthCategory);
+                
                 // Check if we have saved credentials
                 if (Preferences.ContainsKey(UserIdKey) && Preferences.ContainsKey(UserEmailKey))
                 {
@@ -85,32 +105,39 @@ namespace SET09102_2024_5.Services
                             
                             if (user != null)
                             {
+                                _loggingService.Info($"User {user.Email} session restored", AuthCategory);
                                 // Set as current user
                                 _currentUser = user;
                                 OnUserChanged();
                             }
                             else
                             {
+                                _loggingService.Warning($"Saved user session not found in database: {userId}", AuthCategory);
                                 // User not found in database, clear preferences
                                 ClearSavedUserSession();
                             }
                         }
                         catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"Database error during authentication: {ex.Message}");
+                            _loggingService.Error("Database error during authentication restoration", ex, AuthCategory);
                             ClearSavedUserSession();
                         }
                     }
                     else
                     {
+                        _loggingService.Warning("Invalid stored authentication data", AuthCategory);
                         // Invalid stored data, clear preferences
                         ClearSavedUserSession();
                     }
                 }
+                else
+                {
+                    _loggingService.Debug("No saved authentication session found", AuthCategory);
+                }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error loading saved session: {ex.Message}");
+                _loggingService.Error("Error loading saved session", ex, AuthCategory);
                 // If there's any error, clear the saved session
                 ClearSavedUserSession();
                 throw; // Rethrow to allow proper handling by caller
@@ -126,11 +153,11 @@ namespace SET09102_2024_5.Services
                 {
                     Preferences.Set(UserIdKey, user.UserId);
                     Preferences.Set(UserEmailKey, user.Email);
+                    _loggingService.Debug($"User session saved: {user.Email}", AuthCategory);
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error saving user session: {ex.Message}");
-                    // Silent failure - don't crash the app for preference storage issues
+                    _loggingService.Error("Error saving user session", ex, AuthCategory);
                 }
             }
         }
@@ -145,11 +172,12 @@ namespace SET09102_2024_5.Services
                     
                 if (Preferences.ContainsKey(UserEmailKey))
                     Preferences.Remove(UserEmailKey);
+                    
+                _loggingService.Debug("User session cleared", AuthCategory);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error clearing user session: {ex.Message}");
-                // Silent failure - don't crash the app for preference removal issues
+                _loggingService.Error("Error clearing user session", ex, AuthCategory);
             }
         }
 
@@ -160,14 +188,18 @@ namespace SET09102_2024_5.Services
                 string.IsNullOrWhiteSpace(email) || 
                 string.IsNullOrWhiteSpace(password))
             {
+                _loggingService.Warning("Registration attempt with invalid data", AuthCategory);
                 return false;
             }
 
             try
             {
+                _loggingService.Info($"Attempting to register user: {email}", AuthCategory);
+                
                 // Check if user already exists
                 if (await _dbContext.Users.AnyAsync(u => u.Email == email))
                 {
+                    _loggingService.Warning($"Registration failed - user already exists: {email}", AuthCategory);
                     return false;
                 }
 
@@ -175,9 +207,11 @@ namespace SET09102_2024_5.Services
                 var guestRole = await _dbContext.Roles.FirstOrDefaultAsync(r => r.RoleName == "Guest");
                 if (guestRole == null)
                 {
+                    _loggingService.Info("Creating missing Guest role", AuthCategory);
                     guestRole = new Role
                     {
-                        RoleName = "Guest"
+                        RoleName = "Guest",
+                        Description = "Limited access role for new users"
                     };
                     _dbContext.Roles.Add(guestRole);
                     await _dbContext.SaveChangesAsync();
@@ -199,11 +233,12 @@ namespace SET09102_2024_5.Services
 
                 _dbContext.Users.Add(user);
                 await _dbContext.SaveChangesAsync();
+                _loggingService.Info($"User registered successfully: {email}", AuthCategory);
                 return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error registering user: {ex.Message}");
+                _loggingService.Error($"Error registering user: {email}", ex, AuthCategory);
                 return false;
             }
         }
@@ -212,65 +247,84 @@ namespace SET09102_2024_5.Services
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             {
+                _loggingService.Warning("Authentication attempt with empty credentials", AuthCategory);
                 return null;
             }
 
             try
             {
+                _loggingService.Debug($"Authentication attempt: {email}", AuthCategory);
+                
                 var user = await _dbContext.Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.Email == email);
 
                 if (user == null)
+                {
+                    _loggingService.Warning($"Authentication failed - user not found: {email}", AuthCategory);
                     return null;
+                }
 
                 if (!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
+                {
+                    _loggingService.Warning($"Authentication failed - invalid password: {email}", AuthCategory);
                     return null;
+                }
 
                 _currentUser = user;
                 
                 // Save user session for persistent login
                 SaveUserSession(user);
                 
+                _loggingService.Info($"User authenticated successfully: {email}", AuthCategory);
                 OnUserChanged(); // Trigger the event when authentication changes
                 return user;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Authentication error: {ex.Message}");
+                _loggingService.Error("Authentication error", ex, AuthCategory);
                 return null;
             }
         }
 
-        // Rest of the methods remain unchanged but with proper input validation and error handling
         public async Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
         {
             if (userId <= 0 || 
                 string.IsNullOrWhiteSpace(currentPassword) || 
                 string.IsNullOrWhiteSpace(newPassword))
             {
+                _loggingService.Warning($"Invalid password change request for user ID: {userId}", AuthCategory);
                 return false;
             }
 
             try
             {
+                _loggingService.Debug($"Password change attempt for user ID: {userId}", AuthCategory);
+                
                 var user = await _dbContext.Users.FindAsync(userId);
                 if (user == null)
+                {
+                    _loggingService.Warning($"Password change failed - user not found: {userId}", AuthCategory);
                     return false;
+                }
 
                 if (!VerifyPasswordHash(currentPassword, user.PasswordHash, user.PasswordSalt))
+                {
+                    _loggingService.Warning($"Password change failed - invalid current password: {userId}", AuthCategory);
                     return false;
+                }
 
                 CreatePasswordHash(newPassword, out string passwordHash, out string passwordSalt);
                 user.PasswordHash = passwordHash;
                 user.PasswordSalt = passwordSalt;
 
                 await _dbContext.SaveChangesAsync();
+                _loggingService.Info($"Password changed successfully for user ID: {userId}", AuthCategory);
                 return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error changing password: {ex.Message}");
+                _loggingService.Error($"Error changing password for user ID: {userId}", ex, AuthCategory);
                 return false;
             }
         }
@@ -279,11 +333,14 @@ namespace SET09102_2024_5.Services
         {
             if (userId <= 0 || string.IsNullOrWhiteSpace(permissionName))
             {
+                _loggingService.Warning($"Invalid permission check request: User {userId}, Permission '{permissionName}'", AuthCategory);
                 return false;
             }
 
             try
             {
+                _loggingService.Debug($"Checking permission '{permissionName}' for user ID: {userId}", AuthCategory);
+                
                 var user = await _dbContext.Users
                     .Include(u => u.Role)
                     .ThenInclude(r => r.RolePrivileges)
@@ -291,20 +348,29 @@ namespace SET09102_2024_5.Services
                     .FirstOrDefaultAsync(u => u.UserId == userId);
 
                 if (user == null || user.Role == null)
+                {
+                    _loggingService.Warning($"Permission check failed - user or role not found: {userId}", AuthCategory);
                     return false;
+                }
 
                 // Check if user has admin role (admin role has all permissions)
                 if (user.Role.RoleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
+                {
+                    _loggingService.Debug($"Permission '{permissionName}' granted - user is Administrator: {userId}", AuthCategory);
                     return true;
+                }
 
                 // Check if the user's role has the specific permission
-                return user.Role.RolePrivileges.Any(rp => 
+                bool hasPermission = user.Role.RolePrivileges.Any(rp => 
                     rp.AccessPrivilege != null &&
                     rp.AccessPrivilege.Name.Equals(permissionName, StringComparison.OrdinalIgnoreCase));
+                
+                _loggingService.Debug($"Permission '{permissionName}' for user {userId}: {hasPermission}", AuthCategory);
+                return hasPermission;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error checking permission: {ex.Message}");
+                _loggingService.Error($"Error checking permission '{permissionName}' for user {userId}", ex, AuthCategory);
                 return false;
             }
         }
@@ -313,23 +379,31 @@ namespace SET09102_2024_5.Services
         {
             if (userId <= 0 || string.IsNullOrWhiteSpace(roleName))
             {
+                _loggingService.Warning($"Invalid role check request: User {userId}, Role '{roleName}'", AuthCategory);
                 return false;
             }
 
             try
             {
+                _loggingService.Debug($"Checking if user {userId} is in role '{roleName}'", AuthCategory);
+                
                 var user = await _dbContext.Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.UserId == userId);
 
                 if (user == null || user.Role == null)
+                {
+                    _loggingService.Warning($"Role check failed - user or role not found: {userId}", AuthCategory);
                     return false;
+                }
 
-                return user.Role.RoleName.Equals(roleName, StringComparison.OrdinalIgnoreCase);
+                bool isInRole = user.Role.RoleName.Equals(roleName, StringComparison.OrdinalIgnoreCase);
+                _loggingService.Debug($"User {userId} in role '{roleName}': {isInRole}", AuthCategory);
+                return isInRole;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error checking role: {ex.Message}");
+                _loggingService.Error($"Error checking if user {userId} is in role '{roleName}'", ex, AuthCategory);
                 return false;
             }
         }
@@ -340,19 +414,74 @@ namespace SET09102_2024_5.Services
             await EnsureInitializedAsync();
             return _currentUser;
         }
+        
+        public async Task<bool> IsAuthenticatedAsync()
+        {
+            await EnsureInitializedAsync();
+            return _currentUser != null;
+        }
+        
+        public async Task<List<string>> GetUserPermissionsAsync(int userId)
+        {
+            if (userId <= 0)
+            {
+                _loggingService.Warning($"Invalid user ID for permission list: {userId}", AuthCategory);
+                return new List<string>();
+            }
+            
+            try
+            {
+                _loggingService.Debug($"Getting permissions for user ID: {userId}", AuthCategory);
+                
+                var user = await _dbContext.Users
+                    .Include(u => u.Role)
+                    .ThenInclude(r => r.RolePrivileges)
+                    .ThenInclude(rp => rp.AccessPrivilege)
+                    .FirstOrDefaultAsync(u => u.UserId == userId);
+                
+                if (user == null || user.Role == null)
+                {
+                    _loggingService.Warning($"User or role not found for permission list: {userId}", AuthCategory);
+                    return new List<string>();
+                }
+                
+                // If administrator, return a special indicator
+                if (user.Role.RoleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
+                {
+                    _loggingService.Debug($"User {userId} is Administrator with all permissions", AuthCategory);
+                    return new List<string> { "*" }; // * indicates all permissions
+                }
+                
+                // Get the list of permission names
+                var permissions = user.Role.RolePrivileges
+                    .Where(rp => rp.AccessPrivilege != null)
+                    .Select(rp => rp.AccessPrivilege.Name)
+                    .ToList();
+                
+                _loggingService.Debug($"Retrieved {permissions.Count} permissions for user {userId}", AuthCategory);
+                return permissions;
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"Error getting permissions for user {userId}", ex, AuthCategory);
+                return new List<string>();
+            }
+        }
 
         public void SetCurrentUser(User user)
         {
             var previousUser = _currentUser;
             _currentUser = user;
             
-            // Save user session for persistent login if a new user is set
             if (user != null)
             {
+                _loggingService.Info($"Setting current user: {user.Email}", AuthCategory);
+                // Save user session for persistent login if a new user is set
                 SaveUserSession(user);
             }
             else 
             {
+                _loggingService.Info("Clearing current user", AuthCategory);
                 ClearSavedUserSession();
             }
             
@@ -367,6 +496,11 @@ namespace SET09102_2024_5.Services
 
         public void Logout()
         {
+            if (_currentUser != null)
+            {
+                _loggingService.Info($"Logging out user: {_currentUser.Email}", AuthCategory);
+            }
+            
             _currentUser = null;
             
             // Clear saved session data on logout
@@ -395,6 +529,7 @@ namespace SET09102_2024_5.Services
             }
             catch (Exception ex)
             {
+                // Use static method since we don't have access to the logger here
                 System.Diagnostics.Debug.WriteLine($"Error verifying password hash: {ex.Message}");
                 return false;
             }

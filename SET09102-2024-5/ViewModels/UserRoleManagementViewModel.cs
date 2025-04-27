@@ -2,236 +2,489 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Maui.Controls;
-using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Models;
 using SET09102_2024_5.Services;
 
 namespace SET09102_2024_5.ViewModels
 {
-    public class UserRoleManagementViewModel : BaseViewModel
+    public partial class UserRoleManagementViewModel : BaseViewModel
     {
-        private readonly IRepository<User> _userRepository;
-        private readonly IRepository<Role> _roleRepository;
-        private readonly IAuthService _authService;
+        private readonly IDatabaseService _databaseService;
+        private readonly INavigationService _navigationService;
+        private CancellationTokenSource? _statusMessageCts;
 
-        public ObservableCollection<User> Users { get; } = new ObservableCollection<User>();
-        public ObservableCollection<Role> Roles { get; } = new ObservableCollection<Role>();
+        // Properties for user management
+        [ObservableProperty]
+        private ObservableCollection<User> _users = new();
 
-        private User _selectedUser;
-        public User SelectedUser
-        {
-            get => _selectedUser;
-            set
-            {
-                _selectedUser = value;
-                OnPropertyChanged();
-                if (_selectedUser != null)
-                {
-                    SelectedRole = Roles.FirstOrDefault(r => r.RoleId == _selectedUser.RoleId);
-                }
-                OnPropertyChanged(nameof(CanSaveChanges));
-                ((Command)SaveChangesCommand).ChangeCanExecute();
-            }
-        }
+        [ObservableProperty]
+        private User? _selectedUser;
 
-        private Role _selectedRole;
-        public Role SelectedRole
-        {
-            get => _selectedRole;
-            set
-            {
-                _selectedRole = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CanSaveChanges));
-                ((Command)SaveChangesCommand).ChangeCanExecute();
-            }
-        }
+        [ObservableProperty]
+        private ObservableCollection<Role> _availableRoles = new();
 
-        public bool CanSaveChanges => SelectedUser != null && SelectedRole != null;
+        [ObservableProperty]
+        private Role? _originalRole;
 
-        public ICommand SaveChangesCommand { get; }
-        public ICommand RefreshCommand { get; }
-        public ICommand SearchCommand { get; }
+        // Properties for role management
+        [ObservableProperty]
+        private ObservableCollection<Role> _roles = new();
+
+        [ObservableProperty]
+        private Role? _selectedRole;
+
+        [ObservableProperty]
+        private ObservableCollection<PrivilegeViewModel> _rolePrivileges = new();
+
+        [ObservableProperty]
+        private ObservableCollection<PrivilegeGroup> _groupedPrivileges = new();
         
-        private string _searchTerm;
-        public string SearchTerm
+        [ObservableProperty]
+        private string _searchTerm = string.Empty;
+
+        [ObservableProperty]
+        private string _statusMessage = string.Empty;
+
+        [ObservableProperty]
+        private bool _isRefreshing;
+
+        [ObservableProperty] 
+        private bool _isSaving;
+        
+        [ObservableProperty]
+        private string _modifiedPrivilegesMessage = string.Empty;
+
+        // For role assignment
+        public bool CanSaveRoleAssignment => SelectedUser != null && SelectedRole != null && 
+                                           (!SelectedUser.Role?.RoleId.Equals(SelectedRole.RoleId) ?? true);
+
+        // For role privileges
+        public bool CanSaveChanges => HasPrivilegeChanges && SelectedRole != null && !SelectedRole.IsProtected;
+        
+        private bool HasPrivilegeChanges => RolePrivileges?.Any(p => p.IsModified) == true;
+
+        public UserRoleManagementViewModel(IDatabaseService databaseService, INavigationService navigationService)
         {
-            get => _searchTerm;
-            set
+            _databaseService = databaseService;
+            _navigationService = navigationService;
+            
+            Title = "User Access Management";
+        }
+
+        // Sets the status message and schedules it to be cleared after 3 seconds
+        private void SetStatusMessageWithTimeout(string message)
+        {
+            // Cancel any existing timer
+            _statusMessageCts?.Cancel();
+            _statusMessageCts = new CancellationTokenSource();
+            
+            // Set the new message
+            StatusMessage = message;
+            
+            // Start a new timer to clear the message after 3 seconds
+            Task.Delay(3000, _statusMessageCts.Token).ContinueWith(t => 
             {
-                _searchTerm = value;
-                OnPropertyChanged();
-            }
+                if (!t.IsCanceled)
+                {
+                    // Clear the message on the UI thread
+                    Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(() => 
+                    {
+                        StatusMessage = string.Empty;
+                    });
+                }
+            }, TaskScheduler.Current);
         }
 
-        public UserRoleManagementViewModel(
-            IRepository<User> userRepository,
-            IRepository<Role> roleRepository,
-            IAuthService authService)
+        [RelayCommand]
+        public async Task LoadDataAsync()
         {
-            _userRepository = userRepository;
-            _roleRepository = roleRepository;
-            _authService = authService;
+            if (IsBusy) return;
 
-            SaveChangesCommand = new Command(async () => await SaveChanges(), () => CanSaveChanges);
-            RefreshCommand = new Command(async () => await LoadData());
-            SearchCommand = new Command(async () => await FilterUsers());
-
-            // Load data on startup
-            Task.Run(async () => await LoadData());
-        }
-
-        private async Task LoadData()
-        {
-            if (IsBusy)
-                return;
-                
             try
             {
-                StartBusy("Loading users and roles...");
+                StartBusy("Loading data...");
+                IsRefreshing = true;
                 
-                // Clear existing collections
+                // Load all users
+                var users = await _databaseService.GetAllUsersWithRolesAsync();
                 Users.Clear();
-                Roles.Clear();
-                
-                // Load roles first
-                var roles = await _roleRepository.GetAllAsync().ConfigureAwait(false);
-                
-                // Load users with proper error handling
-                var users = await _userRepository.GetAllAsync().ConfigureAwait(false);
-                
-                // Update UI on main thread
-                await MainThread.InvokeOnMainThreadAsync(() =>
+                foreach (var user in users)
                 {
-                    foreach (var role in roles)
-                    {
-                        Roles.Add(role);
-                    }
-                    
-                    foreach (var user in users)
-                    {
-                        Users.Add(user);
-                    }
-                });
+                    Users.Add(user);
+                }
+
+                // Load all roles for dropdown selection
+                var roles = await _databaseService.GetAllRolesAsync();
+                AvailableRoles.Clear();
+                foreach (var role in roles)
+                {
+                    AvailableRoles.Add(role);
+                }
+
+                // Clear selection
+                SelectedUser = null;
+                SelectedRole = null;
+
+                SetStatusMessageWithTimeout($"Loaded {Users.Count} users and {AvailableRoles.Count} roles");
             }
             catch (Exception ex)
             {
-                await MainThread.InvokeOnMainThreadAsync(async () =>
-                {
-                    await Application.Current.MainPage.DisplayAlert(
-                        "Error", 
-                        $"Failed to load user data: {ex.Message}", 
-                        "OK");
-                });
-                System.Diagnostics.Debug.WriteLine($"Error loading user data: {ex}");
+                SetStatusMessageWithTimeout($"Error loading data: {ex.Message}");
             }
             finally
             {
-                EndBusy("User Role Management");
+                EndBusy("User Access Management");
+                IsRefreshing = false;
             }
         }
-        
-        private async Task FilterUsers()
+
+        [RelayCommand]
+        private async Task SearchAsync()
         {
-            if (IsBusy)
-                return;
-                
+            if (IsBusy) return;
+
             try
             {
-                StartBusy("Searching users...");
+                StartBusy("Searching...");
                 
                 if (string.IsNullOrWhiteSpace(SearchTerm))
                 {
-                    await LoadData().ConfigureAwait(false);
+                    // If search is empty, just reload all users
+                    await LoadDataAsync();
                     return;
                 }
+
+                var searchTermLower = SearchTerm.ToLowerInvariant();
                 
-                // Keep existing roles
-                var allUsers = await _userRepository.GetAllAsync().ConfigureAwait(false);
-                
-                var term = SearchTerm.ToLower();
+                // Filter users based on search term
+                var allUsers = await _databaseService.GetAllUsersWithRolesAsync();
                 var filteredUsers = allUsers.Where(u => 
-                    u.FirstName?.ToLower().Contains(term) == true || 
-                    u.LastName?.ToLower().Contains(term) == true || 
-                    u.Email?.ToLower().Contains(term) == true).ToList();
-                    
-                await MainThread.InvokeOnMainThreadAsync(() =>
+                    u.Email.ToLowerInvariant().Contains(searchTermLower) ||
+                    (u.Email != null && u.Email.ToLowerInvariant().Contains(searchTermLower)) ||
+                    (u.Role != null && u.Role.RoleName.ToLowerInvariant().Contains(searchTermLower))
+                ).ToList();
+
+                // Update observable collection
+                Users.Clear();
+                foreach (var user in filteredUsers)
                 {
-                    Users.Clear();
-                    foreach (var user in filteredUsers)
-                    {
-                        Users.Add(user);
-                    }
-                });
+                    Users.Add(user);
+                }
+
+                SetStatusMessageWithTimeout($"Found {Users.Count} users matching '{SearchTerm}'");
+            }
+            catch (Exception ex)
+            {
+                SetStatusMessageWithTimeout($"Error during search: {ex.Message}");
             }
             finally
             {
-                EndBusy("User Role Management");
+                EndBusy("User Access Management");
             }
         }
 
-        private async Task SaveChanges()
+        [RelayCommand]
+        private async Task LoadUserRoleAsync(User user)
         {
-            if (IsBusy || SelectedUser == null || SelectedRole == null)
-                return;
+            if (user == null) return;
 
-            // Prevent changing own role if current user is an admin
-            var currentUser = await _authService.GetCurrentUserAsync().ConfigureAwait(false);
-            if (currentUser?.UserId == SelectedUser.UserId && 
-                currentUser?.Role.RoleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase) == true &&
-                !SelectedRole.RoleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                await MainThread.InvokeOnMainThreadAsync(async () =>
+                StartBusy($"Loading role for {user.Email}...");
+                
+                SelectedUser = user;
+                OriginalRole = user.Role;
+                SelectedRole = user.Role;
+
+                SetStatusMessageWithTimeout($"Loaded role for {user.Email}");
+            }
+            catch (Exception ex)
+            {
+                SetStatusMessageWithTimeout($"Error loading user role: {ex.Message}");
+            }
+            finally
+            {
+                EndBusy("User Access Management");
+            }
+        }
+
+        [RelayCommand]
+        private async Task LoadRolePrivilegesAsync(Role role)
+        {
+            if (role == null) return;
+
+            try
+            {
+                StartBusy($"Loading privileges for {role.RoleName}...");
+                
+                SelectedRole = role;
+                RolePrivileges.Clear();
+                GroupedPrivileges.Clear();
+                
+                // Get all available privileges
+                var allPrivileges = await _databaseService.GetAllAccessPrivilegesAsync();
+                
+                // Get the role's assigned privileges
+                var rolePrivileges = await _databaseService.GetRolePrivilegesAsync(role.RoleId);
+                var assignedPrivilegeIds = rolePrivileges.Select(rp => rp.AccessPrivilegeId).ToHashSet();
+                
+                // Group privileges by module
+                var privilegeGroups = allPrivileges
+                    .OrderBy(p => p.ModuleName)
+                    .ThenBy(p => p.Name)
+                    .GroupBy(p => p.ModuleName ?? "General")
+                    .ToList();
+                
+                // Add privileges to flat collection for data binding
+                foreach (var group in privilegeGroups)
                 {
-                    await Application.Current.MainPage.DisplayAlert(
-                        "Warning", 
-                        "You cannot remove your own Administrator role.", 
-                        "OK");
-                });
+                    foreach (var privilege in group)
+                    {
+                        var isAssigned = assignedPrivilegeIds.Contains(privilege.AccessPrivilegeId);
+                        RolePrivileges.Add(new PrivilegeViewModel(privilege, isAssigned));
+                    }
+                }
+
+                // Create grouped collection for UI
+                foreach (var group in privilegeGroups)
+                {
+                    var privilegeViewModels = group.Select(p => 
+                        new PrivilegeViewModel(p, assignedPrivilegeIds.Contains(p.AccessPrivilegeId))
+                    ).ToList();
+                    
+                    GroupedPrivileges.Add(new PrivilegeGroup(
+                        group.Key,
+                        new ObservableCollection<PrivilegeViewModel>(privilegeViewModels)
+                    ));
+                }
+                
+                SetStatusMessageWithTimeout($"Loaded {RolePrivileges.Count} privileges for {role.RoleName}");
+                
+                // Reset the modified status
+                ModifiedPrivilegesMessage = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                SetStatusMessageWithTimeout($"Error loading privileges: {ex.Message}");
+            }
+            finally
+            {
+                EndBusy("User Access Management");
+            }
+        }
+
+        [RelayCommand]
+        private void TogglePrivilege(PrivilegeViewModel privilege)
+        {
+            if (privilege == null || SelectedRole?.IsProtected == true) return;
+            
+            // Toggle the assigned state
+            privilege.IsAssigned = !privilege.IsAssigned;
+            privilege.IsModified = true;
+            
+            // Update the notification about changes
+            var modifiedCount = RolePrivileges.Count(p => p.IsModified);
+            if (modifiedCount > 0)
+            {
+                ModifiedPrivilegesMessage = $"{modifiedCount} privilege changes pending";
+            }
+            else
+            {
+                ModifiedPrivilegesMessage = string.Empty;
+            }
+            
+            // Notify that save command can execute
+            OnPropertyChanged(nameof(CanSaveChanges));
+            SaveChangesCommand.NotifyCanExecuteChanged();
+        }
+
+        [RelayCommand(CanExecute = nameof(CanSaveChanges))]
+        private async Task SaveChangesAsync()
+        {
+            if (SelectedRole == null || !HasPrivilegeChanges)
+            {
+                SetStatusMessageWithTimeout("No changes to save.");
+                return;
+            }
+
+            if (SelectedRole.IsProtected)
+            {
+                SetStatusMessageWithTimeout("Cannot modify privileges for protected roles.");
                 return;
             }
 
             try
             {
-                StartBusy("Saving changes...");
+                StartBusy("Saving privilege changes...");
                 
-                // Update role assignment
-                SelectedUser.RoleId = SelectedRole.RoleId;
-                SelectedUser.Role = SelectedRole;
-
-                _userRepository.Update(SelectedUser);
-                await _userRepository.SaveChangesAsync().ConfigureAwait(false);
-
-                await MainThread.InvokeOnMainThreadAsync(async () =>
+                var modifiedPrivileges = RolePrivileges.Where(p => p.IsModified).ToList();
+                var addedPrivileges = modifiedPrivileges.Where(p => p.IsAssigned).Select(p => p.Privilege.AccessPrivilegeId).ToList();
+                var removedPrivileges = modifiedPrivileges.Where(p => !p.IsAssigned).Select(p => p.Privilege.AccessPrivilegeId).ToList();
+                
+                // Update the role privileges in the database
+                bool success = await _databaseService.UpdateRolePrivilegesAsync(
+                    SelectedRole.RoleId, 
+                    addedPrivileges, 
+                    removedPrivileges);
+                
+                if (success)
                 {
-                    await Application.Current.MainPage.DisplayAlert(
-                        "Success", 
-                        $"Role for user {SelectedUser.FirstName} {SelectedUser.LastName} updated successfully.", 
-                        "OK");
-                });
-                
-                // Refresh the data to ensure UI is up-to-date
-                await LoadData().ConfigureAwait(false);
+                    // Reset modified status
+                    foreach (var privilege in RolePrivileges)
+                    {
+                        privilege.IsModified = false;
+                    }
+                    
+                    ModifiedPrivilegesMessage = string.Empty;
+                    SetStatusMessageWithTimeout($"Successfully updated privileges for {SelectedRole.RoleName}");
+                    
+                    // Notify property changes
+                    OnPropertyChanged(nameof(CanSaveChanges));
+                    SaveChangesCommand.NotifyCanExecuteChanged();
+                }
+                else
+                {
+                    SetStatusMessageWithTimeout("Failed to save privilege changes.");
+                }
             }
             catch (Exception ex)
             {
-                await MainThread.InvokeOnMainThreadAsync(async () =>
-                {
-                    await Application.Current.MainPage.DisplayAlert(
-                        "Error", 
-                        $"Failed to update user role: {ex.Message}", 
-                        "OK");
-                });
-                System.Diagnostics.Debug.WriteLine($"Error updating user role: {ex}");
+                SetStatusMessageWithTimeout($"Error saving privileges: {ex.Message}");
             }
             finally
             {
-                EndBusy("User Role Management");
+                EndBusy("User Access Management");
             }
+        }
+
+        [RelayCommand(CanExecute = nameof(CanSaveRoleAssignment))]
+        private async Task SaveUserRoleAsync()
+        {
+            if (SelectedUser == null || SelectedRole == null)
+            {
+                SetStatusMessageWithTimeout("User or role not selected.");
+                return;
+            }
+
+            try
+            {
+                StartBusy("Updating user role...");
+                
+                // Update the user's role in the database
+                bool success = await _databaseService.UpdateUserRoleAsync(
+                    SelectedUser.UserId,
+                    SelectedRole.RoleId);
+                
+                if (success)
+                {
+                    // Update the user object locally
+                    SelectedUser.Role = SelectedRole;
+                    OriginalRole = SelectedRole;
+                    
+                    // Update the user in the list
+                    int index = Users.IndexOf(Users.FirstOrDefault(u => u.UserId == SelectedUser.UserId));
+                    if (index >= 0)
+                    {
+                        Users[index] = SelectedUser;
+                    }
+                    
+                    SetStatusMessageWithTimeout($"Successfully updated role for {SelectedUser.Email} to {SelectedRole.RoleName}");
+                    
+                    // Notify command can execute
+                    OnPropertyChanged(nameof(CanSaveRoleAssignment));
+                    SaveUserRoleCommand.NotifyCanExecuteChanged();
+                }
+                else
+                {
+                    SetStatusMessageWithTimeout("Failed to update user role.");
+                }
+            }
+            catch (Exception ex)
+            {
+                SetStatusMessageWithTimeout($"Error updating user role: {ex.Message}");
+            }
+            finally
+            {
+                EndBusy("User Access Management");
+            }
+        }
+
+        partial void OnSelectedRoleChanged(Role? value)
+        {
+            // Notify can save property when the selected role changes
+            OnPropertyChanged(nameof(CanSaveRoleAssignment));
+            SaveUserRoleCommand.NotifyCanExecuteChanged();
+        }
+
+        [RelayCommand]
+        private void ClearStatusMessage()
+        {
+            StatusMessage = string.Empty;
+            
+            // Also cancel any existing timeout
+            _statusMessageCts?.Cancel();
+        }
+        
+        [RelayCommand]
+        private async Task RefreshAsync()
+        {
+            await LoadDataAsync();
+        }
+        
+        public async Task InitializeAsync()
+        {
+            await LoadDataAsync();
+        }
+
+        // Clean up any resources when the page is unloaded
+        public void Cleanup()
+        {
+            _statusMessageCts?.Cancel();
+            _statusMessageCts?.Dispose();
+            _statusMessageCts = null;
+        }
+    }
+
+    public class PrivilegeViewModel : ObservableObject
+    {
+        private bool _isAssigned;
+        private bool _isModified;
+
+        public AccessPrivilege Privilege { get; }
+        
+        public bool IsAssigned 
+        { 
+            get => _isAssigned;
+            set => SetProperty(ref _isAssigned, value);
+        }
+        
+        public bool IsModified
+        {
+            get => _isModified;
+            set => SetProperty(ref _isModified, value);
+        }
+
+        public PrivilegeViewModel(AccessPrivilege privilege, bool isAssigned)
+        {
+            Privilege = privilege;
+            _isAssigned = isAssigned;
+            _isModified = false;
+        }
+    }
+
+    public class PrivilegeGroup : ObservableObject
+    {
+        public string ModuleName { get; }
+        public ObservableCollection<PrivilegeViewModel> Privileges { get; }
+
+        public PrivilegeGroup(string moduleName, ObservableCollection<PrivilegeViewModel> privileges)
+        {
+            ModuleName = moduleName;
+            Privileges = privileges;
         }
     }
 }
