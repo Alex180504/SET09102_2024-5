@@ -1,4 +1,3 @@
-using Microsoft.Maui.Controls;
 using Mapsui.UI.Maui;
 using SET09102_2024_5.ViewModels;
 
@@ -13,7 +12,7 @@ namespace SET09102_2024_5.Views
             InitializeComponent();
             BindingContext = _vm = vm;
 
-            // Hook up the VM’s Map instance
+            // Hook up the VM's Map instance
             MapControl.Map = _vm.Map;
         }
 
