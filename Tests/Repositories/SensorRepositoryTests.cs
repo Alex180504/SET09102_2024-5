@@ -3,7 +3,7 @@ using SET09102_2024_5.Data;
 using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Models;
 
-namespace Tests.Repositories
+namespace SET09102_2024_5.Tests.Repositories
 {
     public class SensorRepositoryTests
     {

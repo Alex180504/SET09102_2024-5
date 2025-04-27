@@ -1,22 +1,14 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Mapsui;
+﻿using Mapsui;
 using Mapsui.Layers;
-using Mapsui.Styles;
 using Mapsui.Projections;
-using Microsoft.Maui.Storage;
+using Mapsui.Styles;
+using Mapsui.Tiling;
 using Microsoft.Extensions.Logging;
 using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Models;
-using Mapsui.Tiling;
-using Map = Mapsui.Map;
 using SET09102_2024_5.Services;
-using Microsoft.Maui.Controls;
+using Map = Mapsui.Map;
 
 namespace SET09102_2024_5.ViewModels
 {
@@ -87,7 +79,7 @@ namespace SET09102_2024_5.ViewModels
         private void OnSensorUpdated(Sensor _, DateTime? __) =>
             _mainThread.BeginInvokeOnMainThread(async () => await RefreshAsync());
 
-        /// Rebuilds the pin layer, choosing a warning style when needed.
+        // Rebuilds the pin layer, choosing a warning style when needed.
         private async Task RefreshAsync()
         {
             if (!await _refreshLock.WaitAsync(0)) return;      // skip if already refreshing
@@ -151,7 +143,7 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
-        /// Returns a human-readable reason if the sensor is stale/out-of-threshold.
+        // Returns a human-readable reason if the sensor is stale/out-of-threshold.
         string? GetWarningReason(Sensor s, MeasurementDto? last)
         {
             // **NEW**: never warn for inactive or maintenance sensors
