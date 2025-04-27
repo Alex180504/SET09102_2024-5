@@ -409,3 +409,4 @@ Tests/bin
 
 appsettings.json
 appsettings.test.json
+/Migrations/appsettings.json

@@ -5,9 +5,13 @@ namespace SET09102_2024_5.Views
 {
     public partial class MainPage : ContentPage
     {
-        public MainPage()
+        private readonly MapPage _mapPage;
+
+        public MainPage(MainPageViewModel vm, MapPage mapPage)
         {
             InitializeComponent();
+            BindingContext = vm;
+            _mapPage = mapPage;
         }
     }
 }
