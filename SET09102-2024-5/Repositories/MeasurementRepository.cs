@@ -1,9 +1,4 @@
-﻿// Data/Repositories/MeasurementRepository.cs
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SET09102_2024_5.Models;
 
 namespace SET09102_2024_5.Data.Repositories
@@ -19,7 +14,6 @@ namespace SET09102_2024_5.Data.Repositories
         public Task<List<Measurement>> GetSinceAsync(DateTime since)
         {
             return _ctx.Measurements
-                       // If you need Sensor info, include it; otherwise you can omit Include altogether
                        .Include(m => m.Sensor)
                        .AsNoTracking()
                        .Where(m => m.Timestamp.HasValue && m.Timestamp.Value > since)
