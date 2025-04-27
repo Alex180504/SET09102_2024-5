@@ -1,0 +1,47 @@
+@startuml Sensor Operational Status Monitor Loading Sequence
+
+actor User
+participant "SensorOperationalStatusPage" as Page
+participant "SensorOperationalStatusViewModel" as ViewModel
+participant "SensorMonitoringContext" as Context
+database "Database" as DB
+
+User -> Page: Navigate to page
+activate Page
+Page -> Page: OnAppearing()
+Page -> ViewModel: LoadSensorsCommand.Execute()
+activate ViewModel
+
+ViewModel -> ViewModel: LoadSensorsAsync()
+activate ViewModel #DDDDDD
+ViewModel -> ViewModel: IsLoading = true
+ViewModel -> Context: Sensors.Include(s => s.Measurand).AsNoTracking().ToListAsync()
+activate Context
+Context -> DB: Query sensors
+activate DB
+DB --> Context: Return sensors data
+deactivate DB
+Context --> ViewModel: Return sensors list
+deactivate Context
+
+ViewModel -> Context: Query incident counts from Measurements
+activate Context
+Context -> DB: Calculate incidents per sensor
+activate DB
+DB --> Context: Return incident counts
+deactivate DB
+Context --> ViewModel: Return incident statistics
+deactivate Context
+
+ViewModel -> ViewModel: Create SensorOperationalModel objects
+ViewModel -> ViewModel: Update Sensors collection
+ViewModel -> ViewModel: Apply sorting if needed
+ViewModel -> ViewModel: IsLoading = false
+deactivate ViewModel #DDDDDD
+
+ViewModel --> Page: UI updated with sensor data
+deactivate ViewModel
+Page --> User: Display sensors and their status
+deactivate Page
+
+@enduml
