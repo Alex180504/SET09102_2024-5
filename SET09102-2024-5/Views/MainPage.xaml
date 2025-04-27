@@ -46,6 +46,14 @@
                 Text="View Status Map"
                 Command="{Binding NavigateToSensorMapCommand}"
                 HorizontalOptions="Fill" />  
+
+            <Button
+                Text="Sensor Operational Status"
+                Command="{Binding NavigateToSensorMonitoringCommand}"
+                BackgroundColor="#007bff"
+                TextColor="White"
+                HorizontalOptions="Fill"
+                SemanticProperties.Hint="Navigate to sensor monitoring" />
         </VerticalStackLayout>
     </ScrollView>
 

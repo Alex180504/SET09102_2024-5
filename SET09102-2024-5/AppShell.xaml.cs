@@ -9,8 +9,9 @@ namespace SET09102_2024_5
             InitializeComponent();
 
             // Register routes for navigation
-            Routing.RegisterRoute(nameof(MainPage), typeof(MainPage));
             Routing.RegisterRoute(nameof(SensorManagementPage), typeof(SensorManagementPage));
+            Routing.RegisterRoute(nameof(SensorOperationalStatusPage), typeof(SensorOperationalStatusPage));
+            Routing.RegisterRoute(nameof(SensorIncidentPage), typeof(SensorIncidentPage));
             Routing.RegisterRoute(nameof(MapPage), typeof(MapPage));
         }
     }

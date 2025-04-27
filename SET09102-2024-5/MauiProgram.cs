@@ -92,9 +92,15 @@ namespace SET09102_2024_5
                 // ViewModels & Views
                 builder.Services.AddTransient<MainPageViewModel>();
                 builder.Services.AddTransient<SensorManagementViewModel>();
+                builder.Services.AddTransient<SensorOperationalStatusViewModel>();
+                builder.Services.AddTransient<SensorIncidentLogViewModel>();
+
+                // Register Views
                 builder.Services.AddTransient<MapViewModel>();
                 builder.Services.AddTransient<MainPage>();
                 builder.Services.AddTransient<SensorManagementPage>();
+                builder.Services.AddTransient<SensorOperationalStatusPage>();
+                builder.Services.AddTransient<SensorIncidentPage>();
                 builder.Services.AddTransient<MapPage>();
 
 
