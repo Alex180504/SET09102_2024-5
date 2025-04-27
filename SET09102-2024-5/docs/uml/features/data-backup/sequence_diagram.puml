@@ -1,0 +1,15 @@
+﻿@startuml
+actor Administrator
+participant AdministratorViewModel as VM
+participant IBackupService as Service
+participant SensorMonitoringContext as DB
+
+Administrator -> VM: BackupNowCommand.Execute()
+VM -> Service: BackupDatabaseAsync(path, ct)
+activate Service
+Service -> DB: EXECUTE "BACKUP DATABASE [...] TO DISK=path"
+DB --> Service: Completed/Exception
+Service --> VM: return success/failure
+deactivate Service
+VM -> Administrator: Show success or error dialog
+@enduml

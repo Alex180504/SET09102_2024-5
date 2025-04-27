@@ -1,0 +1,49 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+class AdministratorViewModel {
+  +ICommand BackupNowCommand
+  +ICommand ConfigureScheduleCommand
+  +Task InitializeAsync()
+}
+
+interface IBackupService {
+  +Task BackupDatabaseAsync(string path, CancellationToken ct)
+}
+
+class BackupService {
+  -DbContext _ctx
+  +Task BackupDatabaseAsync(string path, CancellationToken ct)
+}
+
+interface IBackupScheduler {
+  +void Start(TimeSpan interval, CancellationToken ct)
+  +void Stop()
+}
+
+class BackupScheduler {
+  -IBackupService _backupService
+  -Timer _timer
+  +void Start(TimeSpan interval, CancellationToken ct)
+  +void Stop()
+}
+
+class BackupRecord {
+  +int BackupRecordId
+  +DateTime Timestamp
+  +string FilePath
+  +bool Success
+  +string? ErrorMessage
+}
+
+class SensorMonitoringContext {
+  +DbSet<BackupRecord> BackupRecords
+  -- existing DbSets --
+}
+
+AdministratorViewModel --> IBackupService
+AdministratorViewModel --> IBackupScheduler
+BackupService ..|> IBackupService
+BackupScheduler ..|> IBackupScheduler
+SensorMonitoringContext --> BackupRecord
+@enduml
