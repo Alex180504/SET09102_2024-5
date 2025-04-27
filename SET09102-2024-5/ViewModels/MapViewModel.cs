@@ -185,7 +185,10 @@ namespace SET09102_2024_5.ViewModels
 
         private void OnMapInfo(object? sender, MapInfoEventArgs e)
         {
-            _ = HandlePinTappedAsync(e.MapInfo);
+            var info = e.MapInfo;
+            if (info?.Feature == null) return;
+            // Fire-and-forget on the UI thread
+            _ = HandlePinTappedAsync(info);
         }
 
         public async Task HandlePinTappedAsync(MapInfo info)
