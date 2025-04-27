@@ -4,7 +4,6 @@ using Moq;
 using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Models;
-using SET09102_2024_5.Services;
 using SET09102_2024_5.ViewModels;
 
 namespace SET09102_2024_5.Tests.ViewModels
@@ -15,13 +14,24 @@ namespace SET09102_2024_5.Tests.ViewModels
         private readonly Mock<IMeasurementRepository> _measurementRepo = new();
         private readonly Mock<IDialogService> _dialog = new();
         private readonly Mock<ILogger<MapViewModel>> _logger = new();
-        private readonly Mock<ISensorRepository> _sensorRepo = new(); // for constructor injection remap below
+        private readonly Mock<ISensorService> _sensorService = new();
 
         private MapViewModel CreateVm()
         {
-            // We need a SensorService; use a dummy repo
-            var sensorSvc = new SensorService(_sensorRepo.Object);
-            return new MapViewModel(sensorSvc, _mainThread.Object, _measurementRepo.Object, _dialog.Object, _logger.Object);
+            // Mock ISensorService so VM can subscribe without hitting real polling
+            _sensorService
+                        .Setup(s => s.StartAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+                        .Returns(Task.CompletedTask);
+            _sensorService
+                        .Setup(s => s.GetAllWithConfigurationAsync())
+                        .ReturnsAsync(new List<Sensor>());
+
+            return new MapViewModel(
+                _sensorService.Object,
+                _mainThread.Object,
+                _measurementRepo.Object,
+                _dialog.Object,
+                _logger.Object);
         }
 
         private object InvokePrivate(MethodInfo mi, object instance, params object[] args)
