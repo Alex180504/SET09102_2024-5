@@ -375,6 +375,9 @@ namespace SET09102_2024_5.ViewModels
             {
                 StartBusy("Updating user role...");
                 
+                // Store the previous role for potential update in UI
+                var previousRole = SelectedUser.Role;
+                
                 // Update the user's role in the database
                 bool success = await _databaseService.UpdateUserRoleAsync(
                     SelectedUser.UserId,
@@ -398,6 +401,18 @@ namespace SET09102_2024_5.ViewModels
                     // Notify command can execute
                     OnPropertyChanged(nameof(CanSaveRoleAssignment));
                     SaveUserRoleCommand.NotifyCanExecuteChanged();
+                    
+                    // If the user was previously in another role, notify any interested components
+                    // This allows the RoleManagementViewModel to refresh its users list if it's open
+                    if (previousRole != null && previousRole.RoleId != SelectedRole.RoleId)
+                    {
+                        MessagingCenter.Send(this, "UserRoleChanged", new UserRoleChangedMessage 
+                        { 
+                            UserId = SelectedUser.UserId,
+                            OldRoleId = previousRole.RoleId,
+                            NewRoleId = SelectedRole.RoleId
+                        });
+                    }
                 }
                 else
                 {
@@ -487,5 +502,13 @@ namespace SET09102_2024_5.ViewModels
             ModuleName = moduleName;
             Privileges = privileges;
         }
+    }
+
+    // Message object used to communicate role changes between ViewModels
+    public class UserRoleChangedMessage
+    {
+        public int UserId { get; set; }
+        public int OldRoleId { get; set; }
+        public int NewRoleId { get; set; }
     }
 }

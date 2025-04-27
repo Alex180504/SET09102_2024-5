@@ -738,7 +738,7 @@ namespace SET09102_2024_5.Services
                     return false;
                 }
                 
-                // Begin transaction to ensure all updates are applied atomically
+                // Use a database transaction to ensure all operations succeed or fail together
                 using var transaction = await _dbContext.Database.BeginTransactionAsync();
                 
                 try
@@ -753,6 +753,9 @@ namespace SET09102_2024_5.Services
                             .ToListAsync();
                             
                         _dbContext.RolePrivileges.RemoveRange(rolesToRemove);
+                        
+                        // Save after removing to avoid conflicts with additions
+                        await _dbContext.SaveChangesAsync();
                     }
                     
                     // Add privileges
@@ -770,13 +773,16 @@ namespace SET09102_2024_5.Services
                         var newPrivilegeIds = addedPrivilegeIds
                             .Except(existingPrivilegeIds)
                             .ToList();
+                        
+                        // Create a batch of new role privileges to add
+                        var newRolePrivileges = new List<RolePrivilege>();
                             
                         foreach (var privilegeId in newPrivilegeIds)
                         {
                             // Check if privilege exists
                             if (await _dbContext.AccessPrivileges.AnyAsync(ap => ap.AccessPrivilegeId == privilegeId))
                             {
-                                _dbContext.RolePrivileges.Add(new RolePrivilege
+                                newRolePrivileges.Add(new RolePrivilege
                                 {
                                     RoleId = roleId,
                                     AccessPrivilegeId = privilegeId
@@ -787,9 +793,16 @@ namespace SET09102_2024_5.Services
                                 _loggingService.Warning($"Privilege ID {privilegeId} does not exist - skipping", DbCategory);
                             }
                         }
+                        
+                        // Add all new privileges in one operation
+                        if (newRolePrivileges.Any())
+                        {
+                            await _dbContext.RolePrivileges.AddRangeAsync(newRolePrivileges);
+                            await _dbContext.SaveChangesAsync();
+                        }
                     }
                     
-                    await _dbContext.SaveChangesAsync();
+                    // Commit the transaction only after all operations have succeeded
                     await transaction.CommitAsync();
                     
                     _loggingService.Info($"Role privileges updated successfully for role ID {roleId}", DbCategory);
@@ -797,6 +810,7 @@ namespace SET09102_2024_5.Services
                 }
                 catch (Exception ex)
                 {
+                    // Rollback the transaction if any part fails
                     await transaction.RollbackAsync();
                     _loggingService.Error($"Error updating privileges for role ID {roleId}", ex, DbCategory);
                     return false;
