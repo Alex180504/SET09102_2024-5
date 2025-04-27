@@ -17,14 +17,16 @@ namespace SET09102_2024_5.Services
         public Task<List<Sensor>> GetAllWithConfigurationAsync()
            => _sensorRepo.GetAllWithConfigurationAsync();
 
-        public async Task StartAsync(TimeSpan pollingInterval)
+        public async Task StartAsync(TimeSpan pollingInterval, CancellationToken cancellationToken)
         {
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 var list = await GetAllWithConfigurationAsync();
                 foreach (var s in list)
                     OnSensorUpdated?.Invoke(s, null);
-                await Task.Delay(pollingInterval);
+
+                // Pass the token so Delay will end early if cancellation is requested
+                await Task.Delay(pollingInterval, cancellationToken);
             }
         }
     }

@@ -16,6 +16,7 @@ namespace SET09102_2024_5.ViewModels
     {
         public Map Map { get; }
 
+        private readonly CancellationTokenSource _pollingCts = new();
         private readonly MemoryLayer _pinLayer;
         private readonly SensorService _sensorService;
         private readonly IMainThreadService _mainThread;
@@ -73,7 +74,7 @@ namespace SET09102_2024_5.ViewModels
             // Subscribe to sensor updates, draw initial pins, start polling
             _sensorService.OnSensorUpdated += OnSensorUpdated;
             await RefreshAsync();
-            _ = _sensorService.StartAsync(TimeSpan.FromSeconds(5));
+            _ = _sensorService.StartAsync(TimeSpan.FromSeconds(5), _pollingCts.Token);
         }
 
         private void OnSensorUpdated(Sensor _, DateTime? __) =>
@@ -256,11 +257,17 @@ namespace SET09102_2024_5.ViewModels
             return -1;
         }
 
-        public void Stop() =>
+        public void Stop()
+        {
+            // tell the polling loop to end:
+            _pollingCts.Cancel();
             _sensorService.OnSensorUpdated -= OnSensorUpdated;
+        }
 
         public void Dispose()
         {
+            _pollingCts.Cancel();
+            _pollingCts.Dispose();
             Stop();
             Map.Info -= OnMapInfo;
             _refreshLock.Dispose();

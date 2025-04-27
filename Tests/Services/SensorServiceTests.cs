@@ -45,9 +45,9 @@ namespace SET09102_2024_5.Tests.Services
                     invocationCount++;
             };
 
-            // Act & Assert
+            // Act & Assert (pass CancellationToken.None)
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => svc.StartAsync(TimeSpan.Zero));
+            () => svc.StartAsync(TimeSpan.Zero, CancellationToken.None));
             Assert.Equal("stop", ex.Message);
 
             // Only one update should have fired before the exception
