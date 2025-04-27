@@ -53,5 +53,46 @@ namespace SET09102_2024_5.Tests.Services
             // Only one update should have fired before the exception
             Assert.Equal(1, invocationCount);
         }
+        [Fact]
+        public async Task StartAsync_ImmediateCancellation_DoesNotInvokeOnSensorUpdated()
+        {
+            var dummy = new Sensor { SensorId = 7 };
+            var mockRepo = new Mock<ISensorRepository>();
+            mockRepo.Setup(r => r.GetAllWithConfigurationAsync())
+                    .ReturnsAsync(new List<Sensor> { dummy });
+
+            var svc = new SensorService(mockRepo.Object);
+            int invocationCount = 0;
+            svc.OnSensorUpdated += (_, __) => invocationCount++;
+
+            // Cancel before starting
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await svc.StartAsync(TimeSpan.FromMilliseconds(10), cts.Token);
+
+            Assert.Equal(0, invocationCount);
+        }
+
+        [Fact]
+        public async Task StartAsync_NullResults_DoesNotInvokeOnSensorUpdated()
+        {
+            var mockRepo = new Mock<ISensorRepository>();
+            mockRepo.Setup(r => r.GetAllWithConfigurationAsync())
+                    .ReturnsAsync((List<Sensor>?)null);
+
+            var svc = new SensorService(mockRepo.Object);
+            int invocationCount = 0;
+            svc.OnSensorUpdated += (_, __) => invocationCount++;
+
+            // We allow a single iteration then cancel
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(50);
+
+            // Should not throw, just skip null
+            await svc.StartAsync(TimeSpan.FromMilliseconds(10), cts.Token);
+
+            Assert.Equal(0, invocationCount);
+        }
     }
 }

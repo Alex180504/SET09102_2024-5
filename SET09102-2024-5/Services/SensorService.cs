@@ -27,7 +27,9 @@ namespace SET09102_2024_5.Services
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    var list = await GetAllWithConfigurationAsync();
+                    // Treat null as empty enumeration
+                    var list = await GetAllWithConfigurationAsync()
+                                ?? Enumerable.Empty<Sensor>();
                     foreach (var s in list)
                         OnSensorUpdated?.Invoke(s, null);
 
