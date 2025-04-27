@@ -22,7 +22,6 @@ namespace SET09102_2024_5.ViewModels
         private int _sensorId;
         private string _sensorInfo;
         private ObservableCollection<IncidentModel> _incidents;
-        // Add a new field to store the original unfiltered collection
         private ObservableCollection<IncidentModel> _allIncidents;
         private IncidentModel _selectedIncident;
         private string _filterText;
@@ -130,13 +129,13 @@ namespace SET09102_2024_5.ViewModels
             _mainThreadService = mainThreadService ?? new Services.MainThreadService();
             _dialogService = dialogService ?? new Services.DialogService();
 
-            // Initialize commands
+            // Init commands
             LoadIncidentsCommand = new Command(async () => await LoadIncidentsAsync(), () => !IsLoading);
             ApplyCommand = new Command(ApplyFilterAndRefresh, () => !IsLoading);
             SortCommand = new Command<string>(SortIncidents);
             BackCommand = new Command(async () => await Shell.Current.GoToAsync(".."));
 
-            // Initialize collections
+            // Inite collections
             _allIncidents = new ObservableCollection<IncidentModel>();
             Incidents = new ObservableCollection<IncidentModel>();
             FilterProperties = new List<string> { "All", "ID", "Priority", "Status", "Responder" };
@@ -145,6 +144,10 @@ namespace SET09102_2024_5.ViewModels
             SortIndicator = "";
         }
 
+        /// <summary>
+        /// Extracts SensorId from navigation query parameters and initiates data loading.
+        /// Implements IQueryAttributable pattern for MAUI Shell navigation.
+        /// </summary>
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
             if (query.TryGetValue("SensorId", out var sensorIdObj))
@@ -157,6 +160,11 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Fetches sensor and related incident data from the database.
+        /// Maps database entities to view models and updates collections for UI display.
+        /// Maintains both original collection (_allIncidents) and displayed collection (Incidents).
+        /// </summary>
         private async Task LoadIncidentsAsync()
         {
             if (IsLoading || SensorId <= 0) return;
@@ -226,6 +234,9 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Applies filtering based on user input text. Resets to original collection when filter text is empty to avoid multiple database calls.
+        /// </summary>
         private async void ApplyFilterAndRefresh()
         {
             if (string.IsNullOrWhiteSpace(FilterText))
@@ -244,6 +255,9 @@ namespace SET09102_2024_5.ViewModels
             ApplyFilter();
         }
 
+        /// <summary>
+        /// Filters the incident collection based on selected property (ID, Priority, Status, Responder).
+        /// </summary>
         private void ApplyFilter()
         {
             var filteredList = new ObservableCollection<IncidentModel>();
@@ -292,7 +306,6 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
-        // Rest of the class remains unchanged
         private void SortIncidents(string propertyName)
         {
             if (string.IsNullOrWhiteSpace(propertyName)) return;
@@ -312,6 +325,9 @@ namespace SET09102_2024_5.ViewModels
             ApplySorting(propertyName, true);
         }
 
+        /// <summary>
+        /// Sorts the current collection of incidents based on the selected property.
+        /// </summary>
         private void ApplySorting(string propertyName, bool updateIndicator)
         {
             if (string.IsNullOrWhiteSpace(propertyName)) return;

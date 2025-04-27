@@ -21,7 +21,6 @@ namespace SET09102_2024_5.ViewModels
         private readonly INavigationService _navigationService;
 
         private ObservableCollection<SensorOperationalModel> _sensors;
-        // Add a new field to store the original unfiltered collection
         private ObservableCollection<SensorOperationalModel> _allSensors;
         private SensorOperationalModel _selectedSensor;
         private string _filterText;
@@ -60,7 +59,7 @@ namespace SET09102_2024_5.ViewModels
             SortIndicator = "";
 
             _mainThreadService.BeginInvokeOnMainThread(async () => await LoadSensorsAsync());
-            _navigationService = navigationService;  // Save the navigation service
+            _navigationService = navigationService;
         }
 
         public ObservableCollection<SensorOperationalModel> Sensors
@@ -142,7 +141,10 @@ namespace SET09102_2024_5.ViewModels
         public ICommand ViewIncidentLogCommand { get; }
         public ICommand SortCommand { get; }
 
-        // Load sensor data from the db
+        /// <summary>
+        /// Loads sensor data from the database, calculates incident counts, and updates the UI.
+        /// Maintains both original collection (_allSensors) and displayed collection (Sensors).
+        /// </summary>
         private async Task LoadSensorsAsync()
         {
             if (IsLoading) return;
@@ -217,6 +219,9 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Applies filtering based on user input text. Resets to original collection when filter text is empty to avoid multiple database calls.
+        /// </summary>
         private async void ApplyFilterAndRefresh()
         {
             if (string.IsNullOrWhiteSpace(FilterText))
@@ -235,7 +240,9 @@ namespace SET09102_2024_5.ViewModels
             ApplyFilter();
         }
 
-        // Filtering implementation using strategy pattern based on selected property
+        /// <summary>
+        /// Filters the sensor collection based on selected property (ID, Type, Status, etc.).
+        /// </summary>
         private void ApplyFilter()
         {
             var filteredList = new ObservableCollection<SensorOperationalModel>();
@@ -284,7 +291,6 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
-        // Rest of the class remains unchanged
         private bool CanViewIncidentLog(SensorOperationalModel sensor)
         {
             return sensor != null && sensor.Id > 0;
@@ -294,7 +300,7 @@ namespace SET09102_2024_5.ViewModels
         {
             if (sensor == null) return;
 
-            // If we're in a test environment, the mock navigation service will be used
+            // In a test environment, the mock navigation service will be used
             // In production, we'll use Shell navigation
             if (_navigationService != null &&
                 _navigationService.GetType().FullName.Contains("Mock"))
@@ -307,7 +313,11 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
-        // Dynamic sorting implementation using the property name as a strategy selector
+        /// <summary>
+        /// Dynamic sorting implementation using the property name as a strategy selector
+        /// Toggles sort direction for the same column or sets ascending sort for a new column.
+        /// Updates UI indicators to reflect current sort state.
+        /// </summary>
         private void SortSensors(string propertyName)
         {
             if (string.IsNullOrWhiteSpace(propertyName)) return;
@@ -327,6 +337,9 @@ namespace SET09102_2024_5.ViewModels
             ApplySorting(propertyName, true);
         }
 
+        /// <summary>
+        /// Sorts the current collection of sensors based on the selected property.
+        /// </summary>
         private void ApplySorting(string propertyName, bool updateIndicator)
         {
             if (string.IsNullOrWhiteSpace(propertyName)) return;
