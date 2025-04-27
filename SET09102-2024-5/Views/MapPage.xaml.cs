@@ -13,8 +13,7 @@ namespace SET09102_2024_5.Views
             InitializeComponent();
             BindingContext = _vm = vm;
 
-            // Hook up the VM’s Map instance
-            MapControl.Map = _vm.Map;
+            // Hook up the VM's Map instance
         }
 
         protected override async void OnAppearing()
