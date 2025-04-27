@@ -1,6 +1,3 @@
-using Microsoft.Maui.Controls;
-using System;
-using SET09102_2024_5.Views;
 using SET09102_2024_5.ViewModels;
 
 namespace SET09102_2024_5.Views
@@ -15,8 +12,5 @@ namespace SET09102_2024_5.Views
             BindingContext = vm;
             _mapPage = mapPage;
         }
-
-        private async void OnViewStatusMapClicked(object sender, EventArgs e)
-            => await Navigation.PushAsync(_mapPage);
     }
 }
