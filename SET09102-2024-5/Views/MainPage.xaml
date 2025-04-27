@@ -45,7 +45,11 @@
             <Button
                 Text="View Status Map"
                 Command="{Binding NavigateToSensorMapCommand}"
-                HorizontalOptions="Fill" />  
+                HorizontalOptions="Fill" />
+            <Button 
+                Text="Go to Data Storage" 
+                Command="{Binding NavigateToDataStorageCommand}" 
+                HorizontalOptions="Fill" />
         </VerticalStackLayout>
     </ScrollView>
 

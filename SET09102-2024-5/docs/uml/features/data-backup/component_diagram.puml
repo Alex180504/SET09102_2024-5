@@ -1,4 +1,4 @@
-﻿@startuml
+@startuml
 package "MAUI App" {
   [DataStoragePage]
   [DataStorageViewModel]
