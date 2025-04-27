@@ -6,6 +6,7 @@ using Microsoft.Maui.ApplicationModel;
 using Microsoft.Extensions.DependencyInjection;
 using SET09102_2024_5.Views;
 using System.Collections.Generic;
+using SET09102_2024_5.Interfaces;
 
 namespace SET09102_2024_5.Services
 {
@@ -16,6 +17,7 @@ namespace SET09102_2024_5.Services
         private readonly IServiceProvider _serviceProvider;
         private bool _isInitialized = false;
         private const string NavCategory = "Navigation";
+        private const string ServiceName = "Navigation Service";
         
         // Keep track of registered routes locally since Shell.Routes is not accessible
         private readonly HashSet<string> _registeredRoutes = new HashSet<string>();
@@ -30,10 +32,10 @@ namespace SET09102_2024_5.Services
             _serviceProvider = serviceProvider;
         }
         
-        public async Task InitializeAsync()
+        public async Task<bool> InitializeAsync()
         {
             if (_isInitialized)
-                return;
+                return true;
                 
             _loggingService.Info("Initializing navigation service", NavCategory);
             
@@ -43,14 +45,28 @@ namespace SET09102_2024_5.Services
                 ViewRegistration.Initialize();
                 _isInitialized = true;
                 _loggingService.Info("Navigation service initialized successfully", NavCategory);
+                return true;
             }
             catch (Exception ex)
             {
                 _loggingService.Error("Failed to initialize navigation service", ex, NavCategory);
-                throw;
+                return false;
             }
-            
-            await Task.CompletedTask;
+        }
+        
+        public Task<bool> IsReadyAsync()
+        {
+            return Task.FromResult(_isInitialized);
+        }
+        
+        public string GetServiceStatus()
+        {
+            return _isInitialized ? "Ready" : "Not Ready";
+        }
+        
+        public string GetServiceName()
+        {
+            return ServiceName;
         }
         
         public async Task CleanupAsync()

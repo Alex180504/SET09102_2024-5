@@ -1,17 +1,15 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.ApplicationModel;
-using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Models;
 using SET09102_2024_5.Services;
-using Microsoft.EntityFrameworkCore;
+using SET09102_2024_5.Interfaces;
+using SET09102_2024_5.Data.Repositories;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace SET09102_2024_5.ViewModels
 {
@@ -22,6 +20,12 @@ namespace SET09102_2024_5.ViewModels
         private readonly IRepository<RolePrivilege> _rolePrivilegeRepository;
         private readonly IAuthService _authService;
         private readonly IMemoryCache _cache;
+
+        // Keep track of roles that already had their privileges loaded
+        private HashSet<int> _loadedRoleIds = new HashSet<int>();
+        
+        // Flag to prevent reloading privileges when user is making changes
+        private bool _isUserModifyingPrivileges = false;
 
         // Tab control properties
         [ObservableProperty]
@@ -73,8 +77,7 @@ namespace SET09102_2024_5.ViewModels
             _authService = authService;
             _cache = cache;
 
-            Title = "Role Management";
-            
+            Title = "Role Management";            
             // Don't load data automatically in constructor
             // Let the view call InitializeDataAsync explicitly
         }
@@ -137,6 +140,9 @@ namespace SET09102_2024_5.ViewModels
                 await LoadPrivilegesAsync();
                 await LoadNewRolePrivilegeGroupsAsync(); // Load privilege groups for new role creation
                 
+                // Always load privileges for UI display, even if no role is selected
+                await LoadAllPrivilegesForDisplayAsync();
+                
                 if (SelectedRole != null)
                 {
                     await LoadRolePrivilegesAsync();
@@ -159,6 +165,86 @@ namespace SET09102_2024_5.ViewModels
                 // Always ensure IsBusy is reset
                 System.Diagnostics.Debug.WriteLine("InitializeDataAsync: Resetting IsBusy in finally block");
                 IsBusy = false;
+            }
+        }
+        
+        // New method to load all privileges for the UI when no role is selected
+        private async Task LoadAllPrivilegesForDisplayAsync()
+        {
+            if (AllPrivileges.Count == 0)
+            {
+                // Load all privileges first if they're not already loaded
+                await LoadPrivilegesAsync();
+            }
+            
+            if (RolePrivilegeGroups.Count > 0 || SelectedRole != null)
+            {
+                // Already have groups loaded or a selected role - no need to proceed
+                return;
+            }
+            
+            try
+            {
+                // Group privileges by module for display
+                var groupedPrivileges = AllPrivileges
+                    .GroupBy(p => p.ModuleName ?? "General")
+                    .OrderBy(g => g.Key);
+                
+                var privilegeGroups = new List<PrivilegeModuleGroup>();
+                
+                // Create privilege groups
+                foreach (var group in groupedPrivileges)
+                {
+                    var privilegeGroup = new PrivilegeModuleGroup
+                    {
+                        ModuleName = group.Key,
+                        IsExpanded = true,
+                        HasHeaderCheckbox = true
+                    };
+                    
+                    // Add privileges to the group with unchecked state
+                    foreach (var privilege in group.OrderBy(p => p.Name))
+                    {
+                        privilegeGroup.Privileges.Add(new AccessPrivilegeViewModel
+                        {
+                            AccessPrivilege = privilege,
+                            IsAssigned = false // Initially unchecked when no role is selected
+                        });
+                    }
+                    
+                    privilegeGroup.UpdateGroupSelectionState();
+                    privilegeGroups.Add(privilegeGroup);
+                }
+                
+                // Update UI on main thread
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    // Clear existing groups first
+                    RolePrivilegeGroups.Clear();
+                    RolePrivileges.Clear();
+                    
+                    // Add the new groups
+                    foreach (var group in privilegeGroups)
+                    {
+                        RolePrivilegeGroups.Add(group);
+                        
+                        // Also add to flat list for backward compatibility
+                        foreach (var privilege in group.Privileges)
+                        {
+                            RolePrivileges.Add(privilege);
+                        }
+                    }
+                    
+                    System.Diagnostics.Debug.WriteLine($"Loaded {RolePrivilegeGroups.Count} privilege groups with {RolePrivileges.Count} privileges for display");
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading privileges for display: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
             }
         }
 
@@ -493,6 +579,9 @@ namespace SET09102_2024_5.ViewModels
                 // Update privileges
                 await UpdateRolePrivilegesAsync();
                 
+                // Reset the user modification flag after saving
+                _isUserModifyingPrivileges = false;
+                
                 await ShowAlert("Success", "Role updated successfully", "OK");
             }, "Saving role...", "Failed to save role");
         }
@@ -632,6 +721,9 @@ namespace SET09102_2024_5.ViewModels
         {
             if (SelectedRole == null || privilegeVm == null || SelectedRole.IsProtected) return;
             
+            // Set flag to indicate user is modifying privileges
+            _isUserModifyingPrivileges = true;
+            
             // Toggle the assigned state
             privilegeVm.IsAssigned = !privilegeVm.IsAssigned;
             
@@ -667,6 +759,13 @@ namespace SET09102_2024_5.ViewModels
             SaveRoleCommand.NotifyCanExecuteChanged();
             DeleteRoleCommand.NotifyCanExecuteChanged();
             
+            // If user is actively modifying privileges, don't reload them
+            if (_isUserModifyingPrivileges)
+            {
+                System.Diagnostics.Debug.WriteLine("User is modifying privileges, skipping reload");
+                return;
+            }
+            
             if (value != null)
             {
                 System.Diagnostics.Debug.WriteLine($"Selected Role: {value.RoleName} (ID: {value.RoleId})");
@@ -674,45 +773,61 @@ namespace SET09102_2024_5.ViewModels
                 // Ensure we're on the privileges tab when a role is selected
                 IsUsersTabSelected = false;
                 
-                // Load role privileges with proper data loading
-                ExecuteAsync(async () => 
+                // Only load privileges if they haven't been loaded already
+                if (!_loadedRoleIds.Contains(value.RoleId))
                 {
-                    try
+                    // Load role privileges with proper data loading
+                    ExecuteAsync(async () => 
                     {
-                        // First, ensure the role has its related data fully loaded
-                        var completeRole = await _roleRepository.GetByIdAsync(value.RoleId);
-                        if (completeRole != null)
+                        try
                         {
-                            // Update selected role with complete data if needed
-                            if (value != completeRole)
+                            // First, ensure the role has its related data fully loaded
+                            var completeRole = await _roleRepository.GetByIdAsync(value.RoleId);
+                            if (completeRole != null)
                             {
-                                SelectedRole = completeRole;
+                                // Update selected role with complete data if needed
+                                // BUT DON'T REPLACE SelectedRole as this would trigger OnSelectedRoleChanged again
+                                if (value != completeRole)
+                                {
+                                    // Update properties we care about without triggering another property change
+                                    if (value.Users == null && completeRole.Users != null)
+                                        value.Users = completeRole.Users;
+                                    if (string.IsNullOrEmpty(value.Description) && !string.IsNullOrEmpty(completeRole.Description))
+                                        value.Description = completeRole.Description;
+                                }
+                            }
+                            
+                            // Now load role privileges with proper UI updating
+                            await LoadRolePrivilegesAsync();
+                            System.Diagnostics.Debug.WriteLine($"Loaded {RolePrivilegeGroups.Count} privilege groups for role");
+                            
+                            // Remember that we've loaded this role's privileges
+                            _loadedRoleIds.Add(value.RoleId);
+                            
+                            // Force UI update after loading privileges
+                            await MainThread.InvokeOnMainThreadAsync(() =>
+                            {
+                                // Explicitly notify that privileges have changed
+                                OnPropertyChanged(nameof(RolePrivileges));
+                                OnPropertyChanged(nameof(RolePrivilegeGroups));
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error loading role privileges: {ex.Message}");
+                            if (ex.InnerException != null)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
                             }
                         }
-                        
-                        // Now load role privileges with proper UI updating
-                        await LoadRolePrivilegesAsync();
-                        System.Diagnostics.Debug.WriteLine($"Loaded {RolePrivilegeGroups.Count} privilege groups for role");
-                        
-                        // Force UI update after loading privileges
-                        await MainThread.InvokeOnMainThreadAsync(() =>
-                        {
-                            // Explicitly notify that privileges have changed
-                            OnPropertyChanged(nameof(RolePrivileges));
-                            OnPropertyChanged(nameof(RolePrivilegeGroups));
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error loading role privileges: {ex.Message}");
-                        if (ex.InnerException != null)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                        }
-                    }
-                }, 
-                "Loading role privileges...", 
-                "Failed to load role privileges");
+                    }, 
+                    "Loading role privileges...", 
+                    "Failed to load role privileges");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"Privileges for role {value.RoleId} already loaded, skipping reload");
+                }
             }
             else
             {

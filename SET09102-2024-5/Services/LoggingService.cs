@@ -4,26 +4,28 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Maui.Storage;
+using SET09102_2024_5.Interfaces;
 
 namespace SET09102_2024_5.Services
 {
     /// <summary>
     /// Implementation of the logging service
     /// </summary>
-    public class LoggingService : ILoggingService, IBaseService
+    public class LoggingService : ILoggingService
     {
         private const string LogFileName = "app_log.txt";
         private readonly List<string> _memoryLogs = new List<string>();
         private readonly object _logLock = new object();
         private bool _isInitialized = false;
+        private const string ServiceName = "Logging Service";
         
         /// <summary>
         /// Initialize the logging service
         /// </summary>
-        public async Task InitializeAsync()
+        public async Task<bool> InitializeAsync()
         {
             if (_isInitialized)
-                return;
+                return true;
                 
             try
             {
@@ -35,12 +37,38 @@ namespace SET09102_2024_5.Services
                 await FlushLogsAsync();
                 
                 _isInitialized = true;
+                return true;
             }
             catch (Exception ex)
             {
                 // Use system diagnostics as fallback
                 System.Diagnostics.Debug.WriteLine($"Failed to initialize logging: {ex.Message}");
+                return false;
             }
+        }
+        
+        /// <summary>
+        /// Check if the service is ready
+        /// </summary>
+        public Task<bool> IsReadyAsync()
+        {
+            return Task.FromResult(_isInitialized);
+        }
+        
+        /// <summary>
+        /// Get the current service status
+        /// </summary>
+        public string GetServiceStatus()
+        {
+            return _isInitialized ? "Ready" : "Not Ready";
+        }
+        
+        /// <summary>
+        /// Get the service name
+        /// </summary>
+        public string GetServiceName()
+        {
+            return ServiceName;
         }
         
         /// <summary>

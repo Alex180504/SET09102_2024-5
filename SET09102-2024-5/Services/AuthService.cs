@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Maui.Storage;
 using SET09102_2024_5.Data;
+using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Models;
 
 // Explicitly import the Preferences namespace
@@ -21,6 +22,7 @@ namespace SET09102_2024_5.Services
         private User _currentUser;
         private Task _initializationTask;
         private bool _isInitialized = false;
+        private const string ServiceName = "Authentication Service";
         
         // Keys for storing authentication data
         private const string UserIdKey = "AuthUserId";
@@ -40,10 +42,10 @@ namespace SET09102_2024_5.Services
             _loggingService = loggingService;
         }
 
-        public async Task InitializeAsync()
+        public async Task<bool> InitializeAsync()
         {
             if (_isInitialized)
-                return;
+                return true;
                 
             _loggingService.Info("Initializing authentication service", AuthCategory);
             _initializationTask = InitializeAuthenticationAsync();
@@ -53,16 +55,32 @@ namespace SET09102_2024_5.Services
                 await _initializationTask;
                 _isInitialized = true;
                 _loggingService.Info("Authentication service initialized successfully", AuthCategory);
+                return true;
             }
             catch (Exception ex)
             {
                 _loggingService.Error("Failed to initialize authentication", ex, AuthCategory);
-                throw;
+                return false;
             }
             finally
             {
                 _initializationTask = null;
             }
+        }
+        
+        public Task<bool> IsReadyAsync()
+        {
+            return Task.FromResult(_isInitialized);
+        }
+        
+        public string GetServiceStatus()
+        {
+            return _isInitialized ? "Ready" : "Not Ready";
+        }
+        
+        public string GetServiceName()
+        {
+            return ServiceName;
         }
         
         public async Task CleanupAsync()
@@ -103,6 +121,7 @@ namespace SET09102_2024_5.Services
                                 .Include(u => u.Role)
                                 .FirstOrDefaultAsync(u => u.UserId == userId && u.Email == email);
                             
+
                             if (user != null)
                             {
                                 _loggingService.Info($"User {user.Email} session restored", AuthCategory);

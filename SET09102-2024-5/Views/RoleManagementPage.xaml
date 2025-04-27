@@ -378,6 +378,38 @@
                           </VerticalStackLayout>
                         </CollectionView.EmptyView>
                       </CollectionView>
+
+                      <!-- Add Save Privileges Button -->
+                      <Border Padding="0" 
+                              BackgroundColor="{AppThemeBinding Light=#f7f7f7, Dark=#333333}"
+                              StrokeThickness="1"
+                              Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#505050}"
+                              StrokeShape="RoundRectangle 8"
+                              Margin="0,0,0,16"
+                              IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}">
+                        <Grid Padding="16,12" ColumnDefinitions="Auto,*">
+                          <Button Grid.Column="0"
+                                  Text="Save Role Privileges"
+                                  Command="{Binding SaveRoleCommand}"
+                                  Style="{StaticResource ModernActionButton}"
+                                  BackgroundColor="{AppThemeBinding Light=#4CAF50, Dark=#388E3C}"
+                                  Padding="20,12"
+                                  IsEnabled="{Binding SelectedRole.IsProtected, Converter={StaticResource InvertedBoolConverter}}">
+                            <Button.Shadow>
+                              <Shadow Brush="#404CAF50" 
+                                      Offset="0,3" 
+                                      Radius="8"/>
+                            </Button.Shadow>
+                          </Button>
+                                  
+                          <Label Grid.Column="1"
+                                 Text="Toggle checkboxes above to modify role privileges, then save changes"
+                                 TextColor="{AppThemeBinding Light=#757575, Dark=#BBBBBB}"
+                                 FontSize="14"
+                                 VerticalOptions="Center"
+                                 Margin="16,0,0,0"/>
+                        </Grid>
+                      </Border>
                     </VerticalStackLayout>
                   </ScrollView>
 
@@ -559,12 +591,13 @@
               <!-- Right Side: Role Details with Privileges -->
               <Grid Grid.Column="1"
                    Grid.Row="0"
-                   RowDefinitions="Auto,*"
-                   IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}">
-                <!-- Role Details Header -->
+                   RowDefinitions="Auto,*">
+                <!-- Role Details Card - Only visible when a role is selected -->
                 <Frame Style="{StaticResource ModernCardStyle}"
                       Grid.Row="0"
-                      Margin="0,0,0,16">
+                      Margin="0,0,0,16"
+                      IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}">
+                  <!-- Role Details content - keep as is -->
                   <Grid RowDefinitions="Auto,*">
                     <Border Grid.Row="0"
                             StrokeThickness="0"
@@ -660,7 +693,7 @@
                   </Grid>
                 </Frame>
 
-                <!-- Privileges Content -->
+                <!-- Privileges Content - Always visible, regardless of role selection -->
                 <Frame Style="{StaticResource ModernCardStyle}"
                         Grid.Row="1">
                   <Grid RowDefinitions="Auto,*">
@@ -692,6 +725,7 @@
                         </HorizontalStackLayout>
                       </Grid>
                     </Border>
+
                     <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Always">
                       <VerticalStackLayout Padding="20,16"
                                          Spacing="16">
@@ -736,8 +770,15 @@
                                               IsChecked="{Binding AreAllPrivilegesSelected}"
                                               IsVisible="{Binding HasHeaderCheckbox}"
                                               Color="{AppThemeBinding Light=#2196F3, Dark=#64B5F6}"
-                                              IsEnabled="{Binding Source={RelativeSource AncestorType={x:Type vm:RoleManagementViewModel}}, Path=SelectedRole.IsProtected, Converter={StaticResource InvertedBoolConverter}}"
+                                              IsEnabled="{Binding Source={RelativeSource AncestorType={x:Type vm:RoleManagementViewModel}}, Path=SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}"
                                               VerticalOptions="Center">
+                                        <CheckBox.Triggers>
+                                          <DataTrigger TargetType="CheckBox"
+                                                       Binding="{Binding Source={RelativeSource AncestorType={x:Type vm:RoleManagementViewModel}}, Path=SelectedRole.IsProtected}"
+                                                       Value="True">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                          </DataTrigger>
+                                        </CheckBox.Triggers>
                                         <CheckBox.GestureRecognizers>
                                           <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RoleManagementViewModel}}, Path=ToggleRoleModuleGroupSelectionCommand}"
                                                               CommandParameter="{Binding .}"/>
@@ -831,89 +872,42 @@
                             </VerticalStackLayout>
                           </CollectionView.EmptyView>
                         </CollectionView>
+
+                        <!-- Add Save Privileges Button -->
+                        <Border Padding="0" 
+                                BackgroundColor="{AppThemeBinding Light=#f7f7f7, Dark=#333333}"
+                                StrokeThickness="1"
+                                Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#505050}"
+                                StrokeShape="RoundRectangle 8"
+                                Margin="0,0,0,16"
+                                IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}">
+                          <Grid Padding="16,12" ColumnDefinitions="Auto,*">
+                            <Button Grid.Column="0"
+                                    Text="Save Role Privileges"
+                                    Command="{Binding SaveRoleCommand}"
+                                    Style="{StaticResource ModernActionButton}"
+                                    BackgroundColor="{AppThemeBinding Light=#4CAF50, Dark=#388E3C}"
+                                    Padding="20,12"
+                                    IsEnabled="{Binding SelectedRole.IsProtected, Converter={StaticResource InvertedBoolConverter}}">
+                              <Button.Shadow>
+                                <Shadow Brush="#404CAF50" 
+                                        Offset="0,3" 
+                                        Radius="8"/>
+                              </Button.Shadow>
+                            </Button>
+                                    
+                            <Label Grid.Column="1"
+                                   Text="Toggle checkboxes above to modify role privileges, then save changes"
+                                   TextColor="{AppThemeBinding Light=#757575, Dark=#BBBBBB}"
+                                   FontSize="14"
+                                   VerticalOptions="Center"
+                                   Margin="16,0,0,0"/>
+                          </Grid>
+                        </Border>
                       </VerticalStackLayout>
                     </ScrollView>
                   </Grid>
                 </Frame>
-              </Grid>
-
-              <!-- No Role Selected Message -->
-              <ContentView Grid.Column="1"
-                  Grid.Row="0"
-                  IsVisible="{Binding SelectedRole, Converter={StaticResource NullToBoolConverter}}">
-                <Border BackgroundColor="{AppThemeBinding Light=White, Dark=#2d2d2d}"
-                        Shadow="{Shadow Brush={AppThemeBinding Light=#40000000, Dark=#40000000}, Offset='0,4', Radius=12}"
-                        StrokeThickness="1"
-                        Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#3e3e3e}"
-                        HorizontalOptions="Fill"
-                        VerticalOptions="Fill">
-                  <VerticalStackLayout HorizontalOptions="Center"
-                                       VerticalOptions="Center"
-                                       Spacing="16">
-                    <Label Text="{x:Static helpers:MaterialIcons.Info}"
-                        FontFamily="MaterialIcons"
-                        FontSize="48"
-                        TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#707070}"
-                        HorizontalOptions="Center"/>
-                    <Label Text="Select a Role"
-                        FontSize="22"
-                        FontAttributes="Bold"
-                        TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}"
-                        HorizontalOptions="Center"/>
-                    <Label Text="Choose a role from the list to view and edit its details"
-                        FontSize="16"
-                        TextColor="{AppThemeBinding Light=#757575, Dark=#BBBBBB}"
-                        HorizontalOptions="Center"
-                        HorizontalTextAlignment="Center"
-                        MaximumWidthRequest="280"/>
-                  </VerticalStackLayout>
-                </Border>
-              </ContentView>
-
-              <!-- Action Buttons at the bottom -->
-              <Grid Grid.Row="1"
-                  Grid.Column="1"
-                    Padding="20,16"
-                    BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#252525}"
-                    ColumnDefinitions="*,Auto,Auto"
-                    ColumnSpacing="12"
-                    Margin="0,0,0,16"
-                    IsVisible="{Binding SelectedRole, Converter={StaticResource StringNotNullOrEmptyConverter}}">
-                <!-- Delete Role Button -->
-                <Button Grid.Column="0"
-                        Text="Delete Role"
-                        Command="{Binding DeleteRoleCommand}"
-                        Style="{StaticResource OutlinedButton}"
-                        BackgroundColor="Transparent"
-                        BorderColor="{AppThemeBinding Light=#f44336, Dark=#ef5350}"
-                        TextColor="{AppThemeBinding Light=#f44336, Dark=#ef5350}"
-                        IsEnabled="{Binding SelectedRole.IsProtected, Converter={StaticResource InvertedBoolConverter}}"
-                        HorizontalOptions="Start"/>
-
-                <!-- Cancel Button (resets selections without saving) -->
-                <Button Grid.Column="1"
-                        Text="Cancel"
-                        Command="{Binding InitializeDataCommand}"
-                        Style="{StaticResource OutlinedButton}"
-                        BackgroundColor="Transparent"
-                        BorderColor="{AppThemeBinding Light=#9e9e9e, Dark=#757575}"
-                        TextColor="{AppThemeBinding Light=#9e9e9e, Dark=#757575}"
-                        HorizontalOptions="End"/>
-
-                <!-- Save Role Button -->
-                <Button Grid.Column="2"
-                        Text="Save Changes"
-                        Command="{Binding SaveRoleCommand}"
-                        Style="{StaticResource ModernActionButton}"
-                        BackgroundColor="#4CAF50"
-                        IsEnabled="{Binding SelectedRole.IsProtected, Converter={StaticResource InvertedBoolConverter}}"
-                        HorizontalOptions="End">
-                  <Button.Shadow>
-                    <Shadow Brush="#404CAF50"
-                            Offset="0,3"
-                            Radius="8"/>
-                  </Button.Shadow>
-                </Button>
               </Grid>
             </Grid>
           </Grid>

@@ -1,52 +1,80 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using SET09102_2024_5.Data;
 using SET09102_2024_5.Models;
+using SET09102_2024_5.Interfaces;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace SET09102_2024_5.Services
 {
-    public class DatabaseService : IDatabaseService
+    public class DatabaseService : IBaseService
     {
-        private readonly SensorMonitoringContext _context;
+        private readonly SensorMonitoringContext _dbContext;
         private readonly ILoggingService _loggingService;
         private bool _isInitialized = false;
         private const string DbCategory = "Database";
+        private const string ServiceName = "Database Service";
 
-        public DatabaseService(SensorMonitoringContext context, ILoggingService loggingService)
+        public DatabaseService(
+            SensorMonitoringContext dbContext,
+            ILoggingService loggingService)
         {
-            _context = context;
+            _dbContext = dbContext;
             _loggingService = loggingService;
         }
         
-        public async Task InitializeAsync()
+        public async Task<bool> InitializeAsync()
         {
             if (_isInitialized)
-                return;
+                return true;
                 
             _loggingService.Info("Initializing database service", DbCategory);
             
             try
             {
-                await InitializeDatabaseAsync();
+                // Test connection
+                bool connectionSuccess = await TestConnectionAsync();
+                
+                if (!connectionSuccess)
+                {
+                    _loggingService.Error("Database connection failed during initialization", null, DbCategory);
+                    return false;
+                }
+
+                // Database is initialized
                 _isInitialized = true;
                 _loggingService.Info("Database service initialized successfully", DbCategory);
+                return true;
             }
             catch (Exception ex)
             {
-                _loggingService.Error("Database initialization failed", ex, DbCategory);
-                throw;
+                _loggingService.Error("Failed to initialize database service", ex, DbCategory);
+                return false;
             }
+        }
+        
+        public Task<bool> IsReadyAsync()
+        {
+            return Task.FromResult(_isInitialized);
+        }
+        
+        public string GetServiceStatus()
+        {
+            return _isInitialized ? "Ready" : "Not Ready";
+        }
+        
+        public string GetServiceName()
+        {
+            return ServiceName;
         }
         
         public async Task CleanupAsync()
         {
             _loggingService.Info("Cleaning up database service", DbCategory);
-            // No specific cleanup needed for this service
             await Task.CompletedTask;
         }
 
@@ -55,7 +83,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug("Ensuring database is created", DbCategory);
-                await _context.Database.EnsureCreatedAsync();
+                await _dbContext.Database.EnsureCreatedAsync();
                 await SeedRolesAsync();
                 _loggingService.Info("Database initialized successfully", DbCategory);
             }
@@ -72,7 +100,7 @@ namespace SET09102_2024_5.Services
             {
                 _loggingService.Debug("Testing database connection", DbCategory);
                 // Try to execute a simple query
-                await _context.Database.ExecuteSqlRawAsync("SELECT 1");
+                await _dbContext.Database.ExecuteSqlRawAsync("SELECT 1");
                 _loggingService.Info("Database connection test successful", DbCategory);
                 return true;
             }
@@ -87,7 +115,7 @@ namespace SET09102_2024_5.Services
         {
             try
             {
-                var connection = _context.Database.GetDbConnection();
+                var connection = _dbContext.Database.GetDbConnection();
                 string dbName = connection.Database;
                 string dataSource = connection.DataSource;
                 
@@ -107,7 +135,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug("Retrieving all users", DbCategory);
-                var users = await _context.Users
+                var users = await _dbContext.Users
                     .Include(u => u.Role)
                     .ToListAsync();
                     
@@ -126,7 +154,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug("Retrieving all users with roles", DbCategory);
-                var users = await _context.Users
+                var users = await _dbContext.Users
                     .Include(u => u.Role)
                     .ToListAsync();
                     
@@ -145,7 +173,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug($"Retrieving user by ID: {userId}", DbCategory);
-                var user = await _context.Users
+                var user = await _dbContext.Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.UserId == userId);
                     
@@ -174,7 +202,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug($"Retrieving user by email: {email}", DbCategory);
-                var user = await _context.Users
+                var user = await _dbContext.Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.Email == email);
                     
@@ -198,14 +226,14 @@ namespace SET09102_2024_5.Services
             {
                 _loggingService.Info($"Updating role for user {userId} to role {roleId}", DbCategory);
                 
-                var user = await _context.Users.FindAsync(userId);
+                var user = await _dbContext.Users.FindAsync(userId);
                 if (user == null)
                 {
                     _loggingService.Warning($"Role update failed - user {userId} not found", DbCategory);
                     return false;
                 }
 
-                var role = await _context.Roles.FindAsync(roleId);
+                var role = await _dbContext.Roles.FindAsync(roleId);
                 if (role == null)
                 {
                     _loggingService.Warning($"Role update failed - role {roleId} not found", DbCategory);
@@ -213,7 +241,7 @@ namespace SET09102_2024_5.Services
                 }
 
                 // Check if current user role is Administrator, which is protected
-                var currentRole = await _context.Roles.FindAsync(user.RoleId);
+                var currentRole = await _dbContext.Roles.FindAsync(user.RoleId);
                 if (currentRole != null && currentRole.IsProtected && 
                     currentRole.RoleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
                 {
@@ -222,8 +250,8 @@ namespace SET09102_2024_5.Services
                 }
 
                 user.RoleId = roleId;
-                _context.Users.Update(user);
-                await _context.SaveChangesAsync();
+                _dbContext.Users.Update(user);
+                await _dbContext.SaveChangesAsync();
                 
                 _loggingService.Info($"Role updated successfully for user {userId}", DbCategory);
                 return true;
@@ -241,15 +269,15 @@ namespace SET09102_2024_5.Services
             {
                 _loggingService.Info($"Deleting user with ID: {userId}", DbCategory);
                 
-                var user = await _context.Users.FindAsync(userId);
+                var user = await _dbContext.Users.FindAsync(userId);
                 if (user == null)
                 {
                     _loggingService.Warning($"User delete failed - user {userId} not found", DbCategory);
                     return false;
                 }
 
-                _context.Users.Remove(user);
-                await _context.SaveChangesAsync();
+                _dbContext.Users.Remove(user);
+                await _dbContext.SaveChangesAsync();
                 
                 _loggingService.Info($"User {userId} deleted successfully", DbCategory);
                 return true;
@@ -267,7 +295,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug("Retrieving all roles", DbCategory);
-                var roles = await _context.Roles.ToListAsync();
+                var roles = await _dbContext.Roles.ToListAsync();
                 _loggingService.Debug($"Retrieved {roles.Count} roles", DbCategory);
                 return roles;
             }
@@ -283,7 +311,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug($"Retrieving role by ID: {roleId}", DbCategory);
-                var role = await _context.Roles.FindAsync(roleId);
+                var role = await _dbContext.Roles.FindAsync(roleId);
                 
                 if (role == null)
                 {
@@ -310,7 +338,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug($"Retrieving role by name: {roleName}", DbCategory);
-                var role = await _context.Roles
+                var role = await _dbContext.Roles
                     .FirstOrDefaultAsync(r => r.RoleName.Equals(roleName, StringComparison.OrdinalIgnoreCase));
                     
                 if (role == null)
@@ -340,7 +368,7 @@ namespace SET09102_2024_5.Services
                 _loggingService.Info($"Creating new role: {role.RoleName}", DbCategory);
                 
                 // Check if role with the same name already exists
-                bool exists = await _context.Roles
+                bool exists = await _dbContext.Roles
                     .AnyAsync(r => r.RoleName.Equals(role.RoleName, StringComparison.OrdinalIgnoreCase));
                     
                 if (exists)
@@ -349,8 +377,8 @@ namespace SET09102_2024_5.Services
                     return false;
                 }
                 
-                _context.Roles.Add(role);
-                await _context.SaveChangesAsync();
+                _dbContext.Roles.Add(role);
+                await _dbContext.SaveChangesAsync();
                 
                 _loggingService.Info($"Role '{role.RoleName}' created successfully with ID {role.RoleId}", DbCategory);
                 return true;
@@ -375,7 +403,7 @@ namespace SET09102_2024_5.Services
                 _loggingService.Info($"Updating role ID {role.RoleId}: {role.RoleName}", DbCategory);
                 
                 // Check if role exists
-                var existingRole = await _context.Roles.FindAsync(role.RoleId);
+                var existingRole = await _dbContext.Roles.FindAsync(role.RoleId);
                 if (existingRole == null)
                 {
                     _loggingService.Warning($"Role update failed - role ID {role.RoleId} not found", DbCategory);
@@ -393,8 +421,8 @@ namespace SET09102_2024_5.Services
                 existingRole.RoleName = role.RoleName;
                 existingRole.Description = role.Description;
                 
-                _context.Roles.Update(existingRole);
-                await _context.SaveChangesAsync();
+                _dbContext.Roles.Update(existingRole);
+                await _dbContext.SaveChangesAsync();
                 
                 _loggingService.Info($"Role ID {role.RoleId} updated successfully", DbCategory);
                 return true;
@@ -412,7 +440,7 @@ namespace SET09102_2024_5.Services
             {
                 _loggingService.Info($"Deleting role with ID: {roleId}", DbCategory);
                 
-                var role = await _context.Roles.FindAsync(roleId);
+                var role = await _dbContext.Roles.FindAsync(roleId);
                 if (role == null)
                 {
                     _loggingService.Warning($"Role delete failed - role ID {roleId} not found", DbCategory);
@@ -427,15 +455,15 @@ namespace SET09102_2024_5.Services
                 }
                 
                 // Check if any users have this role
-                bool hasUsers = await _context.Users.AnyAsync(u => u.RoleId == roleId);
+                bool hasUsers = await _dbContext.Users.AnyAsync(u => u.RoleId == roleId);
                 if (hasUsers)
                 {
                     _loggingService.Warning($"Cannot delete role ID {roleId} - it is assigned to users", DbCategory);
                     return false;
                 }
                 
-                _context.Roles.Remove(role);
-                await _context.SaveChangesAsync();
+                _dbContext.Roles.Remove(role);
+                await _dbContext.SaveChangesAsync();
                 
                 _loggingService.Info($"Role ID {roleId} deleted successfully", DbCategory);
                 return true;
@@ -453,7 +481,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug("Retrieving all sensors", DbCategory);
-                var sensors = await _context.Sensors.ToListAsync();
+                var sensors = await _dbContext.Sensors.ToListAsync();
                 _loggingService.Debug($"Retrieved {sensors.Count} sensors", DbCategory);
                 return sensors;
             }
@@ -469,7 +497,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug($"Retrieving sensor by ID: {sensorId}", DbCategory);
-                var sensor = await _context.Sensors.FindAsync(sensorId);
+                var sensor = await _dbContext.Sensors.FindAsync(sensorId);
                 
                 if (sensor == null)
                 {
@@ -491,7 +519,7 @@ namespace SET09102_2024_5.Services
             {
                 _loggingService.Debug($"Retrieving measurements for sensor {sensorId} between {startDate} - {endDate}", DbCategory);
                 
-                var measurements = await _context.Measurements
+                var measurements = await _dbContext.Measurements
                     .Include(m => m.PhysicalQuantity)
                     .Where(m => m.PhysicalQuantity.SensorId == sensorId && 
                                 m.Timestamp >= startDate && 
@@ -516,7 +544,7 @@ namespace SET09102_2024_5.Services
             {
                 _loggingService.Debug("Retrieving incidents with filters", DbCategory);
                 
-                IQueryable<Incident> query = _context.Incidents
+                IQueryable<Incident> query = _dbContext.Incidents
                     .Include(i => i.IncidentMeasurements)
                     .ThenInclude(im => im.Measurement);
                 
@@ -528,14 +556,22 @@ namespace SET09102_2024_5.Services
                         (!endDate.HasValue || im.Measurement.Timestamp <= endDate.Value)));
                 }
                 
-                var incidents = await query
-                    .OrderByDescending(i => i.IncidentMeasurements
-                        .Select(im => im.Measurement.Timestamp)
-                        .Max())
-                    .ToListAsync();
+                // Execute the query first to avoid expression tree lambda issues
+                var incidents = await query.ToListAsync();
+                
+                // Then perform client-side ordering with the full lambda expression
+                var orderedIncidents = incidents
+                    .OrderByDescending(i => 
+                        i.IncidentMeasurements != null && i.IncidentMeasurements.Any() && 
+                        i.IncidentMeasurements.Any(im => im.Measurement != null && im.Measurement.Timestamp.HasValue) ?
+                        i.IncidentMeasurements
+                            .Where(im => im.Measurement != null && im.Measurement.Timestamp.HasValue)
+                            .Max(im => im.Measurement.Timestamp.Value) :
+                        DateTime.MinValue)
+                    .ToList();
                     
-                _loggingService.Debug($"Retrieved {incidents.Count} incidents", DbCategory);
-                return incidents;
+                _loggingService.Debug($"Retrieved {orderedIncidents.Count} incidents", DbCategory);
+                return orderedIncidents;
             }
             catch (Exception ex)
             {
@@ -549,7 +585,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug($"Retrieving incident by ID: {incidentId}", DbCategory);
-                var incident = await _context.Incidents
+                var incident = await _dbContext.Incidents
                     .Include(i => i.IncidentMeasurements)
                     .FirstOrDefaultAsync(i => i.IncidentId == incidentId);
                 
@@ -570,7 +606,7 @@ namespace SET09102_2024_5.Services
         private async Task SeedRolesAsync()
         {
             // Only seed if roles table is empty
-            if (await _context.Roles.AnyAsync())
+            if (await _dbContext.Roles.AnyAsync())
             {
                 _loggingService.Debug("Skipping role seeding - roles already exist", DbCategory);
                 return;
@@ -600,10 +636,10 @@ namespace SET09102_2024_5.Services
                     Description = "Limited read-only access"
                 };
 
-                _context.Roles.Add(adminRole);
-                _context.Roles.Add(userRole);
-                _context.Roles.Add(guestRole);
-                await _context.SaveChangesAsync();
+                _dbContext.Roles.Add(adminRole);
+                _dbContext.Roles.Add(userRole);
+                _dbContext.Roles.Add(guestRole);
+                await _dbContext.SaveChangesAsync();
                 
                 _loggingService.Info("Default roles created successfully", DbCategory);
 
@@ -620,8 +656,8 @@ namespace SET09102_2024_5.Services
                     RoleId = adminRole.RoleId
                 };
                 
-                _context.Users.Add(adminUser);
-                await _context.SaveChangesAsync();
+                _dbContext.Users.Add(adminUser);
+                await _dbContext.SaveChangesAsync();
                 
                 _loggingService.Info("Default admin user created successfully", DbCategory);
             }
@@ -645,7 +681,7 @@ namespace SET09102_2024_5.Services
             try
             {
                 _loggingService.Debug("Retrieving all access privileges", DbCategory);
-                var privileges = await _context.AccessPrivileges
+                var privileges = await _dbContext.AccessPrivileges
                     .OrderBy(p => p.ModuleName)
                     .ThenBy(p => p.Name)
                     .ToListAsync();
@@ -666,7 +702,7 @@ namespace SET09102_2024_5.Services
             {
                 _loggingService.Debug($"Retrieving privileges for role ID: {roleId}", DbCategory);
                 
-                var rolePrivileges = await _context.RolePrivileges
+                var rolePrivileges = await _dbContext.RolePrivileges
                     .Include(rp => rp.AccessPrivilege)
                     .Where(rp => rp.RoleId == roleId)
                     .ToListAsync();
@@ -688,7 +724,7 @@ namespace SET09102_2024_5.Services
                 _loggingService.Info($"Updating privileges for role ID {roleId}", DbCategory);
                 
                 // Check if role exists
-                var role = await _context.Roles.FindAsync(roleId);
+                var role = await _dbContext.Roles.FindAsync(roleId);
                 if (role == null)
                 {
                     _loggingService.Warning($"Privilege update failed - role ID {roleId} not found", DbCategory);
@@ -703,7 +739,7 @@ namespace SET09102_2024_5.Services
                 }
                 
                 // Begin transaction to ensure all updates are applied atomically
-                using var transaction = await _context.Database.BeginTransactionAsync();
+                using var transaction = await _dbContext.Database.BeginTransactionAsync();
                 
                 try
                 {
@@ -712,11 +748,11 @@ namespace SET09102_2024_5.Services
                     {
                         _loggingService.Debug($"Removing {removedPrivilegeIds.Count} privileges from role ID {roleId}", DbCategory);
                         
-                        var rolesToRemove = await _context.RolePrivileges
+                        var rolesToRemove = await _dbContext.RolePrivileges
                             .Where(rp => rp.RoleId == roleId && removedPrivilegeIds.Contains(rp.AccessPrivilegeId))
                             .ToListAsync();
                             
-                        _context.RolePrivileges.RemoveRange(rolesToRemove);
+                        _dbContext.RolePrivileges.RemoveRange(rolesToRemove);
                     }
                     
                     // Add privileges
@@ -725,7 +761,7 @@ namespace SET09102_2024_5.Services
                         _loggingService.Debug($"Adding {addedPrivilegeIds.Count} privileges to role ID {roleId}", DbCategory);
                         
                         // Only add privileges that don't already exist
-                        var existingPrivilegeIds = await _context.RolePrivileges
+                        var existingPrivilegeIds = await _dbContext.RolePrivileges
                             .Where(rp => rp.RoleId == roleId)
                             .Select(rp => rp.AccessPrivilegeId)
                             .ToListAsync();
@@ -738,9 +774,9 @@ namespace SET09102_2024_5.Services
                         foreach (var privilegeId in newPrivilegeIds)
                         {
                             // Check if privilege exists
-                            if (await _context.AccessPrivileges.AnyAsync(ap => ap.AccessPrivilegeId == privilegeId))
+                            if (await _dbContext.AccessPrivileges.AnyAsync(ap => ap.AccessPrivilegeId == privilegeId))
                             {
-                                _context.RolePrivileges.Add(new RolePrivilege
+                                _dbContext.RolePrivileges.Add(new RolePrivilege
                                 {
                                     RoleId = roleId,
                                     AccessPrivilegeId = privilegeId
@@ -753,7 +789,7 @@ namespace SET09102_2024_5.Services
                         }
                     }
                     
-                    await _context.SaveChangesAsync();
+                    await _dbContext.SaveChangesAsync();
                     await transaction.CommitAsync();
                     
                     _loggingService.Info($"Role privileges updated successfully for role ID {roleId}", DbCategory);

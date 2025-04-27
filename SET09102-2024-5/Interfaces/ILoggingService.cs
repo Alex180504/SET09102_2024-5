@@ -1,11 +1,11 @@
 using System;
 
-namespace SET09102_2024_5.Services
+namespace SET09102_2024_5.Interfaces
 {
     /// <summary>
     /// Service for centralized logging across the application
     /// </summary>
-    public interface ILoggingService
+    public interface ILoggingService : IBaseService
     {
         /// <summary>
         /// Log debug information
