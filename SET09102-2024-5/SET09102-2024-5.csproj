@@ -57,6 +57,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Mapsui.Maui" Version="4.1.9" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.4" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.4" />
@@ -90,6 +91,11 @@
 	  <MauiXaml Update="Views\SensorManagementPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	</ItemGroup>
+	<ItemGroup>
+		<MauiAsset Include="Resources\Images\pin_default.png" />
+		<MauiAsset Include="Resources\Images\pin_warning.png" />
+		<MauiAsset Include="Resources\Images\pin_neutral.png" />
 	</ItemGroup>
 
 </Project>

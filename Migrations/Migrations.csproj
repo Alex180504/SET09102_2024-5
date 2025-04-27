@@ -21,7 +21,7 @@
 
 	<ItemGroup>
 	<EmbeddedResource Include="appsettings.json">
-		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</EmbeddedResource>
 	<EmbeddedResource Include="DigiCertGlobalRootG2.crt.pem">
 	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>

@@ -1,0 +1,12 @@
+@startuml
+node "Client Device\n(Mobile/Desktop)" as clientNode {
+  component "MAUI App" as MAUIApp
+  component "PollingTimer Service" as PollingTimer
+}
+node "Azure Cloud" as azureNode {
+  database "Azure SQL Database" as AzureSQL
+}
+
+MAUIApp        --> AzureSQL : TCP/1433
+PollingTimer   --> AzureSQL : TCP/1433
+@enduml

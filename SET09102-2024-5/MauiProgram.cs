@@ -1,17 +1,15 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Reflection;
+using CommunityToolkit.Maui;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using SET09102_2024_5.Data;
 using SET09102_2024_5.Data.Repositories;
+using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Services;
 using SET09102_2024_5.ViewModels;
 using SET09102_2024_5.Views;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
-using Microsoft.Extensions.Configuration;
-using System.Reflection;
-using System.IO;
-using System.Security.Cryptography.X509Certificates;
-using CommunityToolkit.Maui;
-using SET09102_2024_5.Interfaces;
+using SkiaSharp.Views.Maui.Controls.Hosting;
 
 
 namespace SET09102_2024_5
@@ -27,6 +25,7 @@ namespace SET09102_2024_5
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseSkiaSharp()
                 .UseMauiCommunityToolkit()
                 .ConfigureFonts(fonts =>
                 {
@@ -45,8 +44,11 @@ namespace SET09102_2024_5
                     .Build();
 
                 // Get connection string from configuration
+#if DEBUG
+                ConnectionString = config.GetConnectionString("LocalConnection");
+#else
                 ConnectionString = config.GetConnectionString("DefaultConnection");
-
+#endif
                 // Extract SSL certificate and save it to a temporary file
                 CertPath = ExtractSslCertificate();
                 ConnectionString = ConnectionString.Replace("SslCa=DigiCertGlobalRootG2.crt.pem;", $"SslCa={CertPath};");
@@ -71,29 +73,30 @@ namespace SET09102_2024_5
                     return optionsBuilder.Options;
                 });
 
-                // Register the context itself
-                builder.Services.AddScoped<SensorMonitoringContext>();
+                // Your DbContext (scoped)
+                builder.Services.AddDbContextFactory<SensorMonitoringContext>(opts =>
+    opts.UseMySql(ConnectionString, ServerVersion.AutoDetect(ConnectionString)));
+                builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializationService>();
 
-                // Register database initialization service
-                builder.Services.AddSingleton<IDatabaseInitializationService, DatabaseInitializationService>();
-
-                // Register repositories
+                // Repositories (scoped)
                 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+                builder.Services.AddScoped<ISensorRepository, SensorRepository>();
+                builder.Services.AddScoped<IMeasurementRepository, MeasurementRepository>();
 
-                // Register services
+                // Services (scoped, not singleton)
                 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+                builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
+                builder.Services.AddScoped<ISensorService, SensorService>();
+                builder.Services.AddSingleton<IDialogService, DialogService>();
 
-                // Register ViewModels
+                // ViewModels & Views
                 builder.Services.AddTransient<MainPageViewModel>();
                 builder.Services.AddTransient<SensorManagementViewModel>();
-
-                // Register Views
+                builder.Services.AddTransient<MapViewModel>();
                 builder.Services.AddTransient<MainPage>();
                 builder.Services.AddTransient<SensorManagementPage>();
+                builder.Services.AddTransient<MapPage>();
 
-                builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
-                builder.Services.AddSingleton<IDialogService, DialogService>();
-                builder.Services.AddSingleton<INavigationService, NavigationService>();
 
 #if DEBUG
                 builder.Logging.AddDebug();
