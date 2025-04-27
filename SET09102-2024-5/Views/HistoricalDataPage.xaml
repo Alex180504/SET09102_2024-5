@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:viewmodels="clr-namespace:SET09102_2024_5.Features.HistoricalData.ViewModels"
+    xmlns:wv="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
     x:Class="SET09102_2024_5.Features.HistoricalData.HistoricalDataPage"
     Title="Historical Data">
 
@@ -27,23 +28,34 @@
                 ItemsSource="{Binding SensorSites}" 
                 SelectedItem="{Binding SelectedSensorSite}" />
 
-            <!-- Line Chart Placeholder -->
-            <Label Text="Line Chart" FontAttributes="Bold" />
-            <BoxView HeightRequest="200" BackgroundColor="LightGray" CornerRadius="8" />
-
+            <wv:WebView
+                x:Name="ChartWebView"
+                HeightRequest="250"
+                HorizontalOptions="FillAndExpand" />
+            
             <!-- Data Table -->
             <Label Text="Raw Data Table" FontAttributes="Bold" />
             <CollectionView ItemsSource="{Binding DataPoints}">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Grid ColumnDefinitions="*,*" Padding="5">
-                            <Label Text="{Binding Timestamp}" />
-                            <Label Text="{Binding Value}" Grid.Column="1" HorizontalTextAlignment="End"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Text="{Binding Timestamp, StringFormat='{0:yyyy-MM-dd HH:mm:ss}'}" Grid.Column="0"/>
+                            
+                            <Label Text="{Binding Value1}" Grid.Column="1"/>
+                            <Label Text="{Binding Value2}" Grid.Column="2"/>
+                            <Label Text="{Binding Value3}" Grid.Column="3"/>
+                            <Label Text="{Binding Value4}" Grid.Column="4"/>
                         </Grid>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
-
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

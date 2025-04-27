@@ -27,17 +27,6 @@ namespace SET09102_2024_5.Features.HistoricalData.ViewModels
 			}
 		}
 
-		private string selectedSensorSite = "";
-		public string SelectedSensorSite
-		{
-			get => selectedSensorSite;
-			set
-			{
-				selectedSensorSite = value;
-				OnPropertyChanged();
-				LoadHistoricalData();
-			}
-		}
 
 		public event PropertyChangedEventHandler? PropertyChanged;
 		protected void OnPropertyChanged([CallerMemberName] string name = null) =>
@@ -52,15 +41,13 @@ namespace SET09102_2024_5.Features.HistoricalData.ViewModels
 		// Default constructor for XAML instantiation
 		public HistoricalDataViewModel() : this(new MockDataService()) { }
 
-		public async void LoadHistoricalData()
-		{
-			if (string.IsNullOrEmpty(SelectedCategory) || string.IsNullOrEmpty(SelectedSensorSite))
-				return;
-
-			var results = await _dataService.GetHistoricalData(SelectedCategory, SelectedSensorSite);
-			DataPoints.Clear();
-			foreach (var item in results)
-				DataPoints.Add(item);
-		}
-	}
+        public async void LoadHistoricalData()
+        {
+            if (string.IsNullOrEmpty(SelectedCategory)) return;
+            var results = await _dataService.GetHistoricalData(SelectedCategory, null);
+            DataPoints.Clear();
+            foreach (var item in results)
+                DataPoints.Add(item);
+        }
+    }
 }

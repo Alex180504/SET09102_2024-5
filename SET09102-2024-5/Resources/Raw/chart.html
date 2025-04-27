@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Historical Data Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body, html {
+            background: lightgoldenrodyellow;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #chartContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 250px; /* <-- concrete pixel height */
+        }
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="chartContainer">
+        <canvas id="myChart"></canvas>
+    </div>
+    <!--<div>Hello from HTML</div> -->   <!-- debug that HTML loaded -->
+
+    <script>
+        // this array will be replaced by MAUI
+        window.dotnetData = [];
+
+        // Register all built-in controllers, elements, scales & plugins in Chart.js v4+
+        Chart.register(...Chart.registerables);
+
+        // debug: should appear alert when HTML loads
+        //alert('HTML loaded, initial data = ' + JSON.stringify(window.dotnetData));
+
+        // Keep a reference to the Chart instance so updates redraw correctly
+        let myChart = null;
+
+        function renderChart() {
+            //alert('renderChart() sees data = ' + JSON.stringify(window.dotnetData)); // debug
+
+            const labels = window.dotnetData.map(d => d.timestamp);
+            const values = window.dotnetData.map(d => d.value);
+
+            const chartData = {
+                labels, datasets: [{
+                    label: 'Value',
+                    data: values,
+                    fill: false,
+                    borderColor: 'steelblue',    // make the line visible
+                    borderWidth: 2
+                }]
+            };
+
+            const chartConfig = {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { x: {}, y: { beginAtZero: true } }
+                }
+            };
+
+            if (myChart) { myChart.config.data = chartData; myChart.update(); }
+            else { const ctx = document.getElementById('myChart').getContext('2d'); myChart = new Chart(ctx, chartConfig); }
+        }
+    </script>
+</body>
+</html>

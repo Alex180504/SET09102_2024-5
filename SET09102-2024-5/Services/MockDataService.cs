@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using SET09102_2024_5.Models;
 using SET09102_2024_5.Services;
+using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Packaging;
+using System.Data;
 
 namespace SET09102_2024_5.Services
 {
@@ -10,26 +14,115 @@ namespace SET09102_2024_5.Services
     {
         public async Task<List<EnvironmentalDataModel>> GetHistoricalData(string category, string site)
         {
-            // Simulate delay
-            await Task.Delay(500);
-
-            var random = new Random();
-            var list = new List<EnvironmentalDataModel>();
-
-            for (int i = 0; i < 10; i++)
+            // Determine file path based on category
+            var fileName = category switch
             {
-                list.Add(new EnvironmentalDataModel
-                {
-                    Timestamp = DateTime.Now.AddDays(-i),
-                    Value = Math.Round(random.NextDouble() * 100, 2),
-                    ParameterType = "Temperature",
-                    DataCategory = category,
-                    SensorSite = site
-                });
-            }
+                "Air" => "Air_quality.xlsx",
+                "Water" => "Water_quality.xlsx",
+                "Weather" => "Weather.xlsx",
+                _ => throw new ArgumentException("Unknown category")
+            };
+            // Build path to Data folder
+            var dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
+            var filePath = Path.Combine(dataDir, fileName);
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException($"Data file not found: {filePath}");
 
-            list.Reverse(); // so it goes oldest ➝ newest
-            return list;
+            var list = new List<EnvironmentalDataModel>();
+            return await Task.Run(() =>
+            {
+                var list = new List<EnvironmentalDataModel>();
+                using var workbook = new XLWorkbook(filePath);
+                var ws = workbook.Worksheet(1);
+
+                // Find header row (where first cell is "Date" or "time")
+                var headerRow = ws.RowsUsed()
+                    .First(r =>
+                        r.Cell(1).GetString().Trim().Equals("Date", StringComparison.OrdinalIgnoreCase)
+                     || r.Cell(1).GetString().Trim().Equals("time", StringComparison.OrdinalIgnoreCase)
+                    );
+                int headerIndex = headerRow.RowNumber();
+
+                // Determine if weather style (single time column)
+                bool isWeather = headerRow.Cell(1).GetString().Trim().Equals("time", StringComparison.OrdinalIgnoreCase);
+
+                // Identify column indexes
+                int dateCol = headerRow.CellsUsed()
+                    .First(c => c.GetString().Trim().Equals(isWeather ? "time" : "Date", StringComparison.OrdinalIgnoreCase))
+                    .Address.ColumnNumber;
+                int timeCol = isWeather ? -1 : headerRow.CellsUsed()
+                    .First(c => c.GetString().Trim().Equals("Time", StringComparison.OrdinalIgnoreCase))
+                    .Address.ColumnNumber;
+
+                
+                // Find the very last column in the sheet
+                int lastCol = ws.LastColumnUsed().ColumnNumber();
+
+                // Build measureCols = every column between 1..lastCol except dateCol & timeCol
+                var measureCols = Enumerable
+                    .Range(1, lastCol)
+                    .Where(ci => ci != dateCol && ci != timeCol)
+                    .ToList();
+
+                // Process data rows after header
+                foreach (var row in ws.Rows(headerIndex + 1, ws.LastRowUsed().RowNumber()))
+                {
+                    // 1) read raw strings
+                    var dateRaw = row.Cell(dateCol).GetString().Trim();
+                    var timeRaw = isWeather ? "" : row.Cell(timeCol).GetString().Trim();
+                    
+                    // 2) skip any row missing date (or time for Air/Water)
+                    if (string.IsNullOrWhiteSpace(dateRaw) || (!isWeather && string.IsNullOrWhiteSpace(timeRaw)))
+                            continue;
+
+                    DateTime timestamp;
+                    if (isWeather)
+                    {
+                        // parse ISO‐style full timestamp
+                        var raw = row.Cell(dateCol).GetString().Trim();
+                        if (!DateTime.TryParse(raw, out timestamp)) continue;
+                    }
+                    else
+                    {
+                        // for Air/Water: dateCol may hold midnight always, so split parts explicitly
+                        // get date part
+                        var dateCell = row.Cell(dateCol);
+                        DateTime datePart = dateCell.DataType == XLDataType.DateTime
+                            ? dateCell.GetDateTime().Date
+                            : DateTime.Parse(dateCell.GetString().Trim()).Date;
+                        // get time part
+                        var timeText = row.Cell(timeCol).GetString().Trim();
+                        if (!TimeSpan.TryParse(timeText, out var timePart)) continue;
+                        timestamp = datePart + timePart;
+                    }
+                    
+                    // Parse values
+                    var values = measureCols.Select(ci =>
+                    {
+                        var cell = row.Cell(ci);
+                        if (cell.DataType == XLDataType.Number)
+                            return cell.GetDouble();
+                        var txt = cell.GetString().Trim();
+                        return double.TryParse(txt, out var d) ? d : 0.0;
+                    }).ToArray();
+
+                    double val1 = values.ElementAtOrDefault(0);
+                    double val2 = values.ElementAtOrDefault(1);
+                    double val3 = values.ElementAtOrDefault(2);
+                    double val4 = values.ElementAtOrDefault(3);
+
+                    list.Add(new EnvironmentalDataModel
+                    {
+                        Timestamp = timestamp,
+                        Value1 = val1,
+                        Value2 = val2,
+                        Value3 = val3,
+                        Value4 = val4,
+                    });
+                }
+                // Sort ascending
+                return list.OrderBy(dp => dp.Timestamp).ToList();
+            });
         }
     }
 }
