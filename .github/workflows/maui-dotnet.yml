@@ -34,26 +34,29 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-dotnet-workloads-
 
-      - name: Install MAUI Workloads
+      - name: Install .NET MAUI workloads
         run: |
           dotnet workload install maui-android maui-ios maui-windows
-          dotnet workload restore
+
+      - name: Restore NuGet packages
+        run: |
+          dotnet restore SET09102_2024-5/SET09102_2024-5.csproj
 
       - name: Build for Android
         if: ${{ matrix.target == 'android' }}
         run: |
-          dotnet build SET09102_2024_5/SET09102_2024_5.csproj \
+          dotnet build SET09102_2024-5/SET09102_2024-5.csproj \
             --configuration Release \
             --framework net8.0-android
 
       - name: Build for Windows
         if: ${{ matrix.target == 'windows' }}
         run: |
-          dotnet build SET09102_2024_5/SET09102_2024_5.csproj \
+          dotnet build SET09102_2024-5/SET09102_2024-5.csproj \
             --configuration Release \
             --framework net8.0-windows10.0.19041.0
 
-      - name: Run Tests
+      - name: Run tests
         run: |
           dotnet test Tests/Tests.csproj \
             --configuration Release \
