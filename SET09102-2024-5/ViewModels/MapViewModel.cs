@@ -97,6 +97,12 @@ namespace SET09102_2024_5.ViewModels
                 var sensors = await _sensorService.GetAllWithConfigurationAsync();
                 _currentSensors = sensors;
 
+                foreach (var s in sensors)
+                {
+                    if (string.IsNullOrEmpty(s.DisplayName))
+                        s.DisplayName = $"{s.SensorType} #{s.SensorId}";
+                }
+
                 var features = new List<IFeature>(sensors.Count);
 
                 foreach (var s in sensors)
@@ -147,7 +153,8 @@ namespace SET09102_2024_5.ViewModels
         /// Encapsulates stale or out‐of‐threshold logic for a sensor.
         string? GetWarningReason(Sensor s, MeasurementDto? last)
         {
-            if (last == null) return null;
+            if (last == null)
+                return "no recent data";
 
             // 1) Check staleness
             var freq = s.Configuration?.MeasurementFrequency ?? 0;
