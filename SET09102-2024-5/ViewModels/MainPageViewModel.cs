@@ -1,37 +1,23 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace SET09102_2024_5.ViewModels
 {
-    public class MainPageViewModel : BaseViewModel
+    public partial class MainPageViewModel : BaseViewModel
     {
-        private int count;
-
-        public MainPageViewModel()
-        {
-            IncrementCountCommand = new Command(OnIncrementCount);
-            NavigateToSensorManagementCommand = new Command(OnNavigateToSensorManagement);
-        }
-
-        public int Count
-        {
-            get => count;
-            set
-            {
-                if (SetProperty(ref count, value))
-                {
-                    OnPropertyChanged(nameof(CounterText));
-                }
-            }
-        }
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CounterText))]
+        private int _count;
 
         public string CounterText => Count == 1 ? $"Clicked {Count} time" : $"Clicked {Count} times";
 
-        public ICommand IncrementCountCommand { get; }
-        public ICommand NavigateToSensorManagementCommand { get; }
+        public MainPageViewModel()
+        {
+            Title = "Main Page";
+        }
 
-        private void OnIncrementCount()
+        [RelayCommand]
+        private void IncrementCount()
         {
             Count++;
         }

@@ -1,5 +1,5 @@
 using SET09102_2024_5.ViewModels;
-using System.Threading.Tasks;
+using System;
 
 namespace SET09102_2024_5.Views;
 
@@ -18,21 +18,26 @@ public partial class UserRoleManagementPage : ContentPage
     {
         base.OnAppearing();
         
-        // Apply entrance animations
-        this.Opacity = 0;
-        await this.FadeTo(1, 250, Easing.CubicOut);
+        // Explicitly load data when the page appears
+        await _viewModel.LoadDataAsync();
+    }
+    
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
         
-        // Additional initialization if needed when page appears
+        // Clean up any resources or event handlers
+        _viewModel?.Cleanup();
     }
     
     // Animation helper for item selection
-    private async Task AnimateItemSelection(View item)
+    private async void OnItemSelected(object sender, EventArgs e)
     {
-        if (item == null) return;
-        
-        // Quick scale animation to provide visual feedback
-        await item.ScaleTo(0.97, 100, Easing.CubicOut);
-        await Task.Delay(50);
-        await item.ScaleTo(1, 100, Easing.SpringOut);
+        if (sender is View view)
+        {
+            // Simple animation for selection feedback
+            await view.ScaleTo(0.95, 100);
+            await view.ScaleTo(1.0, 100);
+        }
     }
 }

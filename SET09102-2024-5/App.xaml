@@ -9,18 +9,20 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+                <ResourceDictionary Source="Resources/Styles/ViewStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
             
             <!-- Converters -->
             <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
             <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
+            <converters:NullToBoolConverter x:Key="NullToBoolConverter" />
             
             <!-- Button Styles -->
             <Style x:Key="TextButton" TargetType="Button">
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBrush}}" />
-                <Setter Property="BorderWidth" Value="0" />
-                <Setter Property="Padding" Value="5,0" />
+                <Setter Property="BackgroundColor" Value="Transparent"/>
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"/>
+                <Setter Property="BorderWidth" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
             </Style>
         </ResourceDictionary>
     </Application.Resources>

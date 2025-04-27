@@ -12,6 +12,7 @@ using System.Reflection;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using CommunityToolkit.Maui;
+using SET09102_2024_5.Views.Controls;
 
 namespace SET09102_2024_5
 {
@@ -90,30 +91,48 @@ namespace SET09102_2024_5
 
             // Register services
             builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+            builder.Services.AddSingleton<ILoggingService, LoggingService>(); // Add logging service as singleton
             builder.Services.AddSingleton<IAuthService, AuthService>(); // Singleton to maintain auth state
+            
+            // Register optimized navigation and view management services
             builder.Services.AddSingleton<INavigationService, NavigationService>(); // Singleton for navigation service
+            builder.Services.AddSingleton<ViewModelLocator>(); // Add our new ViewModel locator as singleton
+            builder.Services.AddSingleton<ViewLifecycleManager>(); // Add view lifecycle manager
 
             // Register app shell with navigation
             builder.Services.AddSingleton<AppShell>();
 
-            // Register ViewModels
+            // Register ViewModels - all are transient for better memory management
+            // Core ViewModels
             builder.Services.AddTransient<MainPageViewModel>();
             builder.Services.AddTransient<LoginViewModel>();
             builder.Services.AddTransient<RegisterViewModel>();
             
-            // Register Admin ViewModels
+            // Admin ViewModels
             builder.Services.AddTransient<RoleManagementViewModel>();
             builder.Services.AddTransient<UserRoleManagementViewModel>();
+            
+            // Register Reusable UI components
+            RegisterControls(builder.Services);
 
-            // Register Views
+            // Register Views - all views are transient to minimize memory usage
+            // Core Views
             builder.Services.AddTransient<MainPage>();
             builder.Services.AddTransient<LoginPage>();
             builder.Services.AddTransient<RegisterPage>();
             
-            // Register Admin Views
+            // Admin Views
             builder.Services.AddTransient<AdminDashboardPage>();
             builder.Services.AddTransient<RoleManagementPage>();
             builder.Services.AddTransient<UserRoleManagementPage>();
+            
+            // Register page routes with Shell for navigation
+            Routing.RegisterRoute(RouteConstants.LoginPage, typeof(LoginPage));
+            Routing.RegisterRoute(RouteConstants.RegisterPage, typeof(RegisterPage));
+            Routing.RegisterRoute(RouteConstants.MainPage, typeof(MainPage));
+            Routing.RegisterRoute(RouteConstants.AdminDashboardPage, typeof(AdminDashboardPage));
+            Routing.RegisterRoute(RouteConstants.RoleManagementPage, typeof(RoleManagementPage));
+            Routing.RegisterRoute(RouteConstants.UserRoleManagementPage, typeof(UserRoleManagementPage));
 
 #if DEBUG
                 builder.Logging.AddDebug();
@@ -125,6 +144,17 @@ namespace SET09102_2024_5
             }
 
             return builder.Build();
+        }
+        
+        /// <summary>
+        /// Register all reusable UI controls
+        /// </summary>
+        private static void RegisterControls(IServiceCollection services)
+        {
+            // Register common controls used across the application
+            services.AddTransient<PageHeaderView>();
+            services.AddTransient<EmptyStateView>();
+            services.AddTransient<LoadingOverlay>();
         }
 
         private static string ExtractSslCertificate()

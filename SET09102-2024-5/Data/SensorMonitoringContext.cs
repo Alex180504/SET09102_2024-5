@@ -33,6 +33,7 @@ namespace SET09102_2024_5.Data
                 entity.Property(e => e.RoleId).HasColumnName("role_id");
                 entity.Property(e => e.RoleName).HasColumnName("role_name").IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
+                entity.Property(e => e.IsProtected).HasColumnName("is_protected").HasDefaultValue(false);
             });
 
             modelBuilder.Entity<User>(entity =>

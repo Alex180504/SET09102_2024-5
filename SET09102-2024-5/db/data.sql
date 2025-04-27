@@ -1,5 +1,8 @@
 USE sensor_monitoring;
 
+-- Ensure role_name is unique to prevent subquery errors
+ALTER TABLE role ADD UNIQUE (role_name);
+
 -- Ensure we have default roles
 INSERT INTO role (role_name, description) VALUES 
 ('Administrator', 'Full system access with all privileges'),
@@ -62,94 +65,89 @@ ON DUPLICATE KEY UPDATE
 -- Assign all privileges to Administrator role
 INSERT INTO role_privilege (role_id, access_privilege_id)
 SELECT 
-    (SELECT role_id FROM role WHERE role_name = 'Administrator'), 
+    (SELECT role_id FROM role WHERE role_name = 'Administrator' LIMIT 1), 
     access_privilege_id 
-FROM 
-    access_privilege
+FROM access_privilege
 ON DUPLICATE KEY UPDATE role_id = role_id;
 
 -- Assign privileges for Environmental Scientist
 INSERT INTO role_privilege (role_id, access_privilege_id)
 SELECT 
-    (SELECT role_id FROM role WHERE role_name = 'Environmental Scientist'), 
+    (SELECT role_id FROM role WHERE role_name = 'Environmental Scientist' LIMIT 1), 
     access_privilege_id 
-FROM 
-    access_privilege 
-WHERE 
-    name IN ('sensor.view', 'data.view', 'data.analyze', 'data.export', 
-             'alert.view', 'alert.respond', 'report.view', 'report.create', 'report.export')
+FROM access_privilege 
+WHERE name IN (
+    'sensor.view', 'data.view', 'data.analyze', 'data.export', 
+    'alert.view', 'alert.respond', 'report.view', 'report.create', 'report.export'
+)
 ON DUPLICATE KEY UPDATE role_id = role_id;
 
 -- Assign privileges for Operations Manager
 INSERT INTO role_privilege (role_id, access_privilege_id)
 SELECT 
-    (SELECT role_id FROM role WHERE role_name = 'Operations Manager'), 
+    (SELECT role_id FROM role WHERE role_name = 'Operations Manager' LIMIT 1), 
     access_privilege_id 
-FROM 
-    access_privilege 
-WHERE 
-    name IN ('sensor.view', 'sensor.edit', 'data.view', 
-             'alert.view', 'alert.respond', 'alert.configure',
-             'maintenance.view', 'maintenance.schedule', 'report.view')
+FROM access_privilege 
+WHERE name IN (
+    'sensor.view', 'sensor.edit', 'data.view', 
+    'alert.view', 'alert.respond', 'alert.configure',
+    'maintenance.view', 'maintenance.schedule', 'report.view'
+)
 ON DUPLICATE KEY UPDATE role_id = role_id;
 
 -- Assign privileges for Field Technician
 INSERT INTO role_privilege (role_id, access_privilege_id)
 SELECT 
-    (SELECT role_id FROM role WHERE role_name = 'Field Technician'), 
+    (SELECT role_id FROM role WHERE role_name = 'Field Technician' LIMIT 1), 
     access_privilege_id 
-FROM 
-    access_privilege 
-WHERE 
-    name IN ('sensor.view', 'maintenance.view', 'maintenance.perform')
+FROM access_privilege 
+WHERE name IN (
+    'sensor.view', 'maintenance.view', 'maintenance.perform'
+)
 ON DUPLICATE KEY UPDATE role_id = role_id;
 
 -- Assign limited privileges to Guest role
 INSERT INTO role_privilege (role_id, access_privilege_id)
 SELECT 
-    (SELECT role_id FROM role WHERE role_name = 'Guest'), 
+    (SELECT role_id FROM role WHERE role_name = 'Guest' LIMIT 1), 
     access_privilege_id 
-FROM 
-    access_privilege 
-WHERE 
-    name IN ('sensor.view', 'data.view')
+FROM access_privilege 
+WHERE name IN (
+    'sensor.view', 'data.view'
+)
 ON DUPLICATE KEY UPDATE role_id = role_id;
 
 -- Ensure at least one administrator user exists
 INSERT INTO user (first_name, last_name, email, role_id, password_hash, password_salt)
 SELECT 'Admin', 'User', 'admin@example.com', 
-       (SELECT role_id FROM role WHERE role_name = 'Administrator'),
-       -- Pre-hashed password for 'admin123'
-       'QupYj2NpJbHnprPi9U3Y25TWx9kpNsS9mUUkWRbMr+E=',
-       'MIAvLJtBvsvt4gw0xZogLHdgTMXKGGvS3F6Do7+Isi7PUP2+5rcPA7Q/QE8Pt1Vig+3XwXxyuWWZh5Ex3ynVg0hZyqnsA3KhXVKPpJGaZvBLGdvXivRskmTFI4SS0VGyHj4Q9KDbI+GQeFbD3XWbBGZ1+FZGcJbDKBMjNSIsRPc='
+       (SELECT role_id FROM role WHERE role_name = 'Administrator' LIMIT 1),
+       'HSN0y+hZ6jK50zwJPrBe0p+1qlO2ppxCP5Jlo63jmyXkhk4w+i+P/TTLucywy7qg3BRYQBus7WN+4sZyocsXcw==',
+       '4bz835D7mDzxTvpNbfPSSJXzKHq6/lizjm0nY8HjEX3YfdDXoHLXneAI6KY5Jk3HQ1VaY2bDEvMo5cv2GthL7iua6ExwQYGWM9HQDcf2CKHIvsnxvIHA06XzrpPUH/429sNOgb/awkn95WeAiTjRThStw2YdZxTc7ssVi8uHbTk='
 FROM dual 
 WHERE NOT EXISTS(SELECT 1 FROM user WHERE email = 'admin@example.com');
 
 -- Ensure we have a test user for each role
 INSERT INTO user (first_name, last_name, email, role_id, password_hash, password_salt)
 SELECT 'Scientist', 'User', 'scientist@example.com', 
-       (SELECT role_id FROM role WHERE role_name = 'Environmental Scientist'),
-       -- Pre-hashed password for 'password'
-       'QupYj2NpJbHnprPi9U3Y25TWx9kpNsS9mUUkWRbMr+E=',
-       'MIAvLJtBvsvt4gw0xZogLHdgTMXKGGvS3F6Do7+Isi7PUP2+5rcPA7Q/QE8Pt1Vig+3XwXxyuWWZh5Ex3ynVg0hZyqnsA3KhXVKPpJGaZvBLGdvXivRskmTFI4SS0VGyHj4Q9KDbI+GQeFbD3XWbBGZ1+FZGcJbDKBMjNSIsRPc='
+       (SELECT role_id FROM role WHERE role_name = 'Environmental Scientist' LIMIT 1),
+       'HSN0y+hZ6jK50zwJPrBe0p+1qlO2ppxCP5Jlo63jmyXkhk4w+i+P/TTLucywy7qg3BRYQBus7WN+4sZyocsXcw==',
+       '4bz835D7mDzxTvpNbfPSSJXzKHq6/lizjm0nY8HjEX3YfdDXoHLXneAI6KY5Jk3HQ1VaY2bDEvMo5cv2GthL7iua6ExwQYGWM9HQDcf2CKHIvsnxvIHA06XzrpPUH/429sNOgb/awkn95WeAiTjRThStw2YdZxTc7ssVi8uHbTk='
 FROM dual 
 WHERE NOT EXISTS(SELECT 1 FROM user WHERE email = 'scientist@example.com');
 
 INSERT INTO user (first_name, last_name, email, role_id, password_hash, password_salt)
 SELECT 'Operations', 'Manager', 'operations@example.com', 
-       (SELECT role_id FROM role WHERE role_name = 'Operations Manager'),
-       -- Pre-hashed password for 'password'
-       'QupYj2NpJbHnprPi9U3Y25TWx9kpNsS9mUUkWRbMr+E=',
-       'MIAvLJtBvsvt4gw0xZogLHdgTMXKGGvS3F6Do7+Isi7PUP2+5rcPA7Q/QE8Pt1Vig+3XwXxyuWWZh5Ex3ynVg0hZyqnsA3KhXVKPpJGaZvBLGdvXivRskmTFI4SS0VGyHj4Q9KDbI+GQeFbD3XWbBGZ1+FZGcJbDKBMjNSIsRPc='
+       (SELECT role_id FROM role WHERE role_name = 'Operations Manager' LIMIT 1),
+       'HSN0y+hZ6jK50zwJPrBe0p+1qlO2ppxCP5Jlo63jmyXkhk4w+i+P/TTLucywy7qg3BRYQBus7WN+4sZyocsXcw==',
+       '4bz835D7mDzxTvpNbfPSSJXzKHq6/lizjm0nY8HjEX3YfdDXoHLXneAI6KY5Jk3HQ1VaY2bDEvMo5cv2GthL7iua6ExwQYGWM9HQDcf2CKHIvsnxvIHA06XzrpPUH/429sNOgb/awkn95WeAiTjRThStw2YdZxTc7ssVi8uHbTk='
 FROM dual 
 WHERE NOT EXISTS(SELECT 1 FROM user WHERE email = 'operations@example.com');
 
 INSERT INTO user (first_name, last_name, email, role_id, password_hash, password_salt)
 SELECT 'Tech', 'Support', 'technician@example.com', 
-       (SELECT role_id FROM role WHERE role_name = 'Field Technician'),
-       -- Pre-hashed password for 'password'
-       'QupYj2NpJbHnprPi9U3Y25TWx9kpNsS9mUUkWRbMr+E=',
-       'MIAvLJtBvsvt4gw0xZogLHdgTMXKGGvS3F6Do7+Isi7PUP2+5rcPA7Q/QE8Pt1Vig+3XwXxyuWWZh5Ex3ynVg0hZyqnsA3KhXVKPpJGaZvBLGdvXivRskmTFI4SS0VGyHj4Q9KDbI+GQeFbD3XWbBGZ1+FZGcJbDKBMjNSIsRPc='
+       (SELECT role_id FROM role WHERE role_name = 'Field Technician' LIMIT 1),
+       'HSN0y+hZ6jK50zwJPrBe0p+1qlO2ppxCP5Jlo63jmyXkhk4w+i+P/TTLucywy7qg3BRYQBus7WN+4sZyocsXcw==',
+       '4bz835D7mDzxTvpNbfPSSJXzKHq6/lizjm0nY8HjEX3YfdDXoHLXneAI6KY5Jk3HQ1VaY2bDEvMo5cv2GthL7iua6ExwQYGWM9HQDcf2CKHIvsnxvIHA06XzrpPUH/429sNOgb/awkn95WeAiTjRThStw2YdZxTc7ssVi8uHbTk='
 FROM dual 
 WHERE NOT EXISTS(SELECT 1 FROM user WHERE email = 'technician@example.com');
 
