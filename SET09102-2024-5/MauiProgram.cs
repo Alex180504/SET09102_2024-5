@@ -47,8 +47,11 @@ namespace SET09102_2024_5
                     .Build();
 
                 // Get connection string from configuration
+#if DEBUG
+                ConnectionString = config.GetConnectionString("LocalConnection");
+#else
                 ConnectionString = config.GetConnectionString("DefaultConnection");
-
+#endif
                 // Extract SSL certificate and save it to a temporary file
                 CertPath = ExtractSslCertificate();
                 ConnectionString = ConnectionString.Replace("SslCa=DigiCertGlobalRootG2.crt.pem;", $"SslCa={CertPath};");

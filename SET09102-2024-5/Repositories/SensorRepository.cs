@@ -14,6 +14,7 @@ namespace SET09102_2024_5.Data.Repositories
         public Task<List<Sensor>> GetAllWithConfigurationAsync() =>
             _ctx.Sensors
                 .Include(s => s.Configuration)
+                .Include(s => s.Measurand)
                 .AsNoTracking()
                 .ToListAsync();
     }

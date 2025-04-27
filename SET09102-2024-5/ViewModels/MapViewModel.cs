@@ -114,16 +114,18 @@ namespace SET09102_2024_5.ViewModels
                     var pf = new PointFeature(merc.x, merc.y);
                     pf["SensorId"] = s.SensorId;                  // attach ID for tap lookup
 
-                    // Get latest reading and determine if it’s a warning
-                    var lastReading = await _measurementRepo.GetLatestForSensorAsync(s.SensorId);
-                    bool isWarning = CheckWarning(s, lastReading);
+                    // get latest reading
+                    var last = await _measurementRepo.GetLatestForSensorAsync(s.SensorId);
 
-                    // Choose style: warning trumps status
-                    pf.Styles.Add(isWarning
+                    // compute warning reason
+                    var reason = GetWarningReason(s, last);
+
+                    // choose style: warning overrides status
+                    pf.Styles.Add(
+                        reason != null
                         ? _statusStyles["Warning"]
-                        : (_statusStyles.TryGetValue(s.Status, out var st)
-                            ? st
-                            : _statusStyles["Active"]));
+                        : (_statusStyles.TryGetValue(s.Status, out var st) ? st : _statusStyles["Active"])
+                    );
 
                     features.Add(pf);
                 }
@@ -142,29 +144,42 @@ namespace SET09102_2024_5.ViewModels
         }
 
         /// Encapsulates stale or out‐of‐threshold logic for a sensor.
-        private bool CheckWarning(Sensor sensor, MeasurementDto? last)
+        string? GetWarningReason(Sensor s, MeasurementDto? last)
         {
-            if (last == null) return false;
+            if (last == null) return null;
 
-            // Staleness: age > half of configured frequency
-            var freq = sensor.Configuration?.MeasurementFrequency ?? 0;
+            // 1) Check staleness
+            var freq = s.Configuration?.MeasurementFrequency ?? 0;
             if (last.Timestamp.HasValue && freq > 0)
             {
                 var age = DateTime.UtcNow - last.Timestamp.Value;
-                if (age > TimeSpan.FromMinutes(freq / 2.0))
-                    return true;
+                var threshold = TimeSpan.FromMinutes(freq / 2.0);
+                if (age > threshold)
+                    return $"reading is late by {FormatTimeSpan(age - threshold)}";
             }
 
-            // Threshold breach
-            var min = sensor.Configuration?.MinThreshold;
-            var max = sensor.Configuration?.MaxThreshold;
+            // 2) Check min/max thresholds
+            var min = s.Configuration?.MinThreshold;
+            var max = s.Configuration?.MaxThreshold;
             if (last.Value.HasValue && min.HasValue && max.HasValue)
             {
-                if (last.Value < min || last.Value > max)
-                    return true;
+                if (last.Value < min)
+                    return $"reading {last.Value} below minimum by {min - last.Value} {s.Measurand.Unit}";
+                if (last.Value > max)
+                    return $"reading {last.Value} above maximum by {last.Value - max} {s.Measurand.Unit}";
             }
 
-            return false;
+            return null;
+        }
+
+        // formats e.g. "5m", "1h 15m"
+        string FormatTimeSpan(TimeSpan ts)
+        {
+            if (ts.TotalHours >= 1)
+                return $"{(int)ts.TotalHours}h {ts.Minutes}m";
+            if (ts.TotalMinutes >= 1)
+                return $"{(int)ts.TotalMinutes}m";
+            return $"{ts.Seconds}s";
         }
 
         private void OnMapInfo(object? sender, MapInfoEventArgs e)
@@ -174,20 +189,39 @@ namespace SET09102_2024_5.ViewModels
 
         public async Task HandlePinTappedAsync(MapInfo info)
         {
-            if (!(info.Feature["SensorId"] is int sensorId)) return;
-            var sensor = _currentSensors.FirstOrDefault(s => s.SensorId == sensorId);
-            if (sensor == null) return;
+            if (!(info.Feature["SensorId"] is int id)) return;
+            var s = _currentSensors.FirstOrDefault(x => x.SensorId == id);
+            if (s == null) return;
 
-            var last = await _measurementRepo.GetLatestForSensorAsync(sensorId);
-            bool warning = CheckWarning(sensor, last);
+            var last = await _measurementRepo.GetLatestForSensorAsync(id);
+            var reason = GetWarningReason(s, last);
 
+            // sensor.DisplayName if set, else fallback
+            var title = !string.IsNullOrEmpty(s.DisplayName)
+                ? s.DisplayName
+                : $"Sensor {s.SensorId}";
+
+            // value + unit
+            var unit = s.Measurand.Unit;
+            var valueStr = last?.Value.HasValue == true
+                ? $"{last.Value.Value} {unit}"
+                : "N/A";
+
+            // age string
+            var ageStr = last?.Timestamp.HasValue == true
+                ? FormatTimeSpan(DateTime.UtcNow - last.Timestamp.Value) + " ago"
+                : "N/A";
+
+            // build message
             var msg =
-                $"Status: {sensor.Status}\n" +
-                $"Last reading: {last?.Value?.ToString() ?? "N/A"}\n" +
-                $"At: {last?.Timestamp?.ToString("g") ?? "N/A"}\n\n" +
-                (warning ? "⚠️ Warning!" : "All readings OK");
+                $"Status: {s.Status}\n" +
+                $"Last reading: {valueStr}\n" +
+                $"When: {ageStr}\n\n" +
+                (reason != null
+                    ? $"⚠️ {reason}"
+                    : "All readings OK");
 
-            await _dialogService.DisplayAlertAsync($"Sensor {sensorId}", msg, "OK");
+            await _dialogService.DisplayAlertAsync(title, msg, "OK");
         }
 
         async Task<int> RegisterPinAsync(string filename)
