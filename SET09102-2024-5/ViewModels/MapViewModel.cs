@@ -16,6 +16,7 @@ using SET09102_2024_5.Models;
 using Mapsui.Tiling;
 using Map = Mapsui.Map;
 using SET09102_2024_5.Services;
+using Microsoft.Maui.Controls;
 
 namespace SET09102_2024_5.ViewModels
 {
@@ -150,23 +151,27 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
-        /// Encapsulates stale or out‐of‐threshold logic for a sensor.
+        /// Returns a human-readable reason if the sensor is stale/out-of-threshold.
         string? GetWarningReason(Sensor s, MeasurementDto? last)
         {
+            // **NEW**: never warn for inactive or maintenance sensors
+            if (s.Status == "Inactive" || s.Status == "Maintenance")
+                return null;
+
             if (last == null)
                 return "no recent data";
 
-            // 1) Check staleness
+            // Staleness: age > configured frequency
             var freq = s.Configuration?.MeasurementFrequency ?? 0;
             if (last.Timestamp.HasValue && freq > 0)
             {
                 var age = DateTime.UtcNow - last.Timestamp.Value;
-                var threshold = TimeSpan.FromMinutes(freq / 2.0);
+                var threshold = TimeSpan.FromMinutes(freq);
                 if (age > threshold)
                     return $"reading is late by {FormatTimeSpan(age - threshold)}";
             }
 
-            // 2) Check min/max thresholds
+            // Threshold breach
             var min = s.Configuration?.MinThreshold;
             var max = s.Configuration?.MaxThreshold;
             if (last.Value.HasValue && min.HasValue && max.HasValue)
@@ -181,13 +186,16 @@ namespace SET09102_2024_5.ViewModels
         }
 
         // formats e.g. "5m", "1h 15m"
-        string FormatTimeSpan(TimeSpan ts)
+        string FormatTimeSpan(TimeSpan span)
         {
-            if (ts.TotalHours >= 1)
-                return $"{(int)ts.TotalHours}h {ts.Minutes}m";
-            if (ts.TotalMinutes >= 1)
-                return $"{(int)ts.TotalMinutes}m";
-            return $"{ts.Seconds}s";
+            string formatted = string.Format("{0}{1}{2}{3}",
+            span.Duration().Days > 0 ? string.Format("{0:0} day{1}, ", span.Days, span.Days == 1 ? string.Empty : "s") : string.Empty,
+            span.Duration().Hours > 0 ? string.Format("{0:0} hour{1}, ", span.Hours, span.Hours == 1 ? string.Empty : "s") : string.Empty,
+            span.Duration().Minutes > 0 ? string.Format("{0:0} minute{1}, ", span.Minutes, span.Minutes == 1 ? string.Empty : "s") : string.Empty,
+            span.Duration().Seconds > 0 ? string.Format("{0:0} second{1}", span.Seconds, span.Seconds == 1 ? string.Empty : "s") : string.Empty);
+            if (formatted.EndsWith(", ")) formatted = formatted.Substring(0, formatted.Length - 2);
+            if (string.IsNullOrEmpty(formatted)) formatted = "0 seconds";
+            return formatted;
         }
 
         private void OnMapInfo(object? sender, MapInfoEventArgs e)
