@@ -22,6 +22,8 @@ namespace SET09102_2024_5.ViewModels
         private int _sensorId;
         private string _sensorInfo;
         private ObservableCollection<IncidentModel> _incidents;
+        // Add a new field to store the original unfiltered collection
+        private ObservableCollection<IncidentModel> _allIncidents;
         private IncidentModel _selectedIncident;
         private string _filterText;
         private bool _isLoading;
@@ -135,6 +137,7 @@ namespace SET09102_2024_5.ViewModels
             BackCommand = new Command(async () => await Shell.Current.GoToAsync(".."));
 
             // Initialize collections
+            _allIncidents = new ObservableCollection<IncidentModel>();
             Incidents = new ObservableCollection<IncidentModel>();
             FilterProperties = new List<string> { "All", "ID", "Priority", "Status", "Responder" };
             SelectedFilterProperty = "All";
@@ -196,7 +199,10 @@ namespace SET09102_2024_5.ViewModels
                             ResolvedDate = incident.ResolvedDate
                         }));
 
-                    Incidents = incidentModels;
+                    // Store the original unfiltered collection
+                    _allIncidents = incidentModels;
+                    // Set the displayed collection
+                    Incidents = new ObservableCollection<IncidentModel>(_allIncidents);
 
                     // Apply sort if needed
                     if (!string.IsNullOrEmpty(SortProperty))
@@ -210,6 +216,7 @@ namespace SET09102_2024_5.ViewModels
                 await _dialogService.DisplayErrorAsync($"Failed to load incidents: {ex.Message}");
                 _mainThreadService.BeginInvokeOnMainThread(() =>
                 {
+                    _allIncidents = new ObservableCollection<IncidentModel>();
                     Incidents = new ObservableCollection<IncidentModel>();
                 });
             }
@@ -223,7 +230,14 @@ namespace SET09102_2024_5.ViewModels
         {
             if (string.IsNullOrWhiteSpace(FilterText))
             {
-                await LoadIncidentsAsync();
+                // Reset to original collection without reloading from database
+                Incidents = new ObservableCollection<IncidentModel>(_allIncidents);
+
+                // Apply sort if needed
+                if (!string.IsNullOrEmpty(SortProperty))
+                {
+                    ApplySorting(SortProperty, false);
+                }
                 return;
             }
 
@@ -235,7 +249,8 @@ namespace SET09102_2024_5.ViewModels
             var filteredList = new ObservableCollection<IncidentModel>();
             var filter = FilterText?.ToLowerInvariant() ?? "";
 
-            foreach (var incident in _incidents)
+            // Always filter from the original collection
+            foreach (var incident in _allIncidents)
             {
                 bool isMatch = false;
 
@@ -277,6 +292,7 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        // Rest of the class remains unchanged
         private void SortIncidents(string propertyName)
         {
             if (string.IsNullOrWhiteSpace(propertyName)) return;
@@ -369,5 +385,4 @@ namespace SET09102_2024_5.ViewModels
         public string ResponderSortIndicator => GetSortIndicator("Responder");
         public string ResolvedDateSortIndicator => GetSortIndicator("ResolvedDate");
     }
-
 }

@@ -10,7 +10,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using SET09102_2024_5.Views;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace SET09102_2024_5.ViewModels
 {
@@ -22,6 +21,8 @@ namespace SET09102_2024_5.ViewModels
         private readonly INavigationService _navigationService;
 
         private ObservableCollection<SensorOperationalModel> _sensors;
+        // Add a new field to store the original unfiltered collection
+        private ObservableCollection<SensorOperationalModel> _allSensors;
         private SensorOperationalModel _selectedSensor;
         private string _filterText;
         private bool _isLoading;
@@ -51,6 +52,7 @@ namespace SET09102_2024_5.ViewModels
             SortCommand = new Command<string>(SortSensors);
 
             // Init collections
+            _allSensors = new ObservableCollection<SensorOperationalModel>();
             Sensors = new ObservableCollection<SensorOperationalModel>();
             FilterProperties = new List<string> { "All", "ID", "Type", "Status", "Measurand" };
             SelectedFilterProperty = "All";
@@ -59,7 +61,6 @@ namespace SET09102_2024_5.ViewModels
 
             _mainThreadService.BeginInvokeOnMainThread(async () => await LoadSensorsAsync());
             _navigationService = navigationService;  // Save the navigation service
-
         }
 
         public ObservableCollection<SensorOperationalModel> Sensors
@@ -192,7 +193,10 @@ namespace SET09102_2024_5.ViewModels
                         });
                     }
 
-                    Sensors = newSensors;
+                    // Store the original unfiltered collection
+                    _allSensors = newSensors;
+                    // Set the displayed collection
+                    Sensors = new ObservableCollection<SensorOperationalModel>(_allSensors);
 
                     // Apply sort if there is an active sort property
                     if (!string.IsNullOrEmpty(SortProperty))
@@ -217,7 +221,14 @@ namespace SET09102_2024_5.ViewModels
         {
             if (string.IsNullOrWhiteSpace(FilterText))
             {
-                await LoadSensorsAsync();
+                // Reset to original collection without reloading from database
+                Sensors = new ObservableCollection<SensorOperationalModel>(_allSensors);
+
+                // Apply sort if needed
+                if (!string.IsNullOrEmpty(SortProperty))
+                {
+                    ApplySorting(SortProperty, false);
+                }
                 return;
             }
 
@@ -230,7 +241,8 @@ namespace SET09102_2024_5.ViewModels
             var filteredList = new ObservableCollection<SensorOperationalModel>();
             var filter = FilterText?.ToLowerInvariant() ?? "";
 
-            foreach (var sensor in _sensors)
+            // Always filter from the original collection
+            foreach (var sensor in _allSensors)
             {
                 bool isMatch = false;
 
@@ -272,6 +284,7 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        // Rest of the class remains unchanged
         private bool CanViewIncidentLog(SensorOperationalModel sensor)
         {
             return sensor != null && sensor.Id > 0;
@@ -393,5 +406,4 @@ namespace SET09102_2024_5.ViewModels
         public string MeasurandSortIndicator => GetSortIndicator("Measurand");
         public string DeploymentDateSortIndicator => GetSortIndicator("DeploymentDate");
     }
-
 }
