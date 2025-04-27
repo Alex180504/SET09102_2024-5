@@ -21,6 +21,8 @@ namespace SET09102_2024_5.Data
         public DbSet<IncidentMeasurement> IncidentMeasurements { get; set; } = null!;
         public DbSet<AccessPrivilege> AccessPrivileges { get; set; } = null!;
         public DbSet<RolePrivilege> RolePrivileges { get; set; } = null!;
+        public DbSet<AccessPrivilege> AccessPrivileges { get; set; } = null!;
+        public DbSet<RolePrivilege> RolePrivileges { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -34,6 +36,8 @@ namespace SET09102_2024_5.Data
                 entity.Property(e => e.RoleName).HasColumnName("role_name").IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
                 entity.Property(e => e.IsProtected).HasColumnName("is_protected").HasDefaultValue(false);
+                entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
+                entity.Property(e => e.IsProtected).HasColumnName("is_protected").HasDefaultValue(false);
             });
 
             modelBuilder.Entity<User>(entity =>
@@ -44,6 +48,7 @@ namespace SET09102_2024_5.Data
                 entity.Property(e => e.FirstName).HasColumnName("first_name").HasMaxLength(100);
                 entity.Property(e => e.LastName).HasColumnName("last_name").HasMaxLength(100);
                 entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255);
+                entity.Property(e => e.RoleId).HasColumnName("role_id").IsRequired();
                 entity.Property(e => e.RoleId).HasColumnName("role_id").IsRequired();
                 entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasMaxLength(255);
                 entity.Property(e => e.PasswordSalt).HasColumnName("password_salt").HasMaxLength(255);
@@ -181,6 +186,34 @@ namespace SET09102_2024_5.Data
                 entity.HasOne(im => im.Incident)
                       .WithMany(i => i.IncidentMeasurements)
                       .HasForeignKey(im => im.IncidentId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<AccessPrivilege>(entity =>
+            {
+                entity.ToTable("access_privilege");
+                entity.HasKey(e => e.AccessPrivilegeId);
+                entity.Property(e => e.AccessPrivilegeId).HasColumnName("access_privilege_id");
+                entity.Property(e => e.Name).HasColumnName("name").IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255);
+                entity.Property(e => e.ModuleName).HasColumnName("module_name").HasMaxLength(100);
+            });
+
+            modelBuilder.Entity<RolePrivilege>(entity => 
+            {
+                entity.ToTable("role_privilege");
+                entity.HasKey(e => new { e.RoleId, e.AccessPrivilegeId });
+                entity.Property(e => e.RoleId).HasColumnName("role_id");
+                entity.Property(e => e.AccessPrivilegeId).HasColumnName("access_privilege_id");
+
+                entity.HasOne(rp => rp.Role)
+                      .WithMany(r => r.RolePrivileges)
+                      .HasForeignKey(rp => rp.RoleId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(rp => rp.AccessPrivilege)
+                      .WithMany(ap => ap.RolePrivileges)
+                      .HasForeignKey(rp => rp.AccessPrivilegeId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 

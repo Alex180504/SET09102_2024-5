@@ -30,6 +30,30 @@ CREATE TABLE role_privilege (
     PRIMARY KEY (role_id, access_privilege_id),
     FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE,
     FOREIGN KEY (access_privilege_id) REFERENCES access_privilege(access_privilege_id) ON DELETE CASCADE
+    role_name VARCHAR(100) NOT NULL,
+    description VARCHAR(255),
+    is_protected BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- Seed the Administrator role
+INSERT INTO role (role_name, description, is_protected) 
+VALUES ('Administrator', 'Full system access with all privileges', TRUE);
+
+-- Access Privilege Table
+CREATE TABLE access_privilege (
+    access_privilege_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description VARCHAR(255),
+    module_name VARCHAR(100)
+);
+
+-- Role Privilege Table (Join table for roles and privileges)
+CREATE TABLE role_privilege (
+    role_id INT NOT NULL,
+    access_privilege_id INT NOT NULL,
+    PRIMARY KEY (role_id, access_privilege_id),
+    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE,
+    FOREIGN KEY (access_privilege_id) REFERENCES access_privilege(access_privilege_id) ON DELETE CASCADE
 );
 
 -- User Table
@@ -38,6 +62,7 @@ CREATE TABLE user (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(255),
+    role_id INT NOT NULL,
     role_id INT NOT NULL,
     password_hash VARCHAR(255),
     password_salt VARCHAR(255),
