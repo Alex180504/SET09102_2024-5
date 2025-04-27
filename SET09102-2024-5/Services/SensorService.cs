@@ -1,7 +1,4 @@
-﻿// Services/SensorService.cs (or wherever you keep it)
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using SET09102_2024_5.Data.Repositories;
+﻿using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Models;
 
 namespace SET09102_2024_5.Services
