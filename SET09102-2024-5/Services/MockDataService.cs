@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;             // ← for Path, File
-using System.Linq;           // ← for Enumerable.Range, .Select, .First
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using ClosedXML.Excel;
 using SET09102_2024_5.Models;
@@ -23,7 +23,7 @@ namespace SET09102_2024_5.Services
             };
 
             // Build path to Data folder
-            var dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
+            var dataDir = Path.Combine(AppContext.BaseDirectory, "Resources", "Raw");
             var filePath = Path.Combine(dataDir, fileName);
             if (!File.Exists(filePath))
                 throw new FileNotFoundException($"Data file not found: {filePath}");

@@ -78,7 +78,7 @@
     <MauiAsset Include="Resources\Raw\chart.html" />
     <MauiAsset Include="Resources\Raw\chart.umd.min.js" />
     
-    <None Include="Data\*.xlsx">
+    <None Include="Resources\Raw\*.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
