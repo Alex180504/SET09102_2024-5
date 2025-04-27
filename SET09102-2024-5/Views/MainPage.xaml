@@ -42,6 +42,12 @@
                 BackgroundColor="#28a745"
                 TextColor="White"
                 HorizontalOptions="Fill" />
+     
+            <Button
+              Text="View Historical Data"
+              Command="{Binding NavigateToHistoricalDataCommand}" 
+              HorizontalOptions="Fill"/>
+
             <Button
                 Text="View Status Map"
                 Command="{Binding NavigateToSensorMapCommand}"

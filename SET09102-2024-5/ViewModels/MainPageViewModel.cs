@@ -10,8 +10,11 @@ namespace SET09102_2024_5.ViewModels
         {
             IncrementCountCommand = new Command(OnIncrementCount);
             NavigateToSensorManagementCommand = new Command(OnNavigateToSensorManagement);
+
+            NavigateToHistoricalDataCommand = new Command(OnNavigateToHistoricalData);
             NavigateToSensorMapCommand = new Command(OnNavigateToSensorMap);
             NavigateToSensorMonitoringCommand = new Command(OnNavigateToSensorMonitoring);
+
         }
 
         public int Count
@@ -30,6 +33,8 @@ namespace SET09102_2024_5.ViewModels
 
         public ICommand IncrementCountCommand { get; }
         public ICommand NavigateToSensorManagementCommand { get; }
+
+        public ICommand NavigateToHistoricalDataCommand { get; }
         public ICommand NavigateToSensorMapCommand { get; }
         public ICommand NavigateToSensorMonitoringCommand { get; }
 
@@ -42,6 +47,12 @@ namespace SET09102_2024_5.ViewModels
         {
             await Shell.Current.GoToAsync("SensorManagementPage");
         }
+
+        private async void OnNavigateToHistoricalData()
+        {
+            await Shell.Current.GoToAsync("HistoricalDataPage");
+        }
+
         private async void OnNavigateToSensorMap()
         {
             await Shell.Current.GoToAsync("MapPage");

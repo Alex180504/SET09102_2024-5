@@ -7,7 +7,13 @@
 		<IsPackable>false</IsPackable>
 		<IsTestProject>true</IsTestProject>
 		<RootNamespace>Tests</RootNamespace>
+    <!-- ↓ Disable the default *.cs globbing so our explicit Compile items don’t duplicate ↓ -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Remove="appsettings.test.json" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="coverlet.collector" Version="6.0.0" />
@@ -27,8 +33,19 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="appsettings.test.json" />
+		<EmbeddedResource Include="appsettings.test.json">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</EmbeddedResource>
 		<EmbeddedResource Include="DigiCertGlobalRootG2.crt.pem" />
 	</ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="ViewModels\HistoricalDataViewModelTests.cs" />
+    <Compile Include="Converters\DictionaryValueConverterTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Converters\" />
+  </ItemGroup>
 
 </Project>
