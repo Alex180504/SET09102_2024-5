@@ -1,18 +1,15 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Reflection;
+using CommunityToolkit.Maui;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using SET09102_2024_5.Data;
 using SET09102_2024_5.Data.Repositories;
+using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Services;
 using SET09102_2024_5.ViewModels;
 using SET09102_2024_5.Views;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
-using Microsoft.Extensions.Configuration;
-using System.Reflection;
-using System.IO;
-using System.Security.Cryptography.X509Certificates;
 using SkiaSharp.Views.Maui.Controls.Hosting;
-using CommunityToolkit.Maui;
-using SET09102_2024_5.Interfaces;
 
 
 namespace SET09102_2024_5
@@ -90,7 +87,6 @@ namespace SET09102_2024_5
                 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
                 builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
                 builder.Services.AddScoped<SensorService>();
-                builder.Services.AddSingleton<PollingTimer>();
                 builder.Services.AddSingleton<IDialogService, DialogService>();
 
                 // ViewModels & Views
