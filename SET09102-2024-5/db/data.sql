@@ -1,4 +1,4 @@
-USE sensor_monitoring;
+﻿USE sensor_monitoring;
 
 -- Ensure role_name is unique to prevent subquery errors
 ALTER TABLE role ADD UNIQUE (role_name);
@@ -197,7 +197,7 @@ INSERT INTO sensor (sensor_id, sensor_type, status, deployment_date, measurand_i
 (15, 'Bosch BMP388', 'Maintenance', '2023-09-15', 15);
 
 -- Configuration for sensors
-INSERT INTO configuration (sensor_id, latitude, longitude, altitude, orientation, measurment_frequency, min_threshold, max_threshold) VALUES
+INSERT INTO configuration (sensor_id, latitude, longitude, altitude, orientation, measurement_frequency, min_threshold, max_threshold) VALUES
 (1, 55.9533, -3.1883, 80.5, 0, 15, 0, 100),    
 (2, 55.8642, -4.2518, 40.2, 45, 10, 350, 2000), 
 (3, 57.1497, -2.0943, 65.0, 90, 30, 0, 150),  
