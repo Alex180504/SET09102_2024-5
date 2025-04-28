@@ -105,6 +105,11 @@ namespace SET09102_2024_5
                 builder.Services.AddSingleton<ICacheManager, Services.Cache.CacheManager>();
                 builder.Services.AddSingleton<ITokenService, Services.Security.TokenService>();
                 
+                // Register sensor services and repositories
+                builder.Services.AddScoped<ISensorRepository, SensorRepository>();
+                builder.Services.AddScoped<IMeasurementRepository, MeasurementRepository>();
+                builder.Services.AddScoped<ISensorService, SensorService>();
+                
                 // Register navigation services
                 builder.Services.AddSingleton<INavigationService, NavigationService>();
                 builder.Services.AddSingleton<ViewModelLocator>();
@@ -118,6 +123,7 @@ namespace SET09102_2024_5
                 builder.Services.AddTransient<MainPageViewModel>();
                 builder.Services.AddTransient<LoginViewModel>();
                 builder.Services.AddTransient<RegisterViewModel>();
+                builder.Services.AddTransient<MapViewModel>();
                 
                 // Admin ViewModels
                 builder.Services.AddTransient<RoleManagementViewModel>();
@@ -131,6 +137,7 @@ namespace SET09102_2024_5
                 builder.Services.AddTransient<MainPage>();
                 builder.Services.AddTransient<LoginPage>();
                 builder.Services.AddTransient<RegisterPage>();
+                builder.Services.AddTransient<MapPage>();
                 
                 // Admin Views
                 builder.Services.AddTransient<AdminDashboardPage>();
@@ -141,6 +148,7 @@ namespace SET09102_2024_5
                 Routing.RegisterRoute(RouteConstants.LoginPage, typeof(LoginPage));
                 Routing.RegisterRoute(RouteConstants.RegisterPage, typeof(RegisterPage));
                 Routing.RegisterRoute(RouteConstants.MainPage, typeof(MainPage));
+                Routing.RegisterRoute("MapPage", typeof(MapPage));
                 Routing.RegisterRoute(RouteConstants.AdminDashboardPage, typeof(AdminDashboardPage));
                 Routing.RegisterRoute(RouteConstants.RoleManagementPage, typeof(RoleManagementPage));
                 Routing.RegisterRoute(RouteConstants.UserRoleManagementPage, typeof(UserRoleManagementPage));

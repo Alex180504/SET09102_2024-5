@@ -19,7 +19,7 @@ namespace SET09102_2024_5.Services
 {
     public class AuthService : BaseService, IAuthService
     {
-        private readonly SensorMonitoringContext _dbContext;
+        private readonly SensorMonitoringContextFactory _contextFactory;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ICacheManager _cacheManager;
         private readonly ITokenService _tokenService;
@@ -49,7 +49,7 @@ namespace SET09102_2024_5.Services
             ITokenService tokenService)
             : base("Authentication Service", AuthCategory, loggingService)
         {
-            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _contextFactory = new SensorMonitoringContextFactory();
             _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
             _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
             _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
@@ -141,7 +141,7 @@ namespace SET09102_2024_5.Services
                 }
 
                 // Retrieve the user from database with proper error handling
-                var user = await _dbContext.Users
+                var user = await _contextFactory.CreateDbContext(new string[0]).Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.UserId == tokenInfo.UserId && u.Email == tokenInfo.Email);
                 
@@ -216,7 +216,7 @@ namespace SET09102_2024_5.Services
             var result = await ServiceOperations.ExecuteAsync<User>(
                 async () =>
                 {
-                    var user = await _dbContext.Users
+                    var user = await _contextFactory.CreateDbContext(new string[0]).Users
                         .Include(u => u.Role)
                         .FirstOrDefaultAsync(u => u.Email == email);
 
@@ -322,14 +322,14 @@ namespace SET09102_2024_5.Services
                 async () =>
                 {
                     // Check if user already exists
-                    if (await _dbContext.Users.AnyAsync(u => u.Email == email))
+                    if (await _contextFactory.CreateDbContext(new string[0]).Users.AnyAsync(u => u.Email == email))
                     {
                         _loggingService.Warning($"Registration failed - user already exists: {email}", _serviceCategory);
                         return false;
                     }
 
                     // Get guest role (create if doesn't exist)
-                    var guestRole = await _dbContext.Roles.FirstOrDefaultAsync(r => r.RoleName == "Guest");
+                    var guestRole = await _contextFactory.CreateDbContext(new string[0]).Roles.FirstOrDefaultAsync(r => r.RoleName == "Guest");
                     if (guestRole == null)
                     {
                         _loggingService.Info("Creating missing Guest role", _serviceCategory);
@@ -338,8 +338,8 @@ namespace SET09102_2024_5.Services
                             RoleName = "Guest",
                             Description = "Limited access role for new users"
                         };
-                        _dbContext.Roles.Add(guestRole);
-                        await _dbContext.SaveChangesAsync();
+                        _contextFactory.CreateDbContext(new string[0]).Roles.Add(guestRole);
+                        await _contextFactory.CreateDbContext(new string[0]).SaveChangesAsync();
                     }
 
                     // Create password hash and salt using the password hasher service
@@ -356,8 +356,8 @@ namespace SET09102_2024_5.Services
                         RoleId = guestRole.RoleId,
                     };
 
-                    _dbContext.Users.Add(user);
-                    await _dbContext.SaveChangesAsync();
+                    _contextFactory.CreateDbContext(new string[0]).Users.Add(user);
+                    await _contextFactory.CreateDbContext(new string[0]).SaveChangesAsync();
                     _loggingService.Info($"User registered successfully: {email}", _serviceCategory);
                     return true;
                 },
@@ -383,7 +383,7 @@ namespace SET09102_2024_5.Services
             var result = await ServiceOperations.ExecuteAsync<bool>(
                 async () =>
                 {
-                    var user = await _dbContext.Users.FindAsync(userId);
+                    var user = await _contextFactory.CreateDbContext(new string[0]).Users.FindAsync(userId);
                     if (user == null)
                     {
                         _loggingService.Warning($"Password change failed - user not found: {userId}", _serviceCategory);
@@ -400,7 +400,7 @@ namespace SET09102_2024_5.Services
                     user.PasswordHash = passwordHash;
                     user.PasswordSalt = passwordSalt;
 
-                    await _dbContext.SaveChangesAsync();
+                    await _contextFactory.CreateDbContext(new string[0]).SaveChangesAsync();
                     
                     // If this is the current user, we need to update their token
                     if (_currentUser != null && _currentUser.UserId == userId)
@@ -474,7 +474,7 @@ namespace SET09102_2024_5.Services
                         var result = await ServiceOperations.ExecuteAsync<string>(
                             async () =>
                             {
-                                var user = await _dbContext.Users
+                                var user = await _contextFactory.CreateDbContext(new string[0]).Users
                                     .Include(u => u.Role)
                                     .FirstOrDefaultAsync(u => u.UserId == userId);
 
@@ -548,7 +548,7 @@ namespace SET09102_2024_5.Services
                         var result = await ServiceOperations.ExecuteAsync<List<string>>(
                             async () =>
                             {
-                                var user = await _dbContext.Users
+                                var user = await _contextFactory.CreateDbContext(new string[0]).Users
                                     .Include(u => u.Role)
                                     .ThenInclude(r => r.RolePrivileges)
                                     .ThenInclude(rp => rp.AccessPrivilege)

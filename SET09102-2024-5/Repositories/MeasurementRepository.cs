@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SET09102_2024_5.Models;
 
 namespace SET09102_2024_5.Data.Repositories
@@ -8,8 +9,8 @@ namespace SET09102_2024_5.Data.Repositories
     {
         private readonly SensorMonitoringContext _ctx;
 
-        public MeasurementRepository(SensorMonitoringContext ctx)
-            : base(ctx) => _ctx = ctx;
+        public MeasurementRepository(SensorMonitoringContext ctx, IMemoryCache cache)
+            : base(ctx, cache) => _ctx = ctx;
 
         public Task<List<Measurement>> GetSinceAsync(DateTime since)
         {

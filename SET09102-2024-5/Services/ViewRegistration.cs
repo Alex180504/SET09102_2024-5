@@ -21,6 +21,7 @@ namespace SET09102_2024_5.Services
             RegisterRoute(RouteConstants.LoginPage, typeof(LoginPage));
             RegisterRoute(RouteConstants.MainPage, typeof(MainPage));
             RegisterRoute(RouteConstants.RegisterPage, typeof(RegisterPage));
+            RegisterRoute(RouteConstants.MapPage, typeof(MapPage));
             RegisterRoute(RouteConstants.AdminDashboardPage, typeof(AdminDashboardPage));
             RegisterRoute(RouteConstants.RoleManagementPage, typeof(RoleManagementPage));
             RegisterRoute(RouteConstants.UserRoleManagementPage, typeof(UserRoleManagementPage));

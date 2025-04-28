@@ -11,6 +11,7 @@ namespace SET09102_2024_5.Services
         
         // Main application routes
         public const string MainPage = "MainPage";
+        public const string MapPage = "MapPage";
         
         // Admin routes
         public const string AdminDashboardPage = "AdminDashboardPage";
@@ -38,6 +39,7 @@ namespace SET09102_2024_5.Services
             LoginPage,
             RegisterPage,
             MainPage,
+            MapPage,
             AdminDashboardPage,
             RoleManagementPage,
             UserRoleManagementPage
