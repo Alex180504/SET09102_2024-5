@@ -14,6 +14,7 @@
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto,*,Auto" Padding="10">
+        <!-- Search Section -->
         <VerticalStackLayout Grid.Row="0" Spacing="15" Margin="0,0,0,15">
 
             <Frame BorderColor="LightGray" Padding="10" HasShadow="True">
@@ -59,13 +60,14 @@
                 </Grid>
             </Frame>
         </VerticalStackLayout>
-
+        
+        <!-- Details & Configuration -->
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Spacing="15" IsVisible="{Binding IsSensorSelected}">
                 <Frame BorderColor="LightGray" Padding="15" HasShadow="True">
                     <VerticalStackLayout Spacing="10">
                         <Label Text="Sensor Details" FontAttributes="Bold" />
-                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
                             <Label Grid.Row="0" Grid.Column="0" Text="ID:" />
                             <Label Grid.Row="0" Grid.Column="1" Text="{Binding SelectedSensor.SensorId}" />
 
@@ -83,7 +85,14 @@
                             <Label Grid.Row="3" Grid.Column="1" Text="{Binding SelectedSensor.Measurand.QuantityName, TargetNullValue='Not available'}" />
 
                             <Label Grid.Row="4" Grid.Column="0" Text="Firmware:" />
-                            <Label Grid.Row="4" Grid.Column="1" Text="{Binding Firmware.FirmwareVersion, TargetNullValue='Not available'}" />
+                            <Label Grid.Row="4" Grid.Column="1" Text="{Binding FirmwareInfo.FirmwareVersion, TargetNullValue='Not available'}" />
+
+                            <Label Grid.Row="5" Grid.Column="0" Text="Firmware v:" />
+                            <Entry Grid.Row="5" Grid.Column="1" Text="{Binding FirmwareVersion}" IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+                            
+                            <Label Grid.Row="6" Grid.Column="0" Text="Last update:" />
+                            <DatePicker Grid.Row="6" Grid.Column="1" Date="{Binding LastUpdateDate}" IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+
                         </Grid>
                     </VerticalStackLayout>
                 </Frame>
@@ -138,7 +147,8 @@
                                            Placeholder="0-359 degrees"
                                            Unfocused="OnFieldUnfocused"
                                            ClassId="Orientation"
-                                           IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+                                           IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" 
+                                           TextChanged="OnOrientationChanged"/>
                                     <controls:ValidationErrorIndicator 
                                         FieldName="Orientation"
                                         ValidationErrors="{Binding ValidationErrors}"
@@ -205,7 +215,8 @@
                 </Frame>
             </VerticalStackLayout>
         </ScrollView>
-
+        
+        <!-- Save Button -->
         <VerticalStackLayout Grid.Row="2" IsVisible="{Binding IsSensorSelected}" Spacing="10" Margin="0,15,0,0">
             <Button Text="Save Changes" 
                     Command="{Binding SaveChangesCommand}" 

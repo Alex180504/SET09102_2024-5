@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using static Microsoft.Maui.ApplicationModel.Permissions;
 
 namespace SET09102_2024_5.ViewModels
 {
@@ -33,6 +34,10 @@ namespace SET09102_2024_5.ViewModels
         private bool _isLoading;
         private bool _isSearching;
         private string _searchText;
+
+        /// Firm update related fields
+        private string _firmwareVersion;
+        private DateTime? _lastUpdateDate;
 
         private List<string> _statusOptions = new List<string> { "Active", "Inactive", "Maintenance", "Error" };
 
@@ -69,10 +74,26 @@ namespace SET09102_2024_5.ViewModels
             _mainThreadService.BeginInvokeOnMainThread(async () => await InitializeAsync());
         }
 
-        /// <summary>
-        /// Initializes the view model by loading sensors from the database
-        /// </summary>
-        /// <returns>A task that represents the asynchronous operation</returns>
+
+        public string FirmwareVersion
+        {
+            get => _firmwareVersion;
+            set
+            {
+                if (SetProperty(ref _firmwareVersion, value))
+                {
+                    if (FirmwareInfo != null)
+                        FirmwareInfo.FirmwareVersion = value;
+                    OnPropertyChanged(nameof(FirmwareInfo));
+                }
+            }
+        }
+        public DateTime? LastUpdateDate
+        {
+            get => _lastUpdateDate;
+            set => SetProperty(ref _lastUpdateDate, value);
+        }
+
         public async Task InitializeAsync()
         {
             await LoadSensorsAsync();
@@ -592,6 +613,8 @@ namespace SET09102_2024_5.ViewModels
                     };
 
                     FirmwareInfo = sensor.Firmware;
+                    FirmwareVersion = sensor.Firmware?.FirmwareVersion ?? string.Empty;
+                    LastUpdateDate = sensor.Firmware?.LastUpdateDate ?? DateTime.Now;
                 }
 
                 OnPropertyChanged(nameof(Configuration));
@@ -665,6 +688,14 @@ namespace SET09102_2024_5.ViewModels
                         sensor.Configuration.MinThreshold = Configuration.MinThreshold;
                         sensor.Configuration.MaxThreshold = Configuration.MaxThreshold;
                     }
+
+                    if (sensor.Firmware == null)
+                    {
+                        sensor.Firmware = new SensorFirmware { SensorId = sensor.SensorId };
+                        _context.Add(sensor.Firmware);
+                    }
+                    sensor.Firmware.FirmwareVersion = FirmwareVersion;
+                    sensor.Firmware.LastUpdateDate = LastUpdateDate;
 
                     // Save changes
                     await _context.SaveChangesAsync();

@@ -1,0 +1,62 @@
+@startuml Sensor Incident Log Sequence
+
+actor User
+participant "SensorOperationalStatusPage" as StatusPage
+participant "SensorOperationalStatusViewModel" as StatusVM
+participant "SensorIncidentPage" as IncidentPage
+participant "SensorIncidentLogViewModel" as IncidentVM
+participant "SensorMonitoringContext" as Context
+database "Database" as DB
+
+User -> StatusPage: Select a sensor
+activate StatusPage
+StatusPage -> StatusVM: SelectedSensor updated
+activate StatusVM
+User -> StatusPage: Click "View Incidents"
+StatusPage -> StatusVM: ViewIncidentLogCommand.Execute(SelectedSensor)
+StatusVM -> StatusVM: ViewIncidentLog(SensorOperationalModel)
+StatusVM -> Shell: GoToAsync("SensorIncidentPage?SensorId={sensor.Id}")
+deactivate StatusVM
+deactivate StatusPage
+
+activate IncidentPage
+IncidentPage -> IncidentVM: Create viewmodel
+activate IncidentVM
+IncidentVM -> IncidentVM: ApplyQueryAttributes(query)
+IncidentVM -> IncidentVM: Extract SensorId from query
+IncidentVM -> IncidentVM: LoadIncidentsAsync()
+activate IncidentVM #DDDDDD
+
+IncidentVM -> IncidentVM: IsLoading = true
+IncidentVM -> Context: Query sensor details
+activate Context
+Context -> DB: Get sensor by ID
+activate DB
+DB --> Context: Return sensor data
+deactivate DB
+Context --> IncidentVM: Return sensor
+deactivate Context
+
+IncidentVM -> IncidentVM: Set SensorInfo property
+
+IncidentVM -> Context: Query incidents related to sensor
+activate Context
+Context -> DB: Get incidents where IncidentMeasurements match SensorId
+activate DB
+DB --> Context: Return incidents with responder data
+deactivate DB
+Context --> IncidentVM: Return incidents list
+deactivate Context
+
+IncidentVM -> IncidentVM: Create IncidentModel objects
+IncidentVM -> IncidentVM: Update Incidents collection
+IncidentVM -> IncidentVM: Apply sort if needed
+IncidentVM -> IncidentVM: IsLoading = false
+deactivate IncidentVM #DDDDDD
+
+IncidentVM --> IncidentPage: UI updated with incident data
+deactivate IncidentVM
+IncidentPage --> User: Display incidents for selected sensor
+deactivate IncidentPage
+
+@enduml

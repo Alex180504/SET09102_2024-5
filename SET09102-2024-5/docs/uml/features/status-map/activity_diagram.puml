@@ -1,0 +1,21 @@
+@startuml
+start
+:PollingTimer ticks;
+:SensorService.HandleTick();
+:Query SensorRepository for updates;
+:Query AlertRepository for new alerts;
+if (sensorUpdates.Any?) then (yes)
+  :Raise OnSensorsUpdated;
+endif
+if (alertUpdates.Any?) then (yes)
+  :Raise OnAlertsUpdated;
+endif
+:MapViewModel receives updates;
+:Update ObservableCollection<Pin>;
+:Refresh map UI;
+if (any pin status == Critical?) then (yes)
+  :Highlight critical pins;
+  :Popup alert details;
+endif
+stop
+@enduml

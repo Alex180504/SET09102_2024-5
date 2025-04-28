@@ -25,6 +25,6 @@ namespace SET09102_2024_5.Models
         [ForeignKey("PhysicalQuantityId")]
         public PhysicalQuantity PhysicalQuantity { get; set; }
 
-        public ICollection<IncidentMeasurement> IncidentMeasurements { get; set; }
+        public ICollection<IncidentMeasurement> IncidentMeasurements { get; set; } = new List<IncidentMeasurement>();
     }
 }

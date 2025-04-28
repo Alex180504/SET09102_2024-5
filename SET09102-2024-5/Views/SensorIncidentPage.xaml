@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:SET09102_2024_5.ViewModels"
+             x:Class="SET09102_2024_5.Views.SensorIncidentPage"
+             Title="Sensor Incident Log">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Style x:Key="HeaderLabelStyle" TargetType="Label">
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="Padding" Value="5" />
+                <Setter Property="BackgroundColor" Value="#f0f0f0" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="DataLabelStyle" TargetType="Label">
+                <Setter Property="Padding" Value="5" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="DataFrameStyle" TargetType="Frame">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="2" />
+                <Setter Property="BorderColor" Value="#e0e0e0" />
+                <Setter Property="CornerRadius" Value="3" />
+            </Style>
+            <Style x:Key="SortButtonStyle" TargetType="Button">
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="Padding" Value="5" />
+                <Setter Property="BackgroundColor" Value="#e0e0e0" />
+                <Setter Property="HorizontalOptions" Value="Fill" />
+                <Setter Property="CornerRadius" Value="0" />
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="BorderWidth" Value="0" />
+                <Setter Property="VisualStateManager.VisualStateGroups">
+                    <VisualStateGroupList>
+                        <VisualStateGroup x:Name="CommonStates">
+                            <VisualState x:Name="Normal" />
+                            <VisualState x:Name="PointerOver">
+                                <VisualState.Setters>
+                                    <Setter Property="BackgroundColor" Value="#d0d0d0" />
+                                    <Setter Property="TextColor" Value="#007bff" />
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState x:Name="Pressed">
+                                <VisualState.Setters>
+                                    <Setter Property="BackgroundColor" Value="#c0c0c0" />
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState x:Name="Disabled">
+                                <VisualState.Setters>
+                                    <Setter Property="BackgroundColor" Value="#f0f0f0" />
+                                    <Setter Property="TextColor" Value="#a0a0a0" />
+                                </VisualState.Setters>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateGroupList>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="10">
+        <StackLayout Grid.Row="0" Margin="0,0,0,10">
+            <Label Text="{Binding SensorInfo}" 
+                   FontSize="18" 
+                   FontAttributes="Bold" 
+                   HorizontalOptions="Center" />
+        </StackLayout>
+
+        <!-- Search and Filter Section -->
+        <Grid Grid.Row="1" 
+              ColumnDefinitions="*,Auto" 
+              RowDefinitions="Auto,Auto"
+              Margin="0,0,0,10">
+
+            <Entry Grid.Row="0" 
+                   Grid.Column="0" 
+                   Placeholder="Enter search text" 
+                   Text="{Binding FilterText}" 
+                   Margin="0,0,5,0"/>
+
+            <Button Grid.Row="0" 
+                    Grid.Column="1" 
+                    Text="Apply" 
+                    Command="{Binding ApplyCommand}"
+                    BackgroundColor="#007bff"
+                    TextColor="White"
+                    Margin="0,0,0,0">
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroupList>
+                        <VisualStateGroup x:Name="CommonStates">
+                            <VisualState x:Name="Normal" />
+                            <VisualState x:Name="PointerOver">
+                                <VisualState.Setters>
+                                    <Setter Property="BackgroundColor" Value="#0056b3" />
+                                </VisualState.Setters>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateGroupList>
+                </VisualStateManager.VisualStateGroups>
+            </Button>
+
+            <HorizontalStackLayout Grid.Row="1" 
+                                   Grid.Column="0" 
+                                   Grid.ColumnSpan="2"
+                                   Spacing="10">
+                <Label Text="Filter by:" 
+                       VerticalOptions="Center"/>
+
+                <Picker Title="Select Filter" 
+                        ItemsSource="{Binding FilterProperties}" 
+                        SelectedItem="{Binding SelectedFilterProperty}"
+                        WidthRequest="150"/>
+            </HorizontalStackLayout>
+        </Grid>
+
+        <!-- Incidents Table -->
+        <Grid Grid.Row="3">
+            <RefreshView Command="{Binding LoadIncidentsCommand}" 
+                         IsRefreshing="{Binding IsLoading}"
+                         IsVisible="{Binding HasIncidents}">
+                <CollectionView ItemsSource="{Binding Incidents}" 
+                                SelectedItem="{Binding SelectedIncident, Mode=TwoWay}">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="5" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.Header>
+                        <Grid ColumnDefinitions="*,*,*,*,*" BackgroundColor="#f0f0f0">
+                            <Button Grid.Column="0" 
+                                    Text="{Binding IdSortIndicator, StringFormat='ID {0}'}" 
+                                    Command="{Binding SortCommand}" 
+                                    CommandParameter="Id"
+                                    Style="{StaticResource SortButtonStyle}"/>
+
+                            <Button Grid.Column="1" 
+                                    Text="{Binding PrioritySortIndicator, StringFormat='Priority {0}'}" 
+                                    Command="{Binding SortCommand}" 
+                                    CommandParameter="Priority"
+                                    Style="{StaticResource SortButtonStyle}"/>
+
+                            <Button Grid.Column="2" 
+                                    Text="{Binding StatusSortIndicator, StringFormat='Status {0}'}" 
+                                    Command="{Binding SortCommand}" 
+                                    CommandParameter="Status"
+                                    Style="{StaticResource SortButtonStyle}"/>
+
+                            <Button Grid.Column="3" 
+                                    Text="{Binding ResponderSortIndicator, StringFormat='Responder {0}'}" 
+                                    Command="{Binding SortCommand}" 
+                                    CommandParameter="Responder"
+                                    Style="{StaticResource SortButtonStyle}"/>
+
+                            <Button Grid.Column="4" 
+                                    Text="{Binding ResolvedDateSortIndicator, StringFormat='Resolved Date {0}'}" 
+                                    Command="{Binding SortCommand}" 
+                                    CommandParameter="ResolvedDate"
+                                    Style="{StaticResource SortButtonStyle}"/>
+                        </Grid>
+                    </CollectionView.Header>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame Style="{StaticResource DataFrameStyle}">
+                                <Grid ColumnDefinitions="*,*,*,*,*">
+                                    <Label Grid.Column="0" 
+                                           Text="{Binding Id}" 
+                                           Style="{StaticResource DataLabelStyle}"/>
+                                    <Label Grid.Column="1" 
+                                           Text="{Binding Priority}" 
+                                           Style="{StaticResource DataLabelStyle}"/>
+                                    <Label Grid.Column="2" 
+                                           Text="{Binding Status}" 
+                                           Style="{StaticResource DataLabelStyle}"/>
+                                    <Label Grid.Column="3" 
+                                           Text="{Binding ResponderName}" 
+                                           Style="{StaticResource DataLabelStyle}"/>
+                                    <Label Grid.Column="4" 
+                                           Text="{Binding ResolvedDate, StringFormat='{0:d}'}" 
+                                           Style="{StaticResource DataLabelStyle}"/>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </RefreshView>
+
+            <!-- Empty state view - shown when there are no incidents -->
+            <StackLayout IsVisible="{Binding HasNoIncidents}" 
+                VerticalOptions="Center" 
+                HorizontalOptions="Center"
+                BackgroundColor="Transparent">
+                <Label Text="No incidents found for this sensor" 
+                        FontSize="24" 
+                        FontAttributes="Bold"
+                        HorizontalTextAlignment="Center" 
+                        Margin="0,10,0,0"/>
+                <Button Text="Refresh" 
+                        Command="{Binding LoadIncidentsCommand}" 
+                        HorizontalOptions="Center" 
+                        BackgroundColor="#007bff"
+                        TextColor="White"
+                        WidthRequest="120"
+                        HeightRequest="50"
+                        FontSize="16"
+                        Margin="0,20,0,0">
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroupList>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="#0056b3" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateGroupList>
+                    </VisualStateManager.VisualStateGroups>
+                </Button>
+            </StackLayout>
+        </Grid>
+    </Grid>
+</ContentPage>

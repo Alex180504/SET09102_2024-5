@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -113,11 +113,8 @@ namespace SET09102_2024_5.Data.Repositories
             var pattern = $"{typeof(T).Name}_";
             
             // Remove all matching entries
-            // We can't enumerate through IMemoryCache directly, so we'll use a more targeted approach
             _cache.Remove($"{pattern}all");
-            
-            // For applications that need more granular cache invalidation, consider implementing
-            // a cache key tracking system to keep track of all cache keys by entity type
+
         }
     }
 }
