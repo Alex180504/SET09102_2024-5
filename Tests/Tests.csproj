@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="ViewModels\HistoricalDataViewModelTests.cs" />
     <Compile Include="Converters\DictionaryValueConverterTests.cs" />
+    <Compile Include="ViewModels\SensorManagementViewModelFirmwareTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
