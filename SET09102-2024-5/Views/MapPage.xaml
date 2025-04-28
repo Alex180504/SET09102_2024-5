@@ -9,7 +9,6 @@
 
     <ContentPage.Content>
         <mapsui:MapControl
-      x:Name="MapControl"
-      Map="{Binding Map}" />
+            x:Name="MapControl" />
     </ContentPage.Content>
 </views:ViewBase>

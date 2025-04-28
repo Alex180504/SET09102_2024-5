@@ -1,19 +1,31 @@
 using Mapsui.UI.Maui;
 using SET09102_2024_5.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SET09102_2024_5.Views
 {
-    public partial class SensorLocatorPage : ContentPage
+    public partial class SensorLocatorPage : ViewBase
     {
-        private readonly SensorLocatorViewModel _viewModel;
+        private SensorLocatorViewModel _viewModel => BindingContext as SensorLocatorViewModel;
+
+        // Add parameterless constructor for Shell navigation
+        public SensorLocatorPage()
+        {
+            InitializeComponent();
+            BindingContext = App.Current.Handler.MauiContext?.Services.GetService<SensorLocatorViewModel>();
+            if (BindingContext is SensorLocatorViewModel vm)
+            {
+                MapControl.Map = vm.Map;
+            }
+        }
 
         public SensorLocatorPage(SensorLocatorViewModel viewModel)
         {
             InitializeComponent();
-            BindingContext = _viewModel = viewModel;
+            BindingContext = viewModel;
 
             // Hook up the VM's Map instance
-            MapControl.Map = _viewModel.Map;
+            MapControl.Map = viewModel.Map;
         }
 
         protected override async void OnAppearing()

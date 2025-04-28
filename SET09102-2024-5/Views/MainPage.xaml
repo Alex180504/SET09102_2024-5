@@ -4,10 +4,6 @@
              xmlns:viewModels="clr-namespace:SET09102_2024_5.ViewModels"
              x:Class="SET09102_2024_5.Views.MainPage">
 
-    <ContentPage.BindingContext>
-        <viewModels:MainPageViewModel />
-    </ContentPage.BindingContext>
-
     <ScrollView>
         <VerticalStackLayout
             Padding="30,0"

@@ -57,6 +57,9 @@ public partial class AppShell : Shell, INotifyPropertyChanged
         Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
         Routing.RegisterRoute(nameof(RegisterPage), typeof(RegisterPage));
         
+        // Register sensor pages
+        Routing.RegisterRoute(nameof(SensorManagementPage), typeof(SensorManagementPage));
+        
         // Register admin routes
         Routing.RegisterRoute(nameof(AdminDashboardPage), typeof(AdminDashboardPage));
         Routing.RegisterRoute(nameof(RoleManagementPage), typeof(RoleManagementPage));

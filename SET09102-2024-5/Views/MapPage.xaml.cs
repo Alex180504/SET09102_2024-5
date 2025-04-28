@@ -1,19 +1,31 @@
 using Mapsui.UI.Maui;
 using SET09102_2024_5.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SET09102_2024_5.Views
 {
     public partial class MapPage : ViewBase
     {
-        private readonly MapViewModel _vm;
+        private MapViewModel _vm => BindingContext as MapViewModel;
+
+        // Add parameterless constructor for Shell navigation
+        public MapPage()
+        {
+            InitializeComponent();
+            BindingContext = App.Current.Handler.MauiContext?.Services.GetService<MapViewModel>();
+            if (BindingContext is MapViewModel vm)
+            {
+                MapControl.Map = vm.Map;
+            }
+        }
 
         public MapPage(MapViewModel vm)
         {
             InitializeComponent();
-            BindingContext = _vm = vm;
+            BindingContext = vm;
 
             // Hook up the VM's Map instance
-            MapControl.Map = _vm.Map;
+            MapControl.Map = vm.Map;
         }
 
         protected override async void OnAppearing()

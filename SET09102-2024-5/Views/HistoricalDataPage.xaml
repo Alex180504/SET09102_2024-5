@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage 
+<views:ViewBase 
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:viewmodels="clr-namespace:SET09102_2024_5.Features.HistoricalData.ViewModels"
+    xmlns:views="clr-namespace:SET09102_2024_5.Views"
     xmlns:wv="clr-namespace:Microsoft.Maui.Controls;assembly=Microsoft.Maui.Controls"
-    x:Class="SET09102_2024_5.Features.HistoricalData.HistoricalDataPage"
+    x:Class="SET09102_2024_5.Views.HistoricalDataPage"
     Title="Historical Data">
 
 
@@ -60,4 +61,4 @@
             </CollectionView>
         </VerticalStackLayout>
     </ScrollView>
-</ContentPage>
+</views:ViewBase>

@@ -12,6 +12,11 @@ namespace SET09102_2024_5.Services
         // Main application routes
         public const string MainPage = "MainPage";
         public const string MapPage = "MapPage";
+        public const string SensorLocatorPage = "SensorLocatorPage";
+        public const string SensorOperationalStatusPage = "SensorOperationalStatusPage";
+        public const string SensorManagementPage = "SensorManagementPage";
+        public const string HistoricalDataPage = "HistoricalDataPage";
+        public const string DataStoragePage = "DataStoragePage";
         
         // Admin routes
         public const string AdminDashboardPage = "AdminDashboardPage";
@@ -40,6 +45,11 @@ namespace SET09102_2024_5.Services
             RegisterPage,
             MainPage,
             MapPage,
+            SensorLocatorPage,
+            SensorOperationalStatusPage,
+            SensorManagementPage,
+            HistoricalDataPage,
+            DataStoragePage,
             AdminDashboardPage,
             RoleManagementPage,
             UserRoleManagementPage

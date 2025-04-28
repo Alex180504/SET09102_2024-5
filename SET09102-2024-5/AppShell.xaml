@@ -39,6 +39,42 @@
             ContentTemplate="{DataTemplate views:MainPage}"
             Route="MainPage" />
     </FlyoutItem>
+    
+    <!-- Sensor Management Section -->
+    <FlyoutItem Title="Sensors" Icon="sensor.png">
+        <Tab Title="Sensor Functions">
+            <ShellContent
+                Title="Sensor Management"
+                ContentTemplate="{DataTemplate views:SensorManagementPage}"
+                Route="SensorManagementPage" />
+            <ShellContent
+                Title="Operational Status"
+                ContentTemplate="{DataTemplate views:SensorOperationalStatusPage}"
+                Route="SensorOperationalStatusPage" />
+            <ShellContent
+                Title="Locate Sensors"
+                ContentTemplate="{DataTemplate views:SensorLocatorPage}"
+                Route="SensorLocatorPage" />
+        </Tab>
+    </FlyoutItem>
+    
+    <!-- Data Section -->
+    <FlyoutItem Title="Data" Icon="data.png">
+        <Tab Title="Data Functions">
+            <ShellContent
+                Title="Status Map"
+                ContentTemplate="{DataTemplate views:MapPage}"
+                Route="MapPage" />
+            <ShellContent
+                Title="Historical Data"
+                ContentTemplate="{DataTemplate views:HistoricalDataPage}"
+                Route="HistoricalDataPage" />
+            <ShellContent
+                Title="Data Storage"
+                ContentTemplate="{DataTemplate views:DataStoragePage}"
+                Route="DataStoragePage" />
+        </Tab>
+    </FlyoutItem>
 
     <!-- Admin Section - Directly accessible from menu when user has Admin role -->
     <FlyoutItem Title="Administration" IsVisible="{Binding IsAdmin}">

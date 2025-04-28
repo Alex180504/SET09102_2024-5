@@ -22,6 +22,9 @@ namespace SET09102_2024_5.Services
             RegisterRoute(RouteConstants.MainPage, typeof(MainPage));
             RegisterRoute(RouteConstants.RegisterPage, typeof(RegisterPage));
             RegisterRoute(RouteConstants.MapPage, typeof(MapPage));
+            RegisterRoute(RouteConstants.SensorLocatorPage, typeof(SensorLocatorPage));
+            RegisterRoute(RouteConstants.SensorOperationalStatusPage, typeof(SensorOperationalStatusPage));
+            RegisterRoute(RouteConstants.SensorManagementPage, typeof(SensorManagementPage));
             RegisterRoute(RouteConstants.AdminDashboardPage, typeof(AdminDashboardPage));
             RegisterRoute(RouteConstants.RoleManagementPage, typeof(RoleManagementPage));
             RegisterRoute(RouteConstants.UserRoleManagementPage, typeof(UserRoleManagementPage));

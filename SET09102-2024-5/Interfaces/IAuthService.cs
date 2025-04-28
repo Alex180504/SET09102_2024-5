@@ -19,5 +19,8 @@ namespace SET09102_2024_5.Interfaces
         Task<List<string>> GetUserPermissionsAsync(int userId);
         void SetCurrentUser(User user);
         void Logout();
+        
+        // Added method to invalidate user cache - critical for roles/permissions updates
+        void InvalidateUserCache(int userId);
     }
 }

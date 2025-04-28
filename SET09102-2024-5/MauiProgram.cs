@@ -14,6 +14,9 @@ using System.Security.Cryptography.X509Certificates;
 using CommunityToolkit.Maui;
 using SET09102_2024_5.Views.Controls;
 using SET09102_2024_5.Interfaces;
+using SET09102_2024_5.Features.HistoricalData.ViewModels;
+using SET09102_2024_5.Models;
+using SkiaSharp.Views.Maui.Controls.Hosting;
 
 namespace SET09102_2024_5
 {
@@ -32,6 +35,7 @@ namespace SET09102_2024_5
                 builder
                     .UseMauiApp<App>()
                     .UseMauiCommunityToolkit()
+                    .UseSkiaSharp()
                     .ConfigureFonts(fonts =>
                     {
                         fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -105,6 +109,20 @@ namespace SET09102_2024_5
                 builder.Services.AddSingleton<ICacheManager, Services.Cache.CacheManager>();
                 builder.Services.AddSingleton<ITokenService, Services.Security.TokenService>();
                 
+                // Register backup service and related dependencies
+                var backupFolder = Path.Combine(FileSystem.AppDataDirectory, "Backups");
+                builder.Services.AddSingleton(new BackupOptions
+                {
+                    BackupFolder = backupFolder,
+                    KeepLatestBackups = 5, // Default value
+                    ScheduleTime = new TimeSpan(3, 0, 0) // Default 3 AM
+                });
+                
+                builder.Services.AddSingleton<IBackupService>(provider => 
+                    new MySqlBackupService(ConnectionString, backupFolder));
+                
+                builder.Services.AddSingleton<SchedulerService>();
+                
                 // Register sensor services and repositories
                 builder.Services.AddScoped<ISensorRepository, SensorRepository>();
                 builder.Services.AddScoped<IMeasurementRepository, MeasurementRepository>();
@@ -124,6 +142,11 @@ namespace SET09102_2024_5
                 builder.Services.AddTransient<LoginViewModel>();
                 builder.Services.AddTransient<RegisterViewModel>();
                 builder.Services.AddTransient<MapViewModel>();
+                builder.Services.AddTransient<SensorManagementViewModel>();
+                builder.Services.AddTransient<SensorLocatorViewModel>();
+                builder.Services.AddTransient<SensorOperationalStatusViewModel>();
+                builder.Services.AddTransient<HistoricalDataViewModel>();
+                builder.Services.AddTransient<DataStorageViewModel>();
                 
                 // Admin ViewModels
                 builder.Services.AddTransient<RoleManagementViewModel>();
@@ -138,20 +161,19 @@ namespace SET09102_2024_5
                 builder.Services.AddTransient<LoginPage>();
                 builder.Services.AddTransient<RegisterPage>();
                 builder.Services.AddTransient<MapPage>();
+                builder.Services.AddTransient<SensorManagementPage>();
+                builder.Services.AddTransient<SensorLocatorPage>();
+                builder.Services.AddTransient<SensorOperationalStatusPage>();
+                builder.Services.AddTransient<HistoricalDataPage>();
+                builder.Services.AddTransient<DataStoragePage>();
                 
                 // Admin Views
                 builder.Services.AddTransient<AdminDashboardPage>();
                 builder.Services.AddTransient<RoleManagementPage>();
                 builder.Services.AddTransient<UserRoleManagementPage>();
                 
-                // Register page routes with Shell for navigation
-                Routing.RegisterRoute(RouteConstants.LoginPage, typeof(LoginPage));
-                Routing.RegisterRoute(RouteConstants.RegisterPage, typeof(RegisterPage));
-                Routing.RegisterRoute(RouteConstants.MainPage, typeof(MainPage));
-                Routing.RegisterRoute("MapPage", typeof(MapPage));
-                Routing.RegisterRoute(RouteConstants.AdminDashboardPage, typeof(AdminDashboardPage));
-                Routing.RegisterRoute(RouteConstants.RoleManagementPage, typeof(RoleManagementPage));
-                Routing.RegisterRoute(RouteConstants.UserRoleManagementPage, typeof(UserRoleManagementPage));
+                // Note: Routes are registered by NavigationService during initialization
+                // and managed by ViewRegistration class rather than duplicating them here
 
 #if DEBUG
                 builder.Logging.AddDebug();

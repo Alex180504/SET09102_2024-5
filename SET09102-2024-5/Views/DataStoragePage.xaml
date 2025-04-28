@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage
+<views:ViewBase
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:conv="clr-namespace:SET09102_2024_5.Converters"
+    xmlns:views="clr-namespace:SET09102_2024_5.Views"
     x:Class="SET09102_2024_5.Views.DataStoragePage"
     Title="Data Storage">
 
@@ -54,4 +55,4 @@
             Margin="0,10,0,0" />
     </StackLayout>
 
-</ContentPage>
+</views:ViewBase>

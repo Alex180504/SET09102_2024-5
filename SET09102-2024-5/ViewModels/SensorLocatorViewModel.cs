@@ -17,6 +17,7 @@ using Microsoft.Extensions.Configuration;
 using Mapsui.Nts;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Geometries.Implementation;
+using SkiaSharp;
 
 
 namespace SET09102_2024_5.ViewModels
@@ -90,12 +91,22 @@ namespace SET09102_2024_5.ViewModels
             _httpClient = new HttpClient();
 
             // Get OpenRouteService API key from configuration
-            _openRouteServiceApiKey = configuration["OpenRouteServiceApiKey"] ??
-                throw new InvalidOperationException("OpenRouteService API key not configured");
-
-            // Set base address for OpenRouteService API
-            _httpClient.BaseAddress = new Uri("https://api.openrouteservice.org/");
-            _httpClient.DefaultRequestHeaders.Add("Authorization", _openRouteServiceApiKey);
+            _openRouteServiceApiKey = configuration["OpenRouteServiceApiKey"];
+            
+            // Handle missing API key gracefully
+            bool hasApiKey = !string.IsNullOrEmpty(_openRouteServiceApiKey);
+            
+            if (hasApiKey)
+            {
+                // Set base address for OpenRouteService API
+                _httpClient.BaseAddress = new Uri("https://api.openrouteservice.org/");
+                _httpClient.DefaultRequestHeaders.Add("Authorization", _openRouteServiceApiKey);
+            }
+            else
+            {
+                // Log warning about missing API key
+                _logger.LogWarning("OpenRouteService API key not configured. Navigation features will be limited.");
+            }
 
             // Initialize the map and add OSM base layer
             Map = new Map();
@@ -617,7 +628,70 @@ namespace SET09102_2024_5.ViewModels
                     ms.Dispose();
                 }
                 catch (FileNotFoundException) { }
+                catch (DirectoryNotFoundException) { }
             }
+
+            // Create a default bitmap if the file wasn't found
+            _logger.LogWarning("Could not find pin image '{filename}', creating default bitmap", filename);
+            
+            try
+            {
+                // Create a simple color bitmap based on the filename
+                Microsoft.Maui.Graphics.Color color = filename.Contains("warning") 
+                    ? Microsoft.Maui.Graphics.Colors.Yellow  // Yellow for warning
+                    : filename.Contains("location") 
+                        ? Microsoft.Maui.Graphics.Colors.Blue  // Blue for location
+                        : Microsoft.Maui.Graphics.Colors.Green; // Green for default
+                
+                // Generate a simple image using SkiaSharp (already included in MAUI)
+                var ms = new MemoryStream();
+                using (var surface = SKSurface.Create(new SKImageInfo(64, 64)))
+                {
+                    var canvas = surface.Canvas;
+                    // Clear with transparent background
+                    canvas.Clear(SKColors.Transparent);
+                    
+                    // Create circle with specific color
+                    using var paint = new SKPaint
+                    {
+                        IsAntialias = true,
+                        Color = new SKColor((byte)color.Red, (byte)color.Green, (byte)color.Blue, 255),
+                        Style = SKPaintStyle.Fill
+                    };
+                    
+                    // Draw a circle
+                    canvas.DrawCircle(32, 32, 28, paint);
+                    
+                    // Add border
+                    using var strokePaint = new SKPaint
+                    {
+                        IsAntialias = true,
+                        Color = SKColors.White,
+                        Style = SKPaintStyle.Stroke,
+                        StrokeWidth = 2
+                    };
+                    canvas.DrawCircle(32, 32, 28, strokePaint);
+                    
+                    // Convert to PNG
+                    using var image = surface.Snapshot();
+                    using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+                    data.SaveTo(ms);
+                }
+                
+                ms.Position = 0;
+                var id = BitmapRegistry.Instance.Register(ms);
+                if (id > 0)
+                {
+                    _pinStreams.Add(ms);
+                    return id;
+                }
+                ms.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create fallback bitmap for '{filename}'", filename);
+            }
+            
             _logger.LogError("Could not register pin '{filename}'", filename);
             return -1;
         }

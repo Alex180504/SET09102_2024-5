@@ -1293,6 +1293,19 @@ namespace SET09102_2024_5.ViewModels
             }
 
             await _rolePrivilegeRepository.SaveChangesAsync();
+            
+            // Important: Invalidate any cached role information for ALL users with this role
+            // This ensures navigation permissions are updated immediately
+            if (SelectedRole.Users != null && SelectedRole.Users.Any())
+            {
+                foreach (var user in SelectedRole.Users)
+                {
+                    // Invalidate cache for each user with this role
+                    _authService.InvalidateUserCache(user.UserId);
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"Invalidated privilege cache for {SelectedRole.Users.Count} users with role {SelectedRole.RoleName}");
+            }
         }
 
         /// <summary>

@@ -1,5 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SET09102_2024_5.Interfaces;
+using SET09102_2024_5.Services;
+using System.Threading.Tasks;
 
 namespace SET09102_2024_5.ViewModels
 {
@@ -11,6 +14,9 @@ namespace SET09102_2024_5.ViewModels
     /// </remarks>
     public partial class MainPageViewModel : BaseViewModel
     {
+        private readonly INavigationService _navigationService;
+        private readonly IDialogService _dialogService;
+
         /// <summary>
         /// Gets or sets the counter value that tracks button clicks
         /// </summary>
@@ -26,9 +32,11 @@ namespace SET09102_2024_5.ViewModels
         /// <summary>
         /// Initializes a new instance of the <see cref="MainPageViewModel"/> class
         /// </summary>
-        public MainPageViewModel()
+        public MainPageViewModel(INavigationService navigationService, IDialogService dialogService)
         {
             Title = "Main Page";
+            _navigationService = navigationService;
+            _dialogService = dialogService;
         }
 
         /// <summary>
@@ -40,12 +48,60 @@ namespace SET09102_2024_5.ViewModels
             Count++;
         }
 
+        // Navigation Commands
+
         /// <summary>
         /// Navigates to the sensor management page
         /// </summary>
-        private async void OnNavigateToSensorManagement()
+        [RelayCommand]
+        private async Task NavigateToSensorManagement()
         {
-            await Shell.Current.GoToAsync("SensorManagementPage");
+            await _navigationService.NavigateToAsync(RouteConstants.SensorManagementPage);
+        }
+
+        /// <summary>
+        /// Navigates to the sensor locator page
+        /// </summary>
+        [RelayCommand]
+        private async Task NavigateToSensorLocator()
+        {
+            await _navigationService.NavigateToAsync(RouteConstants.SensorLocatorPage);
+        }
+
+        /// <summary>
+        /// Navigates to the sensor map page
+        /// </summary>
+        [RelayCommand]
+        private async Task NavigateToSensorMap()
+        {
+            await _navigationService.NavigateToAsync(RouteConstants.MapPage);
+        }
+
+        /// <summary>
+        /// Navigates to the sensor monitoring/operational status page
+        /// </summary>
+        [RelayCommand]
+        private async Task NavigateToSensorMonitoring()
+        {
+            await _navigationService.NavigateToAsync(RouteConstants.SensorOperationalStatusPage);
+        }
+
+        /// <summary>
+        /// Navigates to the historical data page
+        /// </summary>
+        [RelayCommand]
+        private async Task NavigateToHistoricalData()
+        {
+            await _navigationService.NavigateToAsync(RouteConstants.HistoricalDataPage);
+        }
+
+        /// <summary>
+        /// Navigates to the data storage page
+        /// </summary>
+        [RelayCommand]
+        private async Task NavigateToDataStorage()
+        {
+            await _navigationService.NavigateToAsync(RouteConstants.DataStoragePage);
         }
     }
 }

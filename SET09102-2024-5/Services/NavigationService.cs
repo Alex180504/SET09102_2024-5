@@ -394,7 +394,15 @@ namespace SET09102_2024_5.Services
                 return "//MainPage";
                 
             string cleanRoute = route.TrimStart('/');
-            return "///" + cleanRoute;
+            
+            // If the route doesn't contain a prefix like //, add the standard prefix ///
+            if (!cleanRoute.StartsWith("//"))
+            {
+                return "///" + cleanRoute;
+            }
+            
+            // Route already has appropriate prefix
+            return "/" + cleanRoute;
         }
 
         // Check if a route is public (no authentication required)
@@ -407,8 +415,15 @@ namespace SET09102_2024_5.Services
         // Check if a route requires admin permissions
         private bool IsAdminRoute(string route)
         {
+            if (string.IsNullOrEmpty(route))
+                return false;
+            
+            // Get just the route name without any path separators for a more robust comparison
+            string routeName = route.Split('/', '\\', '?').Last().TrimEnd('/');
+            
             return RouteConstants.AdminRoutes.Any(r => 
-                route.EndsWith(r.TrimStart('/'), StringComparison.OrdinalIgnoreCase));
+                string.Equals(routeName, r.TrimStart('/'), StringComparison.OrdinalIgnoreCase) ||
+                routeName.EndsWith(r.TrimStart('/'), StringComparison.OrdinalIgnoreCase));
         }
         
         #endregion

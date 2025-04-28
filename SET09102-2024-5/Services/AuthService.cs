@@ -460,6 +460,14 @@ namespace SET09102_2024_5.Services
                 return false;
             }
 
+            // For current user, check the in-memory object first for better performance
+            if (_currentUser != null && _currentUser.UserId == userId && _currentUser.Role != null)
+            {
+                bool isInRole = _currentUser.Role.RoleName.Equals(roleName, StringComparison.OrdinalIgnoreCase);
+                _loggingService.Debug($"Checking in-memory user {userId} in role '{roleName}': {isInRole}", _serviceCategory);
+                return isInRole;
+            }
+
             // Cache key for this user's role
             string cacheKey = $"{UserRoleCacheKeyPrefix}{userId}";
 
@@ -494,7 +502,7 @@ namespace SET09102_2024_5.Services
 
                         return result.Value;
                     },
-                    TimeSpan.FromMinutes(10) // Cache user roles for 10 minutes
+                    TimeSpan.FromMinutes(5) // Reduced cache time to 5 minutes for quicker updates
                 );
 
                 if (userRoleName == null)
@@ -597,7 +605,7 @@ namespace SET09102_2024_5.Services
         }
         
         // Helper method to invalidate all cached data for a user
-        private void InvalidateUserCache(int userId)
+        public void InvalidateUserCache(int userId)
         {
             _cacheManager.Remove($"{UserPermissionsCacheKeyPrefix}{userId}");
             _cacheManager.Remove($"{UserRoleCacheKeyPrefix}{userId}");

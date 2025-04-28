@@ -1,11 +1,22 @@
 using SET09102_2024_5.ViewModels;
 using SET09102_2024_5.Models;
+using Microsoft.Maui.Controls;
+using System.Threading.Tasks;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SET09102_2024_5.Views
 {
-    public partial class SensorManagementPage : ContentPage
+    public partial class SensorManagementPage : ViewBase
     {
         private SensorManagementViewModel ViewModel => BindingContext as SensorManagementViewModel;
+
+        // Add parameterless constructor for Shell navigation
+        public SensorManagementPage()
+        {
+            InitializeComponent();
+            BindingContext = App.Current.Handler.MauiContext?.Services.GetService<SensorManagementViewModel>();
+        }
 
         public SensorManagementPage(SensorManagementViewModel viewModel)
         {

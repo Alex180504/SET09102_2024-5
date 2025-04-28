@@ -1,35 +1,10 @@
 DROP DATABASE IF EXISTS sensor_monitoring;
-
 CREATE DATABASE IF NOT EXISTS sensor_monitoring;
 USE sensor_monitoring;
 
 -- Role Table
 CREATE TABLE role (
     role_id INT AUTO_INCREMENT PRIMARY KEY,
-    role_name VARCHAR(100) NOT NULL,
-    description VARCHAR(255),
-    is_protected BOOLEAN NOT NULL DEFAULT FALSE
-);
-
--- Seed the Administrator role
-INSERT INTO role (role_name, description, is_protected) 
-VALUES ('Administrator', 'Full system access with all privileges', TRUE);
-
--- Access Privilege Table
-CREATE TABLE access_privilege (
-    access_privilege_id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description VARCHAR(255),
-    module_name VARCHAR(100)
-);
-
--- Role Privilege Table (Join table for roles and privileges)
-CREATE TABLE role_privilege (
-    role_id INT NOT NULL,
-    access_privilege_id INT NOT NULL,
-    PRIMARY KEY (role_id, access_privilege_id),
-    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE,
-    FOREIGN KEY (access_privilege_id) REFERENCES access_privilege(access_privilege_id) ON DELETE CASCADE
     role_name VARCHAR(100) NOT NULL,
     description VARCHAR(255),
     is_protected BOOLEAN NOT NULL DEFAULT FALSE
@@ -63,7 +38,6 @@ CREATE TABLE user (
     last_name VARCHAR(100),
     email VARCHAR(255),
     role_id INT NOT NULL,
-    role_id INT NOT NULL,
     password_hash VARCHAR(255),
     password_salt VARCHAR(255),
     FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE RESTRICT
@@ -90,12 +64,12 @@ CREATE TABLE sensor (
 
 -- Configuration Table
 CREATE TABLE configuration (
-    sensor_id INT AUTO_INCREMENT PRIMARY KEY,
+    sensor_id INT PRIMARY KEY,
     latitude FLOAT,
     longitude FLOAT,
     altitude FLOAT,
     orientation INT,
-    measurment_frequency INT,
+    measurement_frequency INT,
     min_threshold FLOAT,
     max_threshold FLOAT,
     FOREIGN KEY (sensor_id) REFERENCES sensor(sensor_id) ON DELETE CASCADE
@@ -103,7 +77,7 @@ CREATE TABLE configuration (
 
 -- Sensor Firmware Table
 CREATE TABLE sensor_firmware (
-    sensor_id INT AUTO_INCREMENT PRIMARY KEY,
+    sensor_id INT PRIMARY KEY,
     firmware_version VARCHAR(50),
     last_update_date DATE,
     FOREIGN KEY (sensor_id) REFERENCES sensor(sensor_id) ON DELETE CASCADE
@@ -137,7 +111,6 @@ CREATE TABLE incident_measurement (
     FOREIGN KEY (incident_id) REFERENCES incident(incident_id) ON DELETE CASCADE
 );
 
-<<<<<<< HEAD
 -- Maintenance Table
 CREATE TABLE maintenance (
     maintenance_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -149,9 +122,7 @@ CREATE TABLE maintenance (
     FOREIGN KEY (sensor_id) REFERENCES sensor(sensor_id) ON DELETE CASCADE
 );
 
-=======
 -- App User Creation
->>>>>>> f8db7ea (Refactor Role and User Management Pages)
 CREATE USER IF NOT EXISTS 'sensor_app'@'localhost' IDENTIFIED BY '165456678';
 GRANT SELECT, INSERT, UPDATE, DELETE ON sensor_monitoring.* TO 'sensor_app'@'localhost';
 FLUSH PRIVILEGES;
