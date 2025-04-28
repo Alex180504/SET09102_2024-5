@@ -58,7 +58,6 @@
                 BackgroundColor="#007ACC"
                 TextColor="White"
                 HorizontalOptions="Fill" />
-                HorizontalOptions="Fill" />  
 
             <Button
                 Text="Sensor Operational Status"
