@@ -95,13 +95,15 @@ namespace SET09102_2024_5
                 // Register repositories
                 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-                // Register services with proper adapter patterns
-                builder.Services.AddScoped<Services.DatabaseService>();  // Register concrete implementation
-                builder.Services.AddScoped<IDatabaseService, Services.DatabaseServiceAdapter>(); // Register adapter
+                // Register services - removed adapter pattern for simplicity
+                builder.Services.AddScoped<IDatabaseService, DatabaseService>(); 
                 builder.Services.AddSingleton<ILoggingService, LoggingService>(); 
                 builder.Services.AddSingleton<IAuthService, AuthService>();
                 builder.Services.AddSingleton<IDialogService, DialogService>();
                 builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
+                builder.Services.AddSingleton<IPasswordHasher, Services.Security.PasswordHasher>();
+                builder.Services.AddSingleton<ICacheManager, Services.Cache.CacheManager>();
+                builder.Services.AddSingleton<ITokenService, Services.Security.TokenService>();
                 
                 // Register navigation services
                 builder.Services.AddSingleton<INavigationService, NavigationService>();

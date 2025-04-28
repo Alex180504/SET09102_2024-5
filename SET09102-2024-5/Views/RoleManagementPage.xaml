@@ -367,6 +367,38 @@
                             </DataTemplate>
                           </CollectionView.ItemTemplate>
                         </CollectionView>
+                        
+                        <!-- Update Role Button Section -->
+                        <Border Padding="0" BackgroundColor="{AppThemeBinding Light=#f7f7f7, Dark=#333333}" StrokeThickness="1" Stroke="{AppThemeBinding Light=#e0e0e0, Dark=#505050}" StrokeShape="RoundRectangle 8" Margin="0,16,0,0">
+                          <VerticalStackLayout Spacing="0">
+                            <Border BackgroundColor="{AppThemeBinding Light=#FFF8E1, Dark=#3E2723}" Padding="16,8" IsVisible="{Binding HasUnsavedChanges}">
+                              <HorizontalStackLayout Spacing="8">
+                                <Label Text="{x:Static helpers:MaterialIcons.Info}" FontFamily="MaterialIcons" TextColor="{AppThemeBinding Light=#FF8F00, Dark=#FFCC80}" FontSize="20" VerticalOptions="Center"/>
+                                <Label Text="You have unsaved changes to this role" TextColor="{AppThemeBinding Light=#E65100, Dark=#FFCC80}" FontSize="14" VerticalOptions="Center"/>
+                              </HorizontalStackLayout>
+                            </Border>
+                            <Grid Padding="16,12" ColumnDefinitions="Auto,*">
+                              <Button Grid.Column="0" 
+                                    Text="Update Role" 
+                                    Command="{Binding UpdateRoleCommand}" 
+                                    Style="{StaticResource ModernActionButton}" 
+                                    BackgroundColor="{AppThemeBinding Light=#4CAF50, Dark=#388E3C}" 
+                                    Padding="20,12" 
+                                    IsEnabled="{Binding SelectedRole.IsProtected, Converter={StaticResource InvertedBoolConverter}}">
+                                <Button.Shadow>
+                                  <Shadow Brush="#404CAF50" Offset="0,3" Radius="8"/>
+                                </Button.Shadow>
+                              </Button>
+                              <Label Grid.Column="1" 
+                                    Text="Save changes to role name, description and privileges" 
+                                    TextColor="{AppThemeBinding Light=#757575, Dark=#BBBBBB}" 
+                                    FontSize="14" 
+                                    VerticalOptions="Center" 
+                                    Margin="16,0,0,0"/>
+                            </Grid>
+                          </VerticalStackLayout>
+                        </Border>
+
                       </VerticalStackLayout>
 
                       <!-- Users Tab Content -->
@@ -378,7 +410,6 @@
                         <CollectionView ItemsSource="{Binding RoleUsers}" 
                                         SelectedItem="{Binding SelectedUser}"
                                         SelectionMode="Single"
-                                        EmptyView="No users assigned to this role"
                                         RemainingItemsThreshold="5"
                                         ItemsUpdatingScrollMode="KeepItemsInView">
                           <CollectionView.ItemTemplate>

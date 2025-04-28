@@ -7,32 +7,65 @@ using SET09102_2024_5.Interfaces;
 
 namespace SET09102_2024_5.ViewModels
 {
+    /// <summary>
+    /// ViewModel for the user registration page
+    /// </summary>
+    /// <remarks>
+    /// Manages user registration process including form validation and submission.
+    /// Handles navigation after successful registration.
+    /// </remarks>
     public partial class RegisterViewModel : BaseViewModel
     {
         private readonly IAuthService _authService;
         private readonly INavigationService _navigationService;
         
+        /// <summary>
+        /// Gets or sets the user's first name
+        /// </summary>
         [ObservableProperty]
         private string _firstName = string.Empty;
         
+        /// <summary>
+        /// Gets or sets the user's last name
+        /// </summary>
         [ObservableProperty]
         private string _lastName = string.Empty;
         
+        /// <summary>
+        /// Gets or sets the user's email address
+        /// </summary>
         [ObservableProperty]
         private string _email = string.Empty;
         
+        /// <summary>
+        /// Gets or sets the user's chosen password
+        /// </summary>
         [ObservableProperty]
         private string _password = string.Empty;
         
+        /// <summary>
+        /// Gets or sets the password confirmation value
+        /// </summary>
         [ObservableProperty]
         private string _confirmPassword = string.Empty;
         
+        /// <summary>
+        /// Gets or sets a value indicating whether registration was successful
+        /// </summary>
         [ObservableProperty]
         private bool _registrationSuccessful;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether registration is in progress
+        /// </summary>
         [ObservableProperty]
         private bool _isRegistering;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RegisterViewModel"/> class
+        /// </summary>
+        /// <param name="authService">Service for authentication operations</param>
+        /// <param name="navigationService">Service for navigation operations</param>
         public RegisterViewModel(IAuthService authService, INavigationService navigationService)
         {
             _authService = authService;
@@ -40,6 +73,10 @@ namespace SET09102_2024_5.ViewModels
             Title = "Register";
         }
 
+        /// <summary>
+        /// Registers a new user with the information provided in the form
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand(CanExecute = nameof(CanRegister))]
         private async Task RegisterAsync()
         {
@@ -88,9 +125,17 @@ namespace SET09102_2024_5.ViewModels
             IsRegistering = false;
         }
         
+        /// <summary>
+        /// Navigates back to the login page
+        /// </summary>
+        /// <returns>A task that represents the asynchronous navigation operation</returns>
         [RelayCommand]
         private Task GoToLoginAsync() => _navigationService.NavigateToLoginAsync();
         
+        /// <summary>
+        /// Determines if the registration operation can be executed based on form validation
+        /// </summary>
+        /// <returns>True if all required fields are filled and registration is not in progress; otherwise, false</returns>
         private bool CanRegister() => 
             !string.IsNullOrEmpty(FirstName) && 
             !string.IsNullOrEmpty(LastName) &&

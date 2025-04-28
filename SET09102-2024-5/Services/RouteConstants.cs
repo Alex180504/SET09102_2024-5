@@ -32,6 +32,17 @@ namespace SET09102_2024_5.Services
             RegisterPage
         };
         
+        // Collection of all routes for pre-registration
+        public static readonly string[] AllRoutes = new[]
+        {
+            LoginPage,
+            RegisterPage,
+            MainPage,
+            AdminDashboardPage,
+            RoleManagementPage,
+            UserRoleManagementPage
+        };
+        
         // Legacy route mapping for backward compatibility
         public static class Legacy
         {

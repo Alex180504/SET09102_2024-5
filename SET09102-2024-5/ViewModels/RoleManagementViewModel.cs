@@ -13,6 +13,15 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace SET09102_2024_5.ViewModels
 {
+    /// <summary>
+    /// ViewModel for managing user roles and their associated privileges
+    /// </summary>
+    /// <remarks>
+    /// This ViewModel handles the creation, editing, and deletion of roles,
+    /// as well as managing the privileges assigned to each role.
+    /// It provides functionality for viewing users assigned to roles and
+    /// organizing privileges by module for better management.
+    /// </remarks>
     public partial class RoleManagementViewModel : BaseViewModel
     {
         private readonly IRepository<Role> _roleRepository;
@@ -36,59 +45,104 @@ namespace SET09102_2024_5.ViewModels
         // Flag to prevent reloading privileges when user is making changes
         private bool _isUserModifyingPrivileges = false;
 
-        // Tab control properties
+        /// <summary>
+        /// Gets or sets a value indicating whether the create role tab is active
+        /// </summary>
         [ObservableProperty]
         private bool _isCreateRoleTab = true;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the manage roles tab is active
+        /// </summary>
         [ObservableProperty]
         private bool _isManageRolesTab = false;
 
-        // Properties for the privileges and users tabs in Manage Roles
+        /// <summary>
+        /// Gets or sets a value indicating whether the users tab is selected in the manage roles view
+        /// </summary>
         [ObservableProperty]
         private bool _isUsersTabSelected = false;
 
+        /// <summary>
+        /// Gets or sets the collection of all roles in the system
+        /// </summary>
         [ObservableProperty]
         private ObservableCollection<Role> _roles = new();
 
+        /// <summary>
+        /// Gets or sets the collection of all available privileges in the system
+        /// </summary>
         [ObservableProperty]
         private ObservableCollection<AccessPrivilege> _allPrivileges = new();
 
+        /// <summary>
+        /// Gets or sets the currently selected role
+        /// </summary>
         [ObservableProperty]
         private Role _selectedRole;
 
+        /// <summary>
+        /// Gets or sets the name for a new role being created
+        /// </summary>
         [ObservableProperty]
         private string _newRoleName;
 
+        /// <summary>
+        /// Gets or sets the description for a new role being created
+        /// </summary>
         [ObservableProperty]
         private string _newRoleDescription;
 
+        /// <summary>
+        /// Gets or sets the collection of privileges associated with the selected role
+        /// </summary>
         [ObservableProperty]
         private ObservableCollection<AccessPrivilegeViewModel> _rolePrivileges = new();
 
-        // New property for privileges when creating a new role
+        /// <summary>
+        /// Gets or sets the collection of privilege groups for a new role, organized by module
+        /// </summary>
         [ObservableProperty]
         private ObservableCollection<PrivilegeModuleGroup> _newRolePrivilegeGroups = new();
 
-        // New property for privileges of existing role, organized by module
+        /// <summary>
+        /// Gets or sets the collection of privilege groups for an existing role, organized by module
+        /// </summary>
         [ObservableProperty]
         private ObservableCollection<PrivilegeModuleGroup> _rolePrivilegeGroups = new();
 
-        // New property to track if there are pending changes
+        /// <summary>
+        /// Gets or sets a value indicating whether there are unsaved changes
+        /// </summary>
         [ObservableProperty]
         private bool _hasUnsavedChanges = false;
 
-        // Message to display when changes are pending
+        /// <summary>
+        /// Gets or sets a message describing pending changes
+        /// </summary>
         [ObservableProperty]
         private string _pendingChangesMessage = string.Empty;
 
-        // Observable collection for users assigned to the selected role
+        /// <summary>
+        /// Gets or sets the collection of users assigned to the selected role
+        /// </summary>
         [ObservableProperty]
         private ObservableCollection<User> _roleUsers = new();
 
-        // Currently selected user in the list
+        /// <summary>
+        /// Gets or sets the currently selected user in the role users list
+        /// </summary>
         [ObservableProperty]
         private User _selectedUser;
         
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RoleManagementViewModel"/> class
+        /// </summary>
+        /// <param name="roleRepository">Repository for accessing role data</param>
+        /// <param name="privilegeRepository">Repository for accessing privilege data</param>
+        /// <param name="rolePrivilegeRepository">Repository for accessing role-privilege mappings</param>
+        /// <param name="authService">Service for authentication operations</param>
+        /// <param name="cache">Memory cache for improved performance</param>
         public RoleManagementViewModel(
             IRepository<Role> roleRepository,
             IRepository<AccessPrivilege> privilegeRepository, 
@@ -121,7 +175,11 @@ namespace SET09102_2024_5.ViewModels
                 });
         }
 
-        // Command to switch between privileges and users tabs
+        /// <summary>
+        /// Sets the active section tab (privileges or users) in the manage roles view
+        /// </summary>
+        /// <param name="section">The section to activate: "privileges" or "users"</param>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand]
         private async Task SetActiveSection(string section)
         {
@@ -159,6 +217,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Initializes the data for the view model, loading roles, privileges, and their relationships
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand]
         public async Task InitializeDataAsync()
         {
@@ -347,7 +409,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
-        // Toggle all privileges in a module group for new role creation
+        /// <summary>
+        /// Toggles selection of all privileges in a module group for a new role
+        /// </summary>
+        /// <param name="group">The privilege module group to toggle</param>
         [RelayCommand]
         private void ToggleModuleGroupSelection(PrivilegeModuleGroup group)
         {
@@ -364,210 +429,10 @@ namespace SET09102_2024_5.ViewModels
             group.UpdateGroupSelectionState();
         }
 
-        private async Task LoadRolesAsync()
-        {
-            try
-            {
-                // Directly get from database to avoid caching issues
-                var roles = await _roleRepository.GetAllAsync();
-                
-                if (roles == null || !roles.Any())
-                {
-                    await MainThread.InvokeOnMainThreadAsync(() =>
-                    {
-                        Roles.Clear();
-                    });
-                    System.Diagnostics.Debug.WriteLine("No roles found in database");
-                    return;
-                }
-                
-                // Include related entities if needed
-                foreach (var role in roles)
-                {
-                    // Make sure Users collection is loaded
-                    if (role.Users == null)
-                    {
-                        role.Users = new List<User>();
-                    }
-                }
-                
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    Roles.Clear();
-                    foreach (var role in roles)
-                    {
-                        Roles.Add(role);
-                    }
-                    System.Diagnostics.Debug.WriteLine($"Loaded {Roles.Count} roles successfully");
-                });
-            }
-            catch (Exception ex)
-            {
-                // Log the exception
-                System.Diagnostics.Debug.WriteLine($"Error loading roles: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                }
-                throw; // Rethrow to be caught by the calling method
-            }
-        }
-
-        private async Task LoadPrivilegesAsync()
-        {
-            try 
-            {
-                var privileges = await _privilegeRepository.GetAllAsync();
-                
-                if (privileges == null || !privileges.Any())
-                {
-                    await MainThread.InvokeOnMainThreadAsync(() =>
-                    {
-                        AllPrivileges.Clear();
-                    });
-                    System.Diagnostics.Debug.WriteLine("No privileges found in database");
-                    return;
-                }
-                
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    AllPrivileges.Clear();
-                    foreach (var privilege in privileges)
-                    {
-                        AllPrivileges.Add(privilege);
-                    }
-                    System.Diagnostics.Debug.WriteLine($"Loaded {AllPrivileges.Count} privileges successfully");
-                });
-            }
-            catch (Exception ex)
-            {
-                // Log the exception
-                System.Diagnostics.Debug.WriteLine($"Error loading privileges: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                }
-                throw; // Rethrow to be caught by the calling method
-            }
-        }
-
-        // Unified method to load role privileges - replaces both previous methods
-        private async Task LoadRolePrivilegesAsync(Role role = null)
-        {
-            // Use SelectedRole if no specific role provided
-            var targetRole = role ?? SelectedRole;
-            if (targetRole == null) return;
-
-            try
-            {
-                var rolePrivileges = await _rolePrivilegeRepository
-                    .FindAsync(rp => rp.RoleId == targetRole.RoleId);
-                
-                var rolePrivilegeIds = rolePrivileges.Select(rp => rp.AccessPrivilegeId).ToHashSet();
-                
-                System.Diagnostics.Debug.WriteLine($"Found {rolePrivilegeIds.Count} privileges for role {targetRole.RoleName}");
-                
-                // Store the current role ID for later comparison
-                _currentRoleId = targetRole.RoleId;
-                
-                // Reset tracking for unsaved changes only if explicitly loading a new role
-                // or if the role is different from the current one
-                if (role != null || _currentRoleId != targetRole.RoleId)
-                {
-                    _hasUnsavedPrivilegeChanges = false;
-                    HasUnsavedChanges = false;
-                    PendingChangesMessage = string.Empty;
-                    _originalPrivilegeStates.Clear();
-                }
-                
-                // Initialize empty lists first to prevent null reference exceptions
-                await MainThread.InvokeOnMainThreadAsync(() => 
-                {
-                    RolePrivileges.Clear();
-                    RolePrivilegeGroups.Clear();
-                });
-
-                // Group privileges by module for the organized view
-                var groupedPrivileges = AllPrivileges
-                    .GroupBy(p => p.ModuleName ?? "General")
-                    .OrderBy(g => g.Key)
-                    .ToList();
-
-                // Process in background to avoid UI thread blocking
-                var privilegeGroups = new List<PrivilegeModuleGroup>();
-                foreach (var group in groupedPrivileges)
-                {
-                    var privilegeGroup = new PrivilegeModuleGroup
-                    {
-                        ModuleName = group.Key,
-                        IsExpanded = true,
-                        HasHeaderCheckbox = true
-                    };
-                    
-                    foreach (var privilege in group.OrderBy(p => p.Name))
-                    {
-                        var isAssigned = rolePrivilegeIds.Contains(privilege.AccessPrivilegeId);
-                        
-                        // Store the original state for checking changes later
-                        // Only store if not already tracked (preserves user modifications)
-                        if (!_originalPrivilegeStates.ContainsKey(privilege.AccessPrivilegeId))
-                        {
-                            _originalPrivilegeStates[privilege.AccessPrivilegeId] = isAssigned;
-                        }
-                        
-                        var privilegeVm = new AccessPrivilegeViewModel
-                        {
-                            AccessPrivilege = privilege,
-                            IsAssigned = isAssigned,
-                            ParentGroup = privilegeGroup
-                        };
-                        
-                        privilegeGroup.Privileges.Add(privilegeVm);
-                        RolePrivileges.Add(privilegeVm);
-                    }
-                    
-                    // Update group selection state
-                    privilegeGroup.UpdateGroupSelectionState();
-                    privilegeGroups.Add(privilegeGroup);
-                }
-
-                // Update UI on main thread when all data is ready
-                await MainThread.InvokeOnMainThreadAsync(() => 
-                {
-                    foreach (var group in privilegeGroups)
-                    {
-                        RolePrivilegeGroups.Add(group);
-                    }
-                    
-                    // Force property change notifications to refresh the UI
-                    OnPropertyChanged(nameof(RolePrivileges));
-                    OnPropertyChanged(nameof(RolePrivilegeGroups));
-                    
-                    System.Diagnostics.Debug.WriteLine($"UI updated with {RolePrivilegeGroups.Count} privilege groups containing {RolePrivileges.Count} total privileges");
-                    
-                    // Ensure we're on privileges tab
-                    IsUsersTabSelected = false;
-                    OnPropertyChanged(nameof(IsUsersTabSelected));
-                });
-                
-                // Remember that we've loaded this role's privileges
-                if (!_loadedRoleIds.Contains(targetRole.RoleId))
-                {
-                    _loadedRoleIds.Add(targetRole.RoleId);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log the exception
-                System.Diagnostics.Debug.WriteLine($"Error loading role privileges: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                }
-                throw; // Rethrow to be caught by the calling ExecuteAsync method
-            }
-        }
-
+        /// <summary>
+        /// Creates a new role with the specified name, description, and privileges
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand(CanExecute = nameof(CanCreateRole))]
         private async Task CreateRoleAsync()
         {
@@ -622,7 +487,10 @@ namespace SET09102_2024_5.ViewModels
             }, "Creating role...", "Failed to create role");
         }
 
-        // Reset privilege selections for new role
+        /// <summary>
+        /// Resets the privilege selections for the new role
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         private async Task ResetNewRolePrivilegeSelections()
         {
             foreach (var group in NewRolePrivilegeGroups)
@@ -635,8 +503,67 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Determines whether a new role can be created based on validation rules
+        /// </summary>
+        /// <returns>True if the role can be created; otherwise, false</returns>
         private bool CanCreateRole() => !string.IsNullOrWhiteSpace(NewRoleName);
 
+        /// <summary>
+        /// Updates the selected role with any changes to name, description, and privileges
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
+        [RelayCommand(CanExecute = nameof(CanUpdateRole))]
+        private async Task UpdateRoleAsync()
+        {
+            await ExecuteAsync(async () =>
+            {
+                // Check if this is a protected role using our centralized helper
+                if (await IsProtectedRoleOperation(SelectedRole, "modify"))
+                    return;
+                    
+                // Get a fresh instance of the role from the repository to avoid tracking conflicts
+                var dbRole = await _roleRepository.GetByIdAsync(SelectedRole.RoleId);
+                if (dbRole != null)
+                {
+                    // Copy editable properties from the view model to the database entity
+                    dbRole.RoleName = SelectedRole.RoleName;
+                    dbRole.Description = SelectedRole.Description;
+                    
+                    // Update the database entity
+                    _roleRepository.Update(dbRole);
+                    await _roleRepository.SaveChangesAsync();
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Role with ID {SelectedRole.RoleId} could not be found in the database.");
+                }
+                
+                // Update privileges
+                await UpdateRolePrivilegesAsync();
+                
+                // Reset the user modification flag after saving
+                _isUserModifyingPrivileges = false;
+                
+                // Clear unsaved changes tracking
+                HasUnsavedChanges = false;
+                _hasUnsavedPrivilegeChanges = false;
+                PendingChangesMessage = string.Empty;
+                
+                await ShowAlert("Success", "Role updated successfully", "OK");
+            }, "Updating role...", "Failed to update role");
+        }
+        
+        /// <summary>
+        /// Determines whether the selected role can be updated
+        /// </summary>
+        /// <returns>True if the role can be updated; otherwise, false</returns>
+        private bool CanUpdateRole() => SelectedRole != null && !string.IsNullOrWhiteSpace(SelectedRole.RoleName);
+
+        /// <summary>
+        /// Saves changes to the selected role and its privileges
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand(CanExecute = nameof(CanSaveRole))]
         private async Task SaveRoleAsync()
         {
@@ -678,50 +605,16 @@ namespace SET09102_2024_5.ViewModels
             }, "Saving role...", "Failed to save role");
         }
         
+        /// <summary>
+        /// Determines whether the selected role can be saved
+        /// </summary>
+        /// <returns>True if the role can be saved; otherwise, false</returns>
         private bool CanSaveRole() => SelectedRole != null;
 
-        private async Task UpdateRolePrivilegesAsync()
-        {
-            if (SelectedRole == null) return;
-            
-            // Get existing role privileges
-            var existingPrivileges = await _rolePrivilegeRepository
-                .FindAsync(rp => rp.RoleId == SelectedRole.RoleId);
-            
-            var existingPrivilegeIds = existingPrivileges.Select(rp => rp.AccessPrivilegeId).ToList();
-
-            // Get selected privileges from grouped privileges
-            var selectedPrivilegeVms = RolePrivilegeGroups
-                .SelectMany(g => g.Privileges)
-                .Where(p => p.IsAssigned)
-                .ToList();
-                
-            var selectedPrivilegeIds = selectedPrivilegeVms
-                .Select(p => p.AccessPrivilege.AccessPrivilegeId)
-                .ToList();
-
-            // Remove privileges that were unselected
-            var toRemove = existingPrivileges.Where(rp => !selectedPrivilegeIds.Contains(rp.AccessPrivilegeId)).ToList();
-            if (toRemove.Any())
-            {
-                _rolePrivilegeRepository.RemoveRange(toRemove);
-            }
-
-            // Add newly selected privileges
-            var newPrivilegeIds = selectedPrivilegeIds.Except(existingPrivilegeIds).ToList();
-            if (newPrivilegeIds.Any())
-            {
-                var newRolePrivileges = newPrivilegeIds.Select(id => new RolePrivilege
-                {
-                    RoleId = SelectedRole.RoleId,
-                    AccessPrivilegeId = id
-                });
-                await _rolePrivilegeRepository.AddRangeAsync(newRolePrivileges);
-            }
-
-            await _rolePrivilegeRepository.SaveChangesAsync();
-        }
-
+        /// <summary>
+        /// Deletes the selected role after confirmation and validation
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand(CanExecute = nameof(CanDeleteRole))]
         private async Task DeleteRoleAsync()
         {
@@ -760,42 +653,16 @@ namespace SET09102_2024_5.ViewModels
             }, "Deleting role...", "Failed to delete role");
         }
         
+        /// <summary>
+        /// Determines whether the selected role can be deleted
+        /// </summary>
+        /// <returns>True if the role can be deleted; otherwise, false</returns>
         private bool CanDeleteRole() => SelectedRole != null;
         
-        private async Task<string> ValidateRoleDeletion()
-        {
-            if (SelectedRole == null) return "No role selected";
-            
-            // Don't allow deleting the Administrator role
-            if (SelectedRole.RoleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
-            {
-                return "The Administrator role cannot be deleted";
-            }
-
-            // Check if any users have this role
-            bool hasUsers = SelectedRole.Users?.Any() == true;
-            if (hasUsers)
-            {
-                return "Cannot delete a role that is assigned to users";
-            }
-            
-            return string.Empty; // No validation errors
-        }
-        
-        private async Task DeleteRolePrivilegesAsync()
-        {
-            if (SelectedRole == null) return;
-            
-            var rolePrivileges = await _rolePrivilegeRepository
-                .FindAsync(rp => rp.RoleId == SelectedRole.RoleId);
-                
-            if (rolePrivileges.Any())
-            {
-                _rolePrivilegeRepository.RemoveRange(rolePrivileges);
-                await _rolePrivilegeRepository.SaveChangesAsync();
-            }
-        }
-
+        /// <summary>
+        /// Toggles the selection state of all privileges in a module group for an existing role
+        /// </summary>
+        /// <param name="group">The privilege module group to toggle</param>
         [RelayCommand]
         private void ToggleRoleModuleGroupSelection(PrivilegeModuleGroup group)
         {
@@ -812,6 +679,10 @@ namespace SET09102_2024_5.ViewModels
             group.UpdateGroupSelectionState();
         }
 
+        /// <summary>
+        /// Toggles the selection state of an individual privilege for a role
+        /// </summary>
+        /// <param name="privilegeVm">The privilege view model to toggle</param>
         [RelayCommand]
         private void TogglePrivilege(AccessPrivilegeViewModel privilegeVm)
         {
@@ -955,6 +826,11 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Selects a role and loads its associated privileges and users
+        /// </summary>
+        /// <param name="role">The role to select</param>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand]
         private async Task SelectRoleAsync(Role role)
         {
@@ -1008,67 +884,10 @@ namespace SET09102_2024_5.ViewModels
             });
         }
 
-        private async Task LoadRolePrivilegesForRoleAsync(Role role)
-        {
-            if (role == null) return;
-            try
-            {
-                var rolePrivileges = await _rolePrivilegeRepository.FindAsync(rp => rp.RoleId == role.RoleId);
-                var rolePrivilegeIds = rolePrivileges.Select(rp => rp.AccessPrivilegeId).ToHashSet();
-
-                // Always clear and reload
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    RolePrivileges.Clear();
-                    RolePrivilegeGroups.Clear();
-                });
-
-                // Group privileges by module
-                var groupedPrivileges = AllPrivileges
-                    .GroupBy(p => p.ModuleName ?? "General")
-                    .OrderBy(g => g.Key)
-                    .ToList();
-
-                var privilegeGroups = new List<PrivilegeModuleGroup>();
-                _originalPrivilegeStates.Clear();
-
-                foreach (var group in groupedPrivileges)
-                {
-                    var privilegeGroup = new PrivilegeModuleGroup
-                    {
-                        ModuleName = group.Key,
-                        IsExpanded = true,
-                        HasHeaderCheckbox = true
-                    };
-                    foreach (var privilege in group.OrderBy(p => p.Name))
-                    {
-                        var isAssigned = rolePrivilegeIds.Contains(privilege.AccessPrivilegeId);
-                        _originalPrivilegeStates[privilege.AccessPrivilegeId] = isAssigned;
-                        var privilegeVm = new AccessPrivilegeViewModel
-                        {
-                            AccessPrivilege = privilege,
-                            IsAssigned = isAssigned,
-                            ParentGroup = privilegeGroup
-                        };
-                        privilegeGroup.Privileges.Add(privilegeVm);
-                        RolePrivileges.Add(privilegeVm);
-                    }
-                    privilegeGroup.UpdateGroupSelectionState();
-                    privilegeGroups.Add(privilegeGroup);
-                }
-
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    foreach (var group in privilegeGroups)
-                        RolePrivilegeGroups.Add(group);
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error loading privileges for role: {ex.Message}");
-            }
-        }
-
+        /// <summary>
+        /// Switches between the create role and manage roles tabs
+        /// </summary>
+        /// <param name="tab">The tab to switch to: "create" or "manage"</param>
         [RelayCommand]
         private void SwitchTab(string tab)
         {
@@ -1126,6 +945,11 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Removes a user from the currently selected role
+        /// </summary>
+        /// <param name="user">The user to remove from the role</param>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand]
         private async Task RemoveUserFromRoleAsync(User user)
         {
@@ -1183,20 +1007,351 @@ namespace SET09102_2024_5.ViewModels
             }, "Removing user from role...", "Failed to remove user from role");
         }
 
-        // Message object used to communicate role changes between ViewModels
+        /// <summary>
+        /// Message object used to communicate role changes between ViewModels
+        /// </summary>
         public class UserRoleChangedMessage
         {
+            /// <summary>
+            /// Gets or sets the ID of the user whose role changed
+            /// </summary>
             public int UserId { get; set; }
+            
+            /// <summary>
+            /// Gets or sets the ID of the user's previous role
+            /// </summary>
             public int OldRoleId { get; set; }
+            
+            /// <summary>
+            /// Gets or sets the ID of the user's new role
+            /// </summary>
             public int NewRoleId { get; set; }
+        }
+
+        /// <summary>
+        /// Loads all roles from the database
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation</returns>
+        private async Task LoadRolesAsync()
+        {
+            try
+            {
+                // Directly get from database to avoid caching issues
+                var roles = await _roleRepository.GetAllAsync();
+                
+                if (roles == null || !roles.Any())
+                {
+                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        Roles.Clear();
+                    });
+                    System.Diagnostics.Debug.WriteLine("No roles found in database");
+                    return;
+                }
+                
+                // Include related entities if needed
+                foreach (var role in roles)
+                {
+                    // Make sure Users collection is loaded
+                    if (role.Users == null)
+                    {
+                        role.Users = new List<User>();
+                    }
+                }
+                
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    Roles.Clear();
+                    foreach (var role in roles)
+                    {
+                        Roles.Add(role);
+                    }
+                    System.Diagnostics.Debug.WriteLine($"Loaded {Roles.Count} roles successfully");
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                System.Diagnostics.Debug.WriteLine($"Error loading roles: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+                throw; // Rethrow to be caught by the calling method
+            }
+        }
+
+        /// <summary>
+        /// Loads all access privileges from the database
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation</returns>
+        private async Task LoadPrivilegesAsync()
+        {
+            try 
+            {
+                var privileges = await _privilegeRepository.GetAllAsync();
+                
+                if (privileges == null || !privileges.Any())
+                {
+                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        AllPrivileges.Clear();
+                    });
+                    System.Diagnostics.Debug.WriteLine("No privileges found in database");
+                    return;
+                }
+                
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    AllPrivileges.Clear();
+                    foreach (var privilege in privileges)
+                    {
+                        AllPrivileges.Add(privilege);
+                    }
+                    System.Diagnostics.Debug.WriteLine($"Loaded {AllPrivileges.Count} privileges successfully");
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                System.Diagnostics.Debug.WriteLine($"Error loading privileges: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+                throw; // Rethrow to be caught by the calling method
+            }
+        }
+
+        /// <summary>
+        /// Loads privileges for the specified role, or for the currently selected role if not specified
+        /// </summary>
+        /// <param name="role">Optional role to load privileges for</param>
+        /// <returns>A task representing the asynchronous operation</returns>
+        private async Task LoadRolePrivilegesAsync(Role role = null)
+        {
+            // Use SelectedRole if no specific role provided
+            var targetRole = role ?? SelectedRole;
+            if (targetRole == null) return;
+
+            try
+            {
+                var rolePrivileges = await _rolePrivilegeRepository
+                    .FindAsync(rp => rp.RoleId == targetRole.RoleId);
+                
+                var rolePrivilegeIds = rolePrivileges.Select(rp => rp.AccessPrivilegeId).ToHashSet();
+                
+                System.Diagnostics.Debug.WriteLine($"Found {rolePrivilegeIds.Count} privileges for role {targetRole.RoleName}");
+                
+                // Store the current role ID for later comparison
+                _currentRoleId = targetRole.RoleId;
+                
+                // Reset tracking for unsaved changes only if explicitly loading a new role
+                // or if the role is different from the current one
+                if (role != null || _currentRoleId != targetRole.RoleId)
+                {
+                    _hasUnsavedPrivilegeChanges = false;
+                    HasUnsavedChanges = false;
+                    PendingChangesMessage = string.Empty;
+                    _originalPrivilegeStates.Clear();
+                }
+                
+                // Initialize empty lists first to prevent null reference exceptions
+                await MainThread.InvokeOnMainThreadAsync(() => 
+                {
+                    RolePrivileges.Clear();
+                    RolePrivilegeGroups.Clear();
+                });
+
+                // Group privileges by module for the organized view
+                var groupedPrivileges = AllPrivileges
+                    .GroupBy(p => p.ModuleName ?? "General")
+                    .OrderBy(g => g.Key)
+                    .ToList();
+
+                // Process in background to avoid UI thread blocking
+                var privilegeGroups = new List<PrivilegeModuleGroup>();
+                foreach (var group in groupedPrivileges)
+                {
+                    var privilegeGroup = new PrivilegeModuleGroup
+                    {
+                        ModuleName = group.Key,
+                        IsExpanded = true,
+                        HasHeaderCheckbox = true
+                    };
+                    
+                    foreach (var privilege in group.OrderBy(p => p.Name))
+                    {
+                        var isAssigned = rolePrivilegeIds.Contains(privilege.AccessPrivilegeId);
+                        
+                        // Store the original state for checking changes later
+                        // Only store if not already tracked (preserves user modifications)
+                        if (!_originalPrivilegeStates.ContainsKey(privilege.AccessPrivilegeId))
+                        {
+                            _originalPrivilegeStates[privilege.AccessPrivilegeId] = isAssigned;
+                        }
+                        
+                        var privilegeVm = new AccessPrivilegeViewModel
+                        {
+                            AccessPrivilege = privilege,
+                            IsAssigned = isAssigned,
+                            ParentGroup = privilegeGroup
+                        };
+                        
+                        privilegeGroup.Privileges.Add(privilegeVm);
+                    }
+                    
+                    // Update group selection state
+                    privilegeGroup.UpdateGroupSelectionState();
+                    privilegeGroups.Add(privilegeGroup);
+                }
+
+                // Update UI on main thread when all data is ready
+                await MainThread.InvokeOnMainThreadAsync(() => 
+                {
+                    foreach (var group in privilegeGroups)
+                    {
+                        RolePrivilegeGroups.Add(group);
+                    }
+                    
+                    // Also update the flat list for backward compatibility
+                    foreach (var privilege in RolePrivilegeGroups.SelectMany(g => g.Privileges))
+                    {
+                        RolePrivileges.Add(privilege);
+                    }
+                    
+                    // Force property change notifications to refresh the UI
+                    OnPropertyChanged(nameof(RolePrivileges));
+                    OnPropertyChanged(nameof(RolePrivilegeGroups));
+                    
+                    System.Diagnostics.Debug.WriteLine($"UI updated with {RolePrivilegeGroups.Count} privilege groups containing {RolePrivileges.Count} total privileges");
+                    
+                    // Ensure we're on privileges tab
+                    IsUsersTabSelected = false;
+                    OnPropertyChanged(nameof(IsUsersTabSelected));
+                });
+                
+                // Remember that we've loaded this role's privileges
+                if (!_loadedRoleIds.Contains(targetRole.RoleId))
+                {
+                    _loadedRoleIds.Add(targetRole.RoleId);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                System.Diagnostics.Debug.WriteLine($"Error loading role privileges: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+                throw; // Rethrow to be caught by the calling ExecuteAsync method
+            }
+        }
+
+        /// <summary>
+        /// Updates the privileges assigned to the currently selected role
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation</returns>
+        private async Task UpdateRolePrivilegesAsync()
+        {
+            if (SelectedRole == null) return;
+            
+            // Get existing role privileges
+            var existingPrivileges = await _rolePrivilegeRepository
+                .FindAsync(rp => rp.RoleId == SelectedRole.RoleId);
+            
+            var existingPrivilegeIds = existingPrivileges.Select(rp => rp.AccessPrivilegeId).ToList();
+
+            // Get selected privileges from grouped privileges
+            var selectedPrivilegeVms = RolePrivilegeGroups
+                .SelectMany(g => g.Privileges)
+                .Where(p => p.IsAssigned)
+                .ToList();
+                
+            var selectedPrivilegeIds = selectedPrivilegeVms
+                .Select(p => p.AccessPrivilege.AccessPrivilegeId)
+                .ToList();
+
+            // Remove privileges that were unselected
+            var toRemove = existingPrivileges.Where(rp => !selectedPrivilegeIds.Contains(rp.AccessPrivilegeId)).ToList();
+            if (toRemove.Any())
+            {
+                _rolePrivilegeRepository.RemoveRange(toRemove);
+            }
+
+            // Add newly selected privileges
+            var newPrivilegeIds = selectedPrivilegeIds.Except(existingPrivilegeIds).ToList();
+            if (newPrivilegeIds.Any())
+            {
+                var newRolePrivileges = newPrivilegeIds.Select(id => new RolePrivilege
+                {
+                    RoleId = SelectedRole.RoleId,
+                    AccessPrivilegeId = id
+                });
+                await _rolePrivilegeRepository.AddRangeAsync(newRolePrivileges);
+            }
+
+            await _rolePrivilegeRepository.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Validates if a role can be deleted, checking constraints
+        /// </summary>
+        /// <returns>Error message if validation fails; otherwise, empty string</returns>
+        private async Task<string> ValidateRoleDeletion()
+        {
+            if (SelectedRole == null) return "No role selected";
+            
+            // Don't allow deleting the Administrator role
+            if (SelectedRole.RoleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
+            {
+                return "The Administrator role cannot be deleted";
+            }
+
+            // Check if any users have this role
+            bool hasUsers = SelectedRole.Users?.Any() == true;
+            if (hasUsers)
+            {
+                return "Cannot delete a role that is assigned to users";
+            }
+            
+            return string.Empty; // No validation errors
+        }
+        
+        /// <summary>
+        /// Deletes all privileges associated with the currently selected role
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation</returns>
+        private async Task DeleteRolePrivilegesAsync()
+        {
+            if (SelectedRole == null) return;
+            
+            var rolePrivileges = await _rolePrivilegeRepository
+                .FindAsync(rp => rp.RoleId == SelectedRole.RoleId);
+                
+            if (rolePrivileges.Any())
+            {
+                _rolePrivilegeRepository.RemoveRange(rolePrivileges);
+                await _rolePrivilegeRepository.SaveChangesAsync();
+            }
         }
     }
 
+    /// <summary>
+    /// ViewModel representation of an access privilege with selection state
+    /// </summary>
     public partial class AccessPrivilegeViewModel : ObservableObject
     {
+        /// <summary>
+        /// Gets or sets the underlying access privilege
+        /// </summary>
         [ObservableProperty]
         private AccessPrivilege _accessPrivilege;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this privilege is assigned to the role
+        /// </summary>
         [ObservableProperty]
         private bool _isAssigned;
 
@@ -1209,29 +1364,55 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
-        // Reference to parent group if this privilege belongs to one
+        /// <summary>
+        /// Gets or sets the parent group this privilege belongs to
+        /// </summary>
         public PrivilegeModuleGroup ParentGroup { get; set; }
     }
 
+    /// <summary>
+    /// Groups access privileges by module for organized display and management
+    /// </summary>
     public partial class PrivilegeModuleGroup : ObservableObject
     {
+        /// <summary>
+        /// Gets or sets the name of the module this group represents
+        /// </summary>
         [ObservableProperty]
         private string _moduleName;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this group is expanded in the UI
+        /// </summary>
         [ObservableProperty]
         private bool _isExpanded;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this group has a header checkbox for selecting all privileges
+        /// </summary>
         [ObservableProperty]
         private bool _hasHeaderCheckbox;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether all privileges in this group are selected
+        /// </summary>
         [ObservableProperty]
         private bool _areAllPrivilegesSelected;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether some (but not all) privileges in this group are selected
+        /// </summary>
         [ObservableProperty]
         private bool _areSomePrivilegesSelected;
 
+        /// <summary>
+        /// Gets the collection of privileges in this module group
+        /// </summary>
         public ObservableCollection<AccessPrivilegeViewModel> Privileges { get; } = new();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PrivilegeModuleGroup"/> class
+        /// </summary>
         public PrivilegeModuleGroup()
         {
             // Set parent reference for each privilege
@@ -1247,7 +1428,9 @@ namespace SET09102_2024_5.ViewModels
             };
         }
 
-        // Update group selection state based on child privileges
+        /// <summary>
+        /// Updates the group selection state based on the selection state of child privileges
+        /// </summary>
         public void UpdateGroupSelectionState()
         {
             if (!Privileges.Any())

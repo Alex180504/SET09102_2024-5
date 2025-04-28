@@ -12,62 +12,120 @@ using SET09102_2024_5.Interfaces;
 
 namespace SET09102_2024_5.ViewModels
 {
+    /// <summary>
+    /// ViewModel for managing user role assignments and role privileges
+    /// </summary>
+    /// <remarks>
+    /// This ViewModel provides functionality for:
+    /// 1. Assigning roles to users
+    /// 2. Viewing and modifying privileges assigned to roles
+    /// 3. Searching for specific users
+    /// </remarks>
     public partial class UserRoleManagementViewModel : BaseViewModel
     {
         private readonly IDatabaseService _databaseService;
         private readonly INavigationService _navigationService;
         private CancellationTokenSource? _statusMessageCts;
 
-        // Properties for user management
+        /// <summary>
+        /// Gets or sets the collection of all users in the system
+        /// </summary>
         [ObservableProperty]
         private ObservableCollection<User> _users = new();
 
+        /// <summary>
+        /// Gets or sets the currently selected user
+        /// </summary>
         [ObservableProperty]
         private User? _selectedUser;
 
+        /// <summary>
+        /// Gets or sets the collection of all available roles for assignment
+        /// </summary>
         [ObservableProperty]
         private ObservableCollection<Role> _availableRoles = new();
 
+        /// <summary>
+        /// Gets or sets the user's original role before any changes
+        /// </summary>
         [ObservableProperty]
         private Role? _originalRole;
 
-        // Properties for role management
+        /// <summary>
+        /// Gets or sets the collection of all roles in the system
+        /// </summary>
         [ObservableProperty]
         private ObservableCollection<Role> _roles = new();
 
+        /// <summary>
+        /// Gets or sets the currently selected role for privilege management
+        /// </summary>
         [ObservableProperty]
         private Role? _selectedRole;
 
+        /// <summary>
+        /// Gets or sets the collection of privileges for the selected role
+        /// </summary>
         [ObservableProperty]
         private ObservableCollection<PrivilegeViewModel> _rolePrivileges = new();
 
+        /// <summary>
+        /// Gets or sets the collection of privileges grouped by module
+        /// </summary>
         [ObservableProperty]
         private ObservableCollection<PrivilegeGroup> _groupedPrivileges = new();
         
+        /// <summary>
+        /// Gets or sets the current search term for filtering users
+        /// </summary>
         [ObservableProperty]
         private string _searchTerm = string.Empty;
 
+        /// <summary>
+        /// Gets or sets the status message to display to the user
+        /// </summary>
         [ObservableProperty]
         private string _statusMessage = string.Empty;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether a refresh operation is in progress
+        /// </summary>
         [ObservableProperty]
         private bool _isRefreshing;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether a save operation is in progress
+        /// </summary>
         [ObservableProperty] 
         private bool _isSaving;
         
+        /// <summary>
+        /// Gets or sets a message describing modified privileges
+        /// </summary>
         [ObservableProperty]
         private string _modifiedPrivilegesMessage = string.Empty;
 
-        // For role assignment
+        /// <summary>
+        /// Gets a value indicating whether the current role assignment can be saved
+        /// </summary>
         public bool CanSaveRoleAssignment => SelectedUser != null && SelectedRole != null && 
                                            (!SelectedUser.Role?.RoleId.Equals(SelectedRole.RoleId) ?? true);
 
-        // For role privileges
+        /// <summary>
+        /// Gets a value indicating whether privilege changes can be saved
+        /// </summary>
         public bool CanSaveChanges => HasPrivilegeChanges && SelectedRole != null && !SelectedRole.IsProtected;
         
+        /// <summary>
+        /// Gets a value indicating whether any privileges have been modified
+        /// </summary>
         private bool HasPrivilegeChanges => RolePrivileges?.Any(p => p.IsModified) == true;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserRoleManagementViewModel"/> class
+        /// </summary>
+        /// <param name="databaseService">Service for database operations</param>
+        /// <param name="navigationService">Service for navigation operations</param>
         public UserRoleManagementViewModel(IDatabaseService databaseService, INavigationService navigationService)
         {
             _databaseService = databaseService;
@@ -76,7 +134,10 @@ namespace SET09102_2024_5.ViewModels
             Title = "User Access Management";
         }
 
-        // Sets the status message and schedules it to be cleared after 3 seconds
+        /// <summary>
+        /// Sets the status message and schedules it to be cleared after 3 seconds
+        /// </summary>
+        /// <param name="message">The message to display</param>
         private void SetStatusMessageWithTimeout(string message)
         {
             // Cancel any existing timer
@@ -100,6 +161,10 @@ namespace SET09102_2024_5.ViewModels
             }, TaskScheduler.Current);
         }
 
+        /// <summary>
+        /// Loads all users and roles from the database
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand]
         public async Task LoadDataAsync()
         {
@@ -143,6 +208,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Searches for users based on the current search term
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand]
         private async Task SearchAsync()
         {
@@ -188,6 +257,11 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Loads the role for a specific user
+        /// </summary>
+        /// <param name="user">The user to load the role for</param>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand]
         private async Task LoadUserRoleAsync(User user)
         {
@@ -213,6 +287,11 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Loads the privileges for a specific role
+        /// </summary>
+        /// <param name="role">The role to load privileges for</param>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand]
         private async Task LoadRolePrivilegesAsync(Role role)
         {
@@ -278,6 +357,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Toggles the selection state of a privilege
+        /// </summary>
+        /// <param name="privilege">The privilege to toggle</param>
         [RelayCommand]
         private void TogglePrivilege(PrivilegeViewModel privilege)
         {
@@ -303,6 +386,10 @@ namespace SET09102_2024_5.ViewModels
             SaveChangesCommand.NotifyCanExecuteChanged();
         }
 
+        /// <summary>
+        /// Saves changes to role privileges
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand(CanExecute = nameof(CanSaveChanges))]
         private async Task SaveChangesAsync()
         {
@@ -362,6 +449,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Saves a new role assignment for the selected user
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand(CanExecute = nameof(CanSaveRoleAssignment))]
         private async Task SaveUserRoleAsync()
         {
@@ -436,6 +527,9 @@ namespace SET09102_2024_5.ViewModels
             SaveUserRoleCommand.NotifyCanExecuteChanged();
         }
 
+        /// <summary>
+        /// Clears the status message manually
+        /// </summary>
         [RelayCommand]
         private void ClearStatusMessage()
         {
@@ -445,18 +539,28 @@ namespace SET09102_2024_5.ViewModels
             _statusMessageCts?.Cancel();
         }
         
+        /// <summary>
+        /// Refreshes the data by reloading users and roles
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         [RelayCommand]
         private async Task RefreshAsync()
         {
             await LoadDataAsync();
         }
         
+        /// <summary>
+        /// Initializes the view model by loading data
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         public async Task InitializeAsync()
         {
             await LoadDataAsync();
         }
 
-        // Clean up any resources when the page is unloaded
+        /// <summary>
+        /// Cleans up any resources when the page is unloaded
+        /// </summary>
         public void Cleanup()
         {
             _statusMessageCts?.Cancel();
@@ -465,25 +569,42 @@ namespace SET09102_2024_5.ViewModels
         }
     }
 
+    /// <summary>
+    /// Represents a privilege with selection state for UI binding
+    /// </summary>
     public class PrivilegeViewModel : ObservableObject
     {
         private bool _isAssigned;
         private bool _isModified;
 
+        /// <summary>
+        /// Gets the underlying access privilege
+        /// </summary>
         public AccessPrivilege Privilege { get; }
         
+        /// <summary>
+        /// Gets or sets a value indicating whether this privilege is assigned to the role
+        /// </summary>
         public bool IsAssigned 
         { 
             get => _isAssigned;
             set => SetProperty(ref _isAssigned, value);
         }
         
+        /// <summary>
+        /// Gets or sets a value indicating whether this privilege has been modified
+        /// </summary>
         public bool IsModified
         {
             get => _isModified;
             set => SetProperty(ref _isModified, value);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PrivilegeViewModel"/> class
+        /// </summary>
+        /// <param name="privilege">The underlying access privilege</param>
+        /// <param name="isAssigned">Whether the privilege is assigned to the role</param>
         public PrivilegeViewModel(AccessPrivilege privilege, bool isAssigned)
         {
             Privilege = privilege;
@@ -492,11 +613,26 @@ namespace SET09102_2024_5.ViewModels
         }
     }
 
+    /// <summary>
+    /// Represents a group of privileges for a specific module
+    /// </summary>
     public class PrivilegeGroup : ObservableObject
     {
+        /// <summary>
+        /// Gets the name of the module this group represents
+        /// </summary>
         public string ModuleName { get; }
+        
+        /// <summary>
+        /// Gets the collection of privileges in this module
+        /// </summary>
         public ObservableCollection<PrivilegeViewModel> Privileges { get; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PrivilegeGroup"/> class
+        /// </summary>
+        /// <param name="moduleName">The name of the module</param>
+        /// <param name="privileges">The collection of privileges in this module</param>
         public PrivilegeGroup(string moduleName, ObservableCollection<PrivilegeViewModel> privileges)
         {
             ModuleName = moduleName;
@@ -504,11 +640,24 @@ namespace SET09102_2024_5.ViewModels
         }
     }
 
-    // Message object used to communicate role changes between ViewModels
+    /// <summary>
+    /// Message object used to communicate role changes between ViewModels
+    /// </summary>
     public class UserRoleChangedMessage
     {
+        /// <summary>
+        /// Gets or sets the ID of the user whose role was changed
+        /// </summary>
         public int UserId { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the ID of the user's previous role
+        /// </summary>
         public int OldRoleId { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the ID of the user's new role
+        /// </summary>
         public int NewRoleId { get; set; }
     }
 }
