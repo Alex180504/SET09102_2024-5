@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using SET09102_2024_5.Data;
 using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Interfaces;
+using SET09102_2024_5.Models;
 using SET09102_2024_5.Services;
 using SET09102_2024_5.ViewModels;
 using SET09102_2024_5.Views;
@@ -49,6 +50,14 @@ namespace SET09102_2024_5
 #else
                 ConnectionString = config.GetConnectionString("DefaultConnection");
 #endif
+                var backupFolder = Path.Combine(FileSystem.CacheDirectory, "Backups");
+                Directory.CreateDirectory(backupFolder);
+                builder.Services.AddSingleton(new BackupOptions
+                {
+                    ScheduleTime = TimeSpan.FromHours(2),
+                    KeepLatestBackups = 7,
+                    BackupFolder = backupFolder
+                });
                 // Extract SSL certificate and save it to a temporary file
                 CertPath = ExtractSslCertificate();
                 ConnectionString = ConnectionString.Replace("SslCa=DigiCertGlobalRootG2.crt.pem;", $"SslCa={CertPath};");
@@ -88,6 +97,10 @@ namespace SET09102_2024_5
                 builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
                 builder.Services.AddScoped<ISensorService, SensorService>();
                 builder.Services.AddSingleton<IDialogService, DialogService>();
+                builder.Services.AddSingleton<SchedulerService>();
+                builder.Services.AddSingleton<IDialogService, DialogService>();
+                builder.Services.AddSingleton<IBackupService>(
+                _ => new MySqlBackupService(ConnectionString, backupFolder));
 
                 // ViewModels & Views
                 builder.Services.AddTransient<MainPageViewModel>();
@@ -102,6 +115,8 @@ namespace SET09102_2024_5
                 builder.Services.AddTransient<SensorOperationalStatusPage>();
                 builder.Services.AddTransient<SensorIncidentPage>();
                 builder.Services.AddTransient<MapPage>();
+                builder.Services.AddTransient<DataStoragePage>();
+                builder.Services.AddTransient<DataStorageViewModel>();
 
 
 #if DEBUG
@@ -113,7 +128,10 @@ namespace SET09102_2024_5
                 System.Diagnostics.Debug.WriteLine($"Application initialization error: {ex.Message}");
             }
 
-            return builder.Build();
+            var app = builder.Build();
+            var scheduler = app.Services.GetRequiredService<SchedulerService>();
+            scheduler.Start();
+            return app;
         }
 
         private static string ExtractSslCertificate()
