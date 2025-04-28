@@ -5,7 +5,7 @@
     <ScrollView>
         <VerticalStackLayout Padding="10" Spacing="10">
             <Picker Title="Category" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" />
-            <Picker Title="Site"     ItemsSource="{Binding Sites}"     SelectedItem="{Binding SelectedSite}" />
+            <Picker Title="Site"     ItemsSource="{Binding Sites}" SelectedItem="{Binding SelectedSite}" />
             <DatePicker Date="{Binding FromDate}" />
             <DatePicker Date="{Binding ToDate}" />
             <Button Text="Run Checks" Command="{Binding RunChecksCommand}" />

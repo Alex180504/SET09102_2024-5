@@ -89,6 +89,11 @@ namespace SET09102_2024_5
                 builder.Services.AddScoped<ISensorService, SensorService>();
                 builder.Services.AddSingleton<IDialogService, DialogService>();
 
+                builder.Services.AddScoped<IDataQualityService, MockDataQualityService>();
+                builder.Services.AddTransient<DataQualityViewModel>();
+                builder.Services.AddTransient<DataQualityPage>();
+
+
                 // ViewModels & Views
                 builder.Services.AddTransient<MainPageViewModel>();
                 builder.Services.AddTransient<SensorManagementViewModel>();

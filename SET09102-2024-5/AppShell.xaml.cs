@@ -12,6 +12,7 @@ namespace SET09102_2024_5
             Routing.RegisterRoute(nameof(MainPage), typeof(MainPage));
             Routing.RegisterRoute(nameof(SensorManagementPage), typeof(SensorManagementPage));
             Routing.RegisterRoute(nameof(MapPage), typeof(MapPage));
+            Routing.RegisterRoute(nameof(DataQualityPage), typeof(DataQualityPage));
         }
     }
 }
