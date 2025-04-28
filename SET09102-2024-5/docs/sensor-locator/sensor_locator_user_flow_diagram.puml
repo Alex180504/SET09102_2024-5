@@ -1,0 +1,57 @@
+@startuml Sensor Locator User Flow Diagram
+
+start
+
+:User opens Sensor Locator;
+
+:Map loads with sensors 
+displayed as pins;
+
+fork
+  :User searches for sensor;
+  :User selects sensor from results;
+  :Map centers on selected sensor;
+fork again
+  :User taps pin on map;
+  :Sensor info popup appears;
+  
+  if (User taps "Navigate to Sensor"?) then (yes)
+    :System begins route navigation;
+  else (no)
+    :User closes popup;
+  endif
+end fork
+
+:User selects travel mode
+(Walking/Driving);
+
+:System creates route from
+current location to sensor;
+
+:Map displays route line
+with distance and time;
+
+:User follows route
+to sensor location;
+
+if (User adds more waypoints?) then (yes)
+  :System recalculates multi-point route;
+  :User follows optimized route;
+else (no)
+  :User follows direct route;
+endif
+
+if (User changes travel mode?) then (yes)
+  :System recalculates route
+  with new travel mode;
+else (no)
+endif
+
+if (User clears route?) then (yes)
+  :Map returns to normal view;
+else (no)
+endif
+
+stop
+
+@enduml

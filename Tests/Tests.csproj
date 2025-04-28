@@ -40,9 +40,29 @@
 	</ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Mocks\MockApplication.cs" />
+    <Compile Include="Mocks\MockMapsuiBitmapRegistry.cs" />
+    <Compile Include="Mocks\MockStaticMethod.cs" />
+    <Compile Include="Services\BackupServiceTests.cs" />
+    <Compile Include="Repositories\MeasurementRepositoryTests.cs" />
+	<Compile Include="Repositories\SensorRepositoryTests.cs" />
+	<Compile Include="Mocks\MockDialogService.cs" />
+    <Compile Include="Mocks\MockMainThreadService.cs" />
+    <Compile Include="Mocks\MockNavigationService.cs" />
+    <Compile Include="Services\DatabaseServiceConnectionTests.cs" />
+    <Compile Include="Services\SchedulerServiceTests.cs" />
+    <Compile Include="Services\SensorServiceTests.cs" />
+    <Compile Include="ViewModels\DataStorageViewModelTests.cs" />
     <Compile Include="ViewModels\HistoricalDataViewModelTests.cs" />
     <Compile Include="Converters\DictionaryValueConverterTests.cs" />
+
     <Compile Include="ViewModels\SensorManagementViewModelFirmwareTests.cs" />
+    <Compile Include="ViewModels\MapViewModelTests.cs" />
+    <Compile Include="ViewModels\SensorIncidentLogViewModelTests.cs" />
+    <Compile Include="ViewModels\SensorLocatorViewModelTests.cs" />
+    <Compile Include="ViewModels\SensorManagementViewModelTests.cs" />
+    <Compile Include="ViewModels\SensorOperationalStatusViewModelTests.cs" />
+	  
   </ItemGroup>
 
   <ItemGroup>

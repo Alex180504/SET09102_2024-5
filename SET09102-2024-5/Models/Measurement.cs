@@ -20,6 +20,6 @@ namespace SET09102_2024_5.Models
         public Sensor Sensor { get; set; }
 
 
-        public ICollection<IncidentMeasurement> IncidentMeasurements { get; set; }
+        public ICollection<IncidentMeasurement> IncidentMeasurements { get; set; } = new List<IncidentMeasurement>();
     }
 }

@@ -1,0 +1,153 @@
+@startuml Sensor Configuration Management Class Diagram
+
+' Base classes and interfaces
+abstract class BaseViewModel {
+  # SetProperty<T>(ref T field, T value, string propertyName): bool
+  # OnPropertyChanged(string propertyName): void
+}
+
+interface INotifyPropertyChanged {
+  + PropertyChanged: event
+}
+
+' Main ViewModels and Models
+class SensorManagementViewModel {
+  - _context: SensorMonitoringContext
+  - _mainThreadService: IMainThreadService
+  - _dialogService: IDialogService
+  - _selectedSensor: Sensor
+  - _sensors: ObservableCollection<Sensor>
+  - _filteredSensors: ObservableCollection<Sensor>
+  - _configuration: Configuration
+  - _firmware: SensorFirmware
+  - _isSensorSelected: bool
+  - _isLoading: bool
+  - _isSearching: bool
+  - _searchText: string
+  - _statusOptions: List<string>
+  - _validationErrors: Dictionary<string, string>
+  - _hasValidationErrors: bool
+  + Sensors: ObservableCollection<Sensor>
+  + FilteredSensors: ObservableCollection<Sensor>
+  + SelectedSensor: Sensor
+  + Configuration: Configuration
+  + FirmwareInfo: SensorFirmware
+  + SearchText: string
+  + IsSearchActive: bool
+  + IsSensorSelected: bool
+  + IsLoading: bool
+  + HasValidationErrors: bool
+  + StatusOptions: List<string>
+  + ValidationErrors: Dictionary<string, string>
+  + OrientationText: string
+  + LoadSensorsCommand: ICommand
+  + SaveChangesCommand: ICommand
+  + SearchCommand: ICommand
+  + ClearSearchCommand: ICommand
+  + ValidateCommand: ICommand
+  + FilterSensors(string): void
+  - ExecuteSearch(): void
+  + HideSearchResults(): void
+  - ClearSearch(): void
+  + ShowAllSensorsInSearch(): void
+  - ValidateField(string): void
+  - ValidateLatitude(): void
+  - ValidateLongitude(): void
+  - ValidateAltitude(): void
+  - ValidateOrientation(): void
+  - ValidateMeasurementFrequency(): void
+  - ValidateMinThreshold(): void
+  - ValidateMaxThreshold(): void
+  - AddValidationError(string, string): void
+  - ClearValidationError(string): void
+  - ClearValidationErrors(): void
+  - ValidateAllFields(): void
+  - LoadSensorsAsync(): Task
+  - LoadSensorDetailsAsync(): Task
+  - SaveChangesAsync(): Task
+}
+
+class Sensor {
+  + SensorId: int
+  + SensorType: string
+  + Status: string
+  + DeploymentDate: DateTime?
+  + MeasurandId: int
+  + DisplayName: string
+  + Measurand: Measurand
+  + Configuration: Configuration
+  + Firmware: SensorFirmware
+  + Measurements: ICollection<Measurement>
+  + Maintenances: ICollection<Maintenance>
+}
+
+class Configuration {
+  + SensorId: int
+  + Latitude: float?
+  + Longitude: float?
+  + Altitude: float?
+  + Orientation: int?
+  + MeasurementFrequency: int?
+  + MinThreshold: float?
+  + MaxThreshold: float?
+  + Sensor: Sensor
+}
+
+class SensorFirmware {
+  + SensorId: int
+  + FirmwareVersion: string
+  + LastUpdateDate: DateTime?
+  + Sensor: Sensor
+}
+
+class Measurand {
+  + MeasurandId: int
+  + QuantityType: string
+  + QuantityName: string
+  + Symbol: string
+  + Unit: string
+}
+
+' Services and infrastructure
+interface IDialogService {
+  + DisplayAlertAsync(string, string, string): Task
+  + DisplayConfirmationAsync(string, string, string, string): Task<bool>
+  + DisplayErrorAsync(string, string): Task
+  + DisplaySuccessAsync(string, string): Task
+}
+
+interface IMainThreadService {
+  + IsMainThread: bool
+  + BeginInvokeOnMainThread(Action): void
+  + InvokeOnMainThreadAsync(Action): Task
+}
+
+class SensorMonitoringContext {
+  + Sensors: DbSet<Sensor>
+  + Configurations: DbSet<Configuration>
+  + SensorFirmwares: DbSet<SensorFirmware>
+  + Measurands: DbSet<Measurand>
+}
+
+' Relationships
+BaseViewModel <|-- SensorManagementViewModel
+INotifyPropertyChanged <|.. BaseViewModel
+
+SensorManagementViewModel "1" --> "1" SensorMonitoringContext: uses
+SensorManagementViewModel "1" --> "1" IDialogService: uses
+SensorManagementViewModel "1" --> "1" IMainThreadService: uses
+
+SensorManagementViewModel "1" --> "*" Sensor: manages
+SensorManagementViewModel "1" --> "1" Configuration: configures
+SensorManagementViewModel "1" --> "1" SensorFirmware: accesses
+
+Sensor "1" -- "1" Configuration: has
+Sensor "1" -- "1" SensorFirmware: has
+Sensor "1" -- "1" Measurand: measures with
+
+SensorMonitoringContext "1" --> "*" Sensor: contains
+SensorMonitoringContext "1" --> "*" Configuration: contains
+SensorMonitoringContext "1" --> "*" SensorFirmware: contains
+SensorMonitoringContext "1" --> "*" Measurand: contains
+
+@enduml
