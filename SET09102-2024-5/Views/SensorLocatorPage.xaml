@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<views:ViewBase 
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SET09102_2024_5.ViewModels"
+             xmlns:mapsui="clr-namespace:Mapsui.UI.Maui;assembly=Mapsui.UI.Maui"
+             xmlns:models="clr-namespace:SET09102_2024_5.Models"
+             xmlns:views="clr-namespace:SET09102_2024_5.Views"
+             x:Class="SET09102_2024_5.Views.SensorLocatorPage"
+             x:DataType="vm:SensorLocatorViewModel"
+             Title="Sensor Locator">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" 
+          Padding="10">
+
+        <!-- Search Bar -->
+        <Grid ColumnDefinitions="*,Auto" Grid.Row="0">
+            <SearchBar 
+                x:Name="searchBar"
+                Placeholder="Search sensors..."
+                Text="{Binding SearchText}"
+                SearchButtonPressed="OnSearchButtonPressed"
+                TextChanged="OnSearchTextChanged"
+                Focused="OnSearchBarFocused"
+                Unfocused="OnSearchBarUnfocused"
+                HorizontalOptions="Fill" />
+
+            <Button 
+                Grid.Column="1"
+                Text="Clear"
+                Command="{Binding ClearSearchCommand}"
+                IsVisible="{Binding IsSearchActive}" />
+        </Grid>
+
+        <!-- Travel Mode Selector -->
+        <HorizontalStackLayout Grid.Row="1" Spacing="10" Margin="0,5,0,5">
+            <Label Text="Travel Mode:" VerticalOptions="Center" />
+            <Picker x:Name="travelModePicker" 
+            Title="Select Travel Mode"
+            SelectedIndex="{Binding SelectedTravelModeIndex}" 
+            SelectedIndexChanged="OnTravelModePickerSelectedIndexChanged"
+            WidthRequest="150">
+                <Picker.ItemsSource>
+                    <x:Array Type="{x:Type x:String}">
+                        <x:String>Walking 🚶</x:String>
+                        <x:String>Driving 🚗</x:String>
+                    </x:Array>
+                </Picker.ItemsSource>
+            </Picker>
+        </HorizontalStackLayout>
+        
+        <!-- Search Results -->
+        <Frame x:Name="searchResultsFrame"
+               Grid.Row="1"
+               BorderColor="LightGray"
+               Padding="0"
+               Margin="0,0,0,5"
+               IsVisible="{Binding IsSearchActive}"
+               HasShadow="True">
+            <CollectionView 
+                x:Name="sensorListView"
+                ItemsSource="{Binding FilteredSensors}"
+                SelectionMode="Single"
+                SelectionChanged="OnSensorSelected"
+                HeightRequest="200">
+                <CollectionView.EmptyView>
+                    <Label Text="No sensors found" 
+                           HorizontalTextAlignment="Center"
+                           VerticalTextAlignment="Center"
+                           FontSize="16" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Sensor">
+                        <Grid Padding="10" ColumnDefinitions="*,Auto">
+                            <StackLayout Grid.Column="0">
+                                <Label Text="{Binding DisplayName}" 
+                                       FontAttributes="Bold" />
+                                <Label Text="{Binding SensorType}" 
+                                       FontSize="Small" />
+                                <Label Text="{Binding Status}"
+                                       FontSize="Small"
+                                       TextColor="{Binding Status, Converter={StaticResource StatusToColorConverter}}" />
+                            </StackLayout>
+                            <StackLayout Grid.Column="1" 
+                                         VerticalOptions="Center"
+                                         HorizontalOptions="End">
+                                <Button Text="🧭 Navigate" 
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SensorLocatorViewModel}}, Path=NavigateToSensorCommand}"
+                                        CommandParameter="{Binding}"
+                                        FontSize="12"
+                                        Padding="5" />
+                            </StackLayout>
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Frame>
+
+        <!-- Map -->
+        <mapsui:MapControl 
+            x:Name="MapControl"
+            Grid.Row="2"
+            VerticalOptions="FillAndExpand"
+            HorizontalOptions="FillAndExpand"
+            BackgroundColor="LightGray" />
+
+        <!-- Route Waypoints and Controls -->
+        <Grid Grid.Row="3" 
+                RowDefinitions="Auto,Auto"
+                ColumnDefinitions="*,Auto"
+                Margin="0,5,0,0">
+
+            <!-- Route waypoints text -->
+            <Label Grid.Row="0" Grid.Column="0" 
+                    Text="{Binding NavigationTitle}" 
+                    FontAttributes="Bold"
+                    TextColor="#28a745"
+                    IsVisible="{Binding Path=RouteWaypoints.Count, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}"
+                    VerticalOptions="Center"/>
+
+            <!-- Route details -->
+            <Label Grid.Row="1" Grid.Column="0"
+                    Text="{Binding RouteDetailsText}"
+                    TextColor="#0066cc"
+                    FontSize="Small"
+                    IsVisible="{Binding Path=RouteDetailsText, Converter={StaticResource StringToBoolConverter}}"
+                    VerticalOptions="Center" />
+
+            <!-- Controls -->
+            <StackLayout Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
+                     Orientation="Horizontal"
+                     HorizontalOptions="End"
+                     VerticalOptions="Center">
+                <ActivityIndicator IsRunning="{Binding IsLoading}" 
+                          IsVisible="{Binding IsLoading}"
+                          WidthRequest="20"
+                          HeightRequest="20" />
+                <Button Text="Clear" 
+                        Command="{Binding ClearRouteCommand}"
+                        IsVisible="{Binding Path=RouteWaypoints.Count, Converter={StaticResource BooleanConverter}}" />
+                <Button Text="Refresh" 
+                        Command="{Binding RefreshCommand}" />
+            </StackLayout>
+        </Grid>
+
+        <!-- Error Banner -->
+        <Frame Grid.Row="3" 
+                BackgroundColor="#ffcccc" 
+                Padding="10"
+                IsVisible="{Binding HasError}">
+            <Label Text="{Binding ErrorMessage}" 
+                   TextColor="DarkRed" 
+                   FontSize="Small"/>
+        </Frame>
+
+    </Grid>
+</views:ViewBase>

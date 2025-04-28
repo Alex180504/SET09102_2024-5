@@ -1,0 +1,61 @@
+name: CI/CD Pipeline for .NET MAUI App
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        target: [android, windows]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Cache .NET Workloads
+        uses: actions/cache@v3
+        with:
+          path: ~/.dotnet
+          key: ${{ runner.os }}-dotnet-workloads-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-dotnet-workloads-
+
+      - name: Install .NET MAUI workloads
+        run: dotnet workload install maui-android maui-ios maui-windows
+
+      - name: Restore NuGet packages
+        run: dotnet restore
+
+      - name: Build for Android
+        if: ${{ matrix.target == 'android' }}
+        run: |
+          dotnet build SET09102_2024-5/SET09102_2024-5.csproj \
+            --configuration Release \
+            --framework net8.0-android
+
+      - name: Build for Windows
+        if: ${{ matrix.target == 'windows' }}
+        run: |
+          dotnet build SET09102_2024-5/SET09102_2024-5.csproj \
+            --configuration Release \
+            --framework net8.0-windows10.0.19041.0
+
+      - name: Run tests
+        run: |
+          dotnet test Tests/Tests.csproj \
+            --configuration Release \
+            --verbosity normal

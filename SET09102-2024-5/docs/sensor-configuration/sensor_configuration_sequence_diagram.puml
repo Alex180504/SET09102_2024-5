@@ -1,0 +1,129 @@
+@startuml Sensor Configuration Management Sequence
+
+actor User
+participant "SensorManagementPage" as Page
+participant "SensorManagementViewModel" as ViewModel
+participant "SensorMonitoringContext" as Context
+database "Database" as DB
+
+User -> Page: Navigate to page
+activate Page
+
+Page -> Page: OnAppearing()
+Page -> ViewModel: LoadSensorsCommand.Execute()
+activate ViewModel
+
+ViewModel -> ViewModel: LoadSensorsAsync()
+activate ViewModel #DDDDDD
+ViewModel -> ViewModel: IsLoading = true
+ViewModel -> Context: Sensors.Include(s => s.Measurand).AsNoTracking().ToListAsync()
+activate Context
+Context -> DB: Query sensors
+activate DB
+DB --> Context: Return sensors data
+deactivate DB
+Context --> ViewModel: Return sensors list
+deactivate Context
+
+ViewModel -> ViewModel: Update Sensors collection
+ViewModel -> ViewModel: IsLoading = false
+deactivate ViewModel #DDDDDD
+
+ViewModel --> Page: UI updated with sensors
+deactivate ViewModel
+Page --> User: Display sensors list
+
+User -> Page: Select a sensor
+activate Page
+Page -> ViewModel: Set SelectedSensor
+activate ViewModel
+
+ViewModel -> ViewModel: LoadSensorDetailsAsync()
+activate ViewModel #DDDDDD
+ViewModel -> ViewModel: IsLoading = true
+ViewModel -> Context: Query sensor with Configuration and Firmware
+activate Context
+Context -> DB: Get configuration data
+activate DB
+DB --> Context: Return configuration data
+deactivate DB
+Context --> ViewModel: Return sensor details
+deactivate Context
+
+alt No existing configuration
+    ViewModel -> ViewModel: Create default Configuration object
+else Has configuration
+    ViewModel -> ViewModel: Use existing Configuration
+end
+
+ViewModel -> ViewModel: Update Configuration property
+ViewModel -> ViewModel: Update FirmwareInfo property
+ViewModel -> ViewModel: IsLoading = false
+deactivate ViewModel #DDDDDD
+
+ViewModel --> Page: UI updated with configuration values
+deactivate ViewModel
+Page --> User: Display configuration form
+
+User -> Page: Edit configuration fields
+Page -> ViewModel: Update Configuration properties
+
+User -> Page: Field focus changed
+Page -> ViewModel: ValidateCommand.Execute(fieldName)
+activate ViewModel
+ViewModel -> ViewModel: ValidateField(fieldName)
+alt Field has error
+    ViewModel -> ViewModel: AddValidationError()
+    ViewModel -> ViewModel: HasValidationErrors = true
+else Field is valid
+    ViewModel -> ViewModel: ClearValidationError()
+end
+ViewModel --> Page: Update validation UI
+deactivate ViewModel
+
+User -> Page: Click Save button
+activate Page
+Page -> ViewModel: SaveChangesCommand.Execute()
+activate ViewModel
+
+ViewModel -> ViewModel: ValidateAllFields()
+alt Has validation errors
+    ViewModel -> ViewModel: DisplayErrorAsync()
+    ViewModel --> Page: Show validation errors
+else No validation errors
+    ViewModel -> ViewModel: Display confirmation dialog
+    
+    alt User confirms
+        ViewModel -> ViewModel: IsLoading = true
+        ViewModel -> Context: Get sensor with configuration
+        activate Context
+        Context -> DB: Query sensor
+        DB --> Context: Return sensor
+        deactivate Context
+        
+        alt Sensor has no configuration
+            ViewModel -> Context: Add new Configuration
+        else Has existing configuration
+            ViewModel -> Context: Update existing Configuration
+        end
+        
+        ViewModel -> Context: SaveChangesAsync()
+        activate Context
+        Context -> DB: Save configuration changes
+        DB --> Context: Confirm save
+        deactivate Context
+        
+        ViewModel -> ViewModel: DisplaySuccessAsync()
+        ViewModel -> ViewModel: LoadSensorsAsync()
+        ViewModel -> ViewModel: IsLoading = false
+    else User cancels
+        ViewModel -> ViewModel: Return without saving
+    end
+end
+
+ViewModel --> Page: UI updated after save
+deactivate ViewModel
+Page --> User: Display save result
+deactivate Page
+
+@enduml

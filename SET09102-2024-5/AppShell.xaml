@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="SET09102_2024_5.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:SET09102_2024_5"
+    xmlns:views="clr-namespace:SET09102_2024_5.Views"
+    Shell.FlyoutBehavior="Flyout"
+    Title="Sensor Monitoring System">
+
+    <Shell.FlyoutHeader>
+        <Grid HeightRequest="120" BackgroundColor="{StaticResource Primary}" Padding="20">
+            <Label Text="Sensor Monitoring System" 
+                   TextColor="White" 
+                   FontAttributes="Bold" 
+                   FontSize="20" 
+                   VerticalOptions="Center" />
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <!-- Login Route (No Flyout) -->
+    <ShellContent
+        Title="Login"
+        ContentTemplate="{DataTemplate views:LoginPage}"
+        Route="LoginPage"
+        FlyoutItemIsVisible="False" />
+
+    <!-- Register Route (No Flyout) -->
+    <ShellContent
+        Title="Register"
+        ContentTemplate="{DataTemplate views:RegisterPage}"
+        Route="RegisterPage"
+        FlyoutItemIsVisible="False" />
+
+    <!-- Main Application Routes -->
+    <FlyoutItem Title="Dashboard" Icon="home.png">
+        <ShellContent
+            Title="Home"
+            ContentTemplate="{DataTemplate views:MainPage}"
+            Route="MainPage" />
+    </FlyoutItem>
+    
+    <!-- Sensor Management Section -->
+    <FlyoutItem Title="Sensors" Icon="sensor.png">
+        <Tab Title="Sensor Functions">
+            <ShellContent
+                Title="Sensor Management"
+                ContentTemplate="{DataTemplate views:SensorManagementPage}"
+                Route="SensorManagementPage" />
+            <ShellContent
+                Title="Operational Status"
+                ContentTemplate="{DataTemplate views:SensorOperationalStatusPage}"
+                Route="SensorOperationalStatusPage" />
+            <ShellContent
+                Title="Locate Sensors"
+                ContentTemplate="{DataTemplate views:SensorLocatorPage}"
+                Route="SensorLocatorPage" />
+        </Tab>
+    </FlyoutItem>
+    
+    <!-- Data Section -->
+    <FlyoutItem Title="Data" Icon="data.png">
+        <Tab Title="Data Functions">
+            <ShellContent
+                Title="Status Map"
+                ContentTemplate="{DataTemplate views:MapPage}"
+                Route="MapPage" />
+            <ShellContent
+                Title="Historical Data"
+                ContentTemplate="{DataTemplate views:HistoricalDataPage}"
+                Route="HistoricalDataPage" />
+            <ShellContent
+                Title="Data Storage"
+                ContentTemplate="{DataTemplate views:DataStoragePage}"
+                Route="DataStoragePage" />
+        </Tab>
+    </FlyoutItem>
+
+    <!-- Admin Section - Directly accessible from menu when user has Admin role -->
+    <FlyoutItem Title="Administration" IsVisible="{Binding IsAdmin}">
+        <Tab Title="Admin Panel">
+            <ShellContent
+                Title="Admin Dashboard"
+                ContentTemplate="{DataTemplate views:AdminDashboardPage}"
+                Route="AdminDashboardPage" />
+            <ShellContent
+                Title="Role Management"
+                ContentTemplate="{DataTemplate views:RoleManagementPage}"
+                Route="RoleManagementPage" />
+            <ShellContent
+                Title="User Role Assignment"
+                ContentTemplate="{DataTemplate views:UserRoleManagementPage}"
+                Route="UserRoleManagementPage" />
+        </Tab>
+    </FlyoutItem>
+
+    <!-- Log Out Option -->
+    <MenuItem Text="Log Out" 
+              IconImageSource="logout.png"
+              Command="{Binding LogoutCommand}" />
+
+</Shell>

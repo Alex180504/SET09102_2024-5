@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+               xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+               x:Class="SET09102_2024_5.Controls.DatabaseErrorPopup"
+               CanBeDismissedByTappingOutsideOfPopup="False"
+               Color="Transparent">
+    <Frame BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
+           CornerRadius="12"
+           BorderColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+           Padding="20"
+           MaximumWidthRequest="400">
+        <VerticalStackLayout Spacing="20">
+            <Label Text="Database Connection Error"
+                   FontSize="24"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center" 
+                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
+
+            <Label Text="The application could not connect to the database. Please check your network connection and try again later."
+                   HorizontalTextAlignment="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
+
+            <Button Text="Exit Application"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Tertiary}}"
+                    TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource White}}"
+                    HorizontalOptions="Center"
+                    WidthRequest="200"
+                    Clicked="ExitButton_Clicked"/>
+        </VerticalStackLayout>
+    </Frame>
+</toolkit:Popup>

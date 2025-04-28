@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<views:ViewBase
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:conv="clr-namespace:SET09102_2024_5.Converters"
+    xmlns:views="clr-namespace:SET09102_2024_5.Views"
+    x:Class="SET09102_2024_5.Views.DataStoragePage"
+    Title="Data Storage">
+
+    <StackLayout Padding="20">
+        <Button Text="Backup now" Command="{Binding BackupCommand}" />
+        <Label Text="Schedule time:" />
+        <TimePicker Time="{Binding ScheduleTime}" />
+        <Label Text="Keep backups (N):" />
+        <Entry Text="{Binding KeepLatestBackups}" Keyboard="Numeric" />
+        <Button Text="Save settings" Command="{Binding SaveSettingsCommand}" />
+
+        <!-- Backup list -->
+        <Label Text="Available Backups:" Margin="0,20,0,5" />
+        <CollectionView
+            ItemsSource="{Binding BackupFiles}"
+            SelectedItem="{Binding SelectedBackup}"
+            SelectionMode="Single"
+            HeightRequest="200">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Padding="10" Margin="5" BorderColor="LightGray">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+                                <VisualState Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="grey" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState Name="Selected">
+                                    <VisualState.Setters>
+                                        <Setter Property="BackgroundColor" Value="LightBlue" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Label Text="{Binding FileName}" TextColor="Black" />
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Button
+            Text="Restore Selected Backup"
+            Command="{Binding RestoreCommand}"
+            IsEnabled="{Binding SelectedBackup, Converter={StaticResource NullToBoolConverter}}" />
+        <Button
+            Text="Open Backup Folder"
+            Command="{Binding OpenFolderCommand}"
+            Margin="0,10,0,0" />
+    </StackLayout>
+
+</views:ViewBase>

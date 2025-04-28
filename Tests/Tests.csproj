@@ -1,0 +1,72 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+		<RootNamespace>Tests</RootNamespace>
+    <!-- ↓ Disable the default *.cs globbing so our explicit Compile items don’t duplicate ↓ -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Remove="appsettings.test.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="coverlet.collector" Version="6.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.4" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+		<PackageReference Include="Moq" Version="4.20.72" />
+		<PackageReference Include="Moq.EntityFrameworkCore" Version="9.0.0.1" />
+		<PackageReference Include="xunit" Version="2.5.3" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Xunit" />
+		<ProjectReference Include="..\SET09102-2024-5\SET09102-2024-5.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="appsettings.test.json">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Include="DigiCertGlobalRootG2.crt.pem" />
+	</ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Mocks\MockApplication.cs" />
+    <Compile Include="Mocks\MockMapsuiBitmapRegistry.cs" />
+    <Compile Include="Mocks\MockStaticMethod.cs" />
+    <Compile Include="Services\BackupServiceTests.cs" />
+    <Compile Include="Repositories\MeasurementRepositoryTests.cs" />
+	<Compile Include="Repositories\SensorRepositoryTests.cs" />
+	<Compile Include="Mocks\MockDialogService.cs" />
+    <Compile Include="Mocks\MockMainThreadService.cs" />
+    <Compile Include="Mocks\MockNavigationService.cs" />
+    <Compile Include="Services\DatabaseServiceConnectionTests.cs" />
+    <Compile Include="Services\SchedulerServiceTests.cs" />
+    <Compile Include="Services\SensorServiceTests.cs" />
+    <Compile Include="ViewModels\DataStorageViewModelTests.cs" />
+    <Compile Include="ViewModels\HistoricalDataViewModelTests.cs" />
+    <Compile Include="Converters\DictionaryValueConverterTests.cs" />
+
+    <Compile Include="ViewModels\SensorManagementViewModelFirmwareTests.cs" />
+    <Compile Include="ViewModels\MapViewModelTests.cs" />
+    <Compile Include="ViewModels\SensorIncidentLogViewModelTests.cs" />
+    <Compile Include="ViewModels\SensorLocatorViewModelTests.cs" />
+    <Compile Include="ViewModels\SensorManagementViewModelTests.cs" />
+    <Compile Include="ViewModels\SensorOperationalStatusViewModelTests.cs" />
+	  
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Converters\" />
+  </ItemGroup>
+
+</Project>

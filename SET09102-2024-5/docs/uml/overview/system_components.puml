@@ -1,0 +1,32 @@
+@startuml
+skinparam componentStyle rectangle
+
+package "View" {
+  [MapPage] <<Component>>
+}
+package "ViewModel" {
+  [MapViewModel] <<Component>>
+}
+package "Model" {
+  [Sensor] <<Entity>>
+  [Alert] <<Entity>>
+}
+package "Services" {
+  [SensorService] <<Component>>
+  [PollingTimer] <<Component>>
+}
+package "Data" {
+  [SensorRepository] <<Component>>
+  [AlertRepository] <<Component>>
+}
+database "AzureSQLDB" <<Database>>
+
+MapPage --> MapViewModel : DataContext
+MapViewModel --> SensorService : uses
+SensorService --> PollingTimer : schedules
+PollingTimer --> SensorService : OnTick()
+SensorService --> SensorRepository : GetUpdatesSince(...)
+SensorService --> AlertRepository  : GetUpdatesSince(...)
+SensorRepository --> AzureSQLDB    : CRUD
+AlertRepository --> AzureSQLDB     : CRUD
+@enduml

@@ -1,0 +1,179 @@
+@startuml Sensor Locator Class Diagram
+
+' Core classes
+class SensorLocatorViewModel {
+  - _sensorService: ISensorService
+  - _mainThread: IMainThreadService
+  - _measurementRepo: IMeasurementRepository
+  - _dialogService: IDialogService
+  - _logger: ILogger<SensorLocatorViewModel>
+  - _httpClient: HttpClient
+  - _refreshLock: SemaphoreSlim
+  - _refreshTimer: IDispatcherTimer
+  - _pinStreams: List<Stream>
+  - _statusStyles: Dictionary<string, SymbolStyle>
+  - _openRouteServiceApiKey: string
+  - _sensors: List<Sensor>
+  - _filteredSensors: ObservableCollection<Sensor>
+  - _selectedSensor: Sensor
+  - _searchText: string
+  - _routeWaypoints: List<Sensor>
+  - _routeDistance: double
+  - _routeDuration: TimeSpan
+  - _currentPosition: Position
+  - _selectedTravelMode: TravelMode
+  + Map: Map
+  + FilteredSensors: ObservableCollection<Sensor>
+  + SelectedSensor: Sensor
+  + SearchText: string
+  + RouteWaypoints: List<Sensor>
+  + SelectedTravelMode: TravelMode
+  + InitializeAsync(): Task
+  + FilterSensors(searchText: string): void
+  + HideSearchResults(): void
+  + SearchCommand: ICommand
+  + ClearSearchCommand: ICommand
+  + RefreshCommand: ICommand
+  + AddToRouteCommand: ICommand
+  + RemoveFromRouteCommand: ICommand
+  + ClearRouteCommand: ICommand
+  + BuildRouteCommand: ICommand
+  + NavigateToSensorCommand: ICommand
+  + ChangeTravelModeCommand: ICommand
+}
+
+enum TravelMode {
+  Walking
+  Driving
+}
+
+' Models
+class Sensor {
+  + SensorId: int
+  + SensorType: string
+  + Status: string
+  + DeploymentDate: DateTime?
+  + MeasurandId: int
+  + Measurand: Measurand
+  + Configuration: Configuration
+  + Firmware: SensorFirmware
+  + Measurements: ICollection<Measurement>
+  + Maintenances: ICollection<Maintenance>
+  + DisplayName: string
+}
+
+class Configuration {
+  + SensorId: int
+  + Latitude: float?
+  + Longitude: float?
+  + Altitude: float?
+  + Orientation: int?
+  + OrientationDisplay: string
+  + MeasurementFrequency: int?
+  + MinThreshold: float?
+  + MaxThreshold: float?
+  + Sensor: Sensor
+}
+
+class Measurand {
+  + MeasurandId: int
+  + QuantityType: string
+  + QuantityName: string
+  + Symbol: string
+  + Unit: string
+  + Sensors: ICollection<Sensor>
+  + Measurements: ICollection<Measurement>
+}
+
+class Position {
+  + X: double
+  + Y: double
+  + Position(x: double, y: double)
+}
+
+' Interfaces
+interface ISensorService {
+  + GetAllWithConfigurationAsync(): Task<List<Sensor>>
+  + StartAsync(pollingInterval: TimeSpan, cancellationToken: CancellationToken): Task
+}
+
+interface IMainThreadService {
+  + IsMainThread: bool
+  + BeginInvokeOnMainThread(action: Action): void
+  + InvokeOnMainThreadAsync(action: Action): Task
+  + InvokeOnMainThreadAsync<T>(function: Func<T>): Task<T>
+}
+
+interface IDialogService {
+  + DisplayAlertAsync(title: string, message: string, cancel: string): Task
+  + DisplayConfirmationAsync(title: string, message: string, accept: string, cancel: string): Task<bool>
+  + DisplayErrorAsync(message: string, title: string): Task
+  + DisplaySuccessAsync(message: string, title: string): Task
+}
+
+interface IMeasurementRepository {
+  + GetSinceAsync(since: DateTime): Task<List<Measurement>>
+  + GetLatestForSensorAsync(sensorId: int): Task<MeasurementDto?>
+}
+
+' Mapsui classes (simplified)
+class Map {
+  + Layers: LayerCollection
+  + Navigator: Navigator
+  + Info: MapInfoEvent
+  + Refresh(): void
+}
+
+class MemoryLayer {
+  + Features: IEnumerable<IFeature>
+  + Style: IStyle
+  + IsMapInfoLayer: bool
+}
+
+' View
+class SensorLocatorPage {
+  - _viewModel: SensorLocatorViewModel
+  + OnAppearing(): void
+  + OnSearchTextChanged(sender: object, e: TextChangedEventArgs): void
+  + OnSensorSelected(sender: object, e: SelectionChangedEventArgs): void
+  + OnSearchButtonPressed(sender: object, e: EventArgs): void
+  + OnSearchBarFocused(sender: object, e: FocusEventArgs): void
+  + OnSearchBarUnfocused(sender: object, e: FocusEventArgs): void
+}
+
+' OpenRouteService helpers
+class GeoJsonFeatureCollection {
+  + type: string
+  + features: List<GeoJsonFeature>
+}
+
+class GeoJsonFeature {
+  + type: string
+  + properties: GeoJsonProperties
+  + geometry: GeoJsonGeometry
+}
+
+' Relationships
+SensorLocatorViewModel --|> BaseViewModel
+SensorLocatorViewModel --> Map : contains
+SensorLocatorViewModel --> "0..*" Sensor : manages
+SensorLocatorViewModel --> ISensorService : uses
+SensorLocatorViewModel --> IMainThreadService : uses
+SensorLocatorViewModel --> IMeasurementRepository : uses
+SensorLocatorViewModel --> IDialogService : uses
+SensorLocatorViewModel --> TravelMode : uses
+SensorLocatorViewModel --> Position : uses
+SensorLocatorViewModel --> MemoryLayer : contains
+
+Sensor --> "1" Configuration : has
+Sensor --> "1" Measurand : has
+
+SensorLocatorPage --> SensorLocatorViewModel : uses
+
+Map o-- "0..*" MemoryLayer : contains
+
+GeoJsonFeatureCollection o-- "0..*" GeoJsonFeature : contains
+GeoJsonFeature --> GeoJsonGeometry : contains
+GeoJsonFeature --> GeoJsonProperties : contains
+
+@enduml
