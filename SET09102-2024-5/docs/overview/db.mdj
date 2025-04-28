@@ -3433,7 +3433,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGWDJ2L6fsg5Qc="
 							},
-							"name": "measurment_frequency",
+							"name": "measurement_frequency",
 							"length": 0
 						},
 						{

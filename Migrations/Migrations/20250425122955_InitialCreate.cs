@@ -115,7 +115,7 @@ namespace Migrations.Migrations
                     longitude = table.Column<float>(type: "float", nullable: true),
                     altitude = table.Column<float>(type: "float", nullable: true),
                     orientation = table.Column<int>(type: "int", nullable: true),
-                    measurment_frequency = table.Column<int>(type: "int", nullable: true),
+                    measurement_frequency = table.Column<int>(type: "int", nullable: true),
                     min_threshold = table.Column<float>(type: "float", nullable: true),
                     max_threshold = table.Column<float>(type: "float", nullable: true)
                 },
@@ -240,8 +240,7 @@ namespace Migrations.Migrations
                 columns: table => new
                 {
                     measurement_id = table.Column<int>(type: "int", nullable: false),
-                    incident_id = table.Column<int>(type: "int", nullable: false),
-                    Id = table.Column<int>(type: "int", nullable: false)
+                    incident_id = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {

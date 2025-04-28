@@ -13,7 +13,6 @@ namespace SET09102_2024_5.Data
         public DbSet<Role> Roles { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Sensor> Sensors { get; set; } = null!;
-        public DbSet<ConfigurationSetting> ConfigurationSettings { get; set; } = null!;
         public DbSet<Maintenance> Maintenances { get; set; } = null!;
         public DbSet<PhysicalQuantity> PhysicalQuantities { get; set; } = null!;
         public DbSet<Measurement> Measurements { get; set; } = null!;

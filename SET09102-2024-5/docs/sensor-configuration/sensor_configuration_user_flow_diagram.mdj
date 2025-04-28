@@ -235,7 +235,7 @@
 							"top": 416,
 							"width": 360,
 							"height": 51,
-							"text": "Configuration settings include: type, status, latitude, longitude, altitude, orientation, min/max thresholds, measurment frequency "
+							"text": "Configuration settings include: type, status, latitude, longitude, altitude, orientation, min/max thresholds, measurement frequency "
 						},
 						{
 							"_type": "FCDecisionView",
