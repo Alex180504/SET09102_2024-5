@@ -46,7 +46,7 @@ namespace Migrations.Migrations
 
                     b.Property<int?>("MeasurementFrequency")
                         .HasColumnType("int")
-                        .HasColumnName("measurment_frequency");
+                        .HasColumnName("measurement_frequency");
 
                     b.Property<float?>("MinThreshold")
                         .HasColumnType("float")
