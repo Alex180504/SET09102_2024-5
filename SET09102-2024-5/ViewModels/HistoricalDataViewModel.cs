@@ -60,9 +60,9 @@ namespace SET09102_2024_5.Features.HistoricalData.ViewModels
                 ParameterTypes = _paramsByCategory[selectedCategory];
                 // default-pick the first one so SelectedParameter isn’t null
                 SelectedParameter = ParameterTypes.First();
-                
-				LoadHistoricalData();
-			}
+
+                _ = LoadHistoricalData();
+            }
 		}
         private string selectedSensorSite = "Site A";
         public string SelectedSensorSite
@@ -74,7 +74,7 @@ namespace SET09102_2024_5.Features.HistoricalData.ViewModels
                     return;
                 selectedSensorSite = value;
                 OnPropertyChanged();
-                LoadHistoricalData();
+                _ = LoadHistoricalData();
             }
         }
         private string _selectedParameter;
@@ -86,7 +86,7 @@ namespace SET09102_2024_5.Features.HistoricalData.ViewModels
                 if (_selectedParameter == value) return;
                 _selectedParameter = value;
                 OnPropertyChanged();
-                LoadHistoricalData();
+                _ = LoadHistoricalData();
             }
         }
 
@@ -105,9 +105,12 @@ namespace SET09102_2024_5.Features.HistoricalData.ViewModels
             // seed the parameters for the default category
             ParameterTypes = _paramsByCategory[selectedCategory];
             SelectedParameter = ParameterTypes.First();
+
+            // one‐time initial load
+            _ = LoadHistoricalData();
         }
 
-        public async void LoadHistoricalData()
+        public async Task LoadHistoricalData()
         {
             if (string.IsNullOrEmpty(SelectedCategory)) return;
             var results = await _dataService.GetHistoricalData(SelectedCategory, null);
