@@ -57,7 +57,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+
+		<PackageReference Include="ClosedXML" Version="0.104.2" />
 		<PackageReference Include="Mapsui.Maui" Version="4.1.9" />
+    
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.4" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.4" />
@@ -71,10 +74,20 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
 		<PackageReference Include="CommunityToolkit.Maui" Version="7.0.0" />
 		<PackageReference Include="MySqlBackup.Net" Version="2.3.9" />
-		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />	
+		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />
 	</ItemGroup>
-	
-	<!-- Include env variables file in the build -->
+  
+  <!-- Include web chart so it is treated as a MauiAsset -->
+  <ItemGroup>
+    <MauiAsset Include="Resources\Raw\chart.html" />
+    <MauiAsset Include="Resources\Raw\chart.umd.min.js" />
+    
+    <None Include="Resources\Raw\*.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- Include env variables file in the build -->
 	<ItemGroup>
 		<None Remove="appsettings.json" />
 		<EmbeddedResource Include="appsettings.json">
@@ -87,6 +100,9 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <MauiXaml Update="Controls\DatabaseErrorPopup.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\HistoricalDataPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\SensorManagementPage.xaml">
