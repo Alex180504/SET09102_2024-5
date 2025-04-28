@@ -60,8 +60,16 @@
                 TextColor="White"
                 HorizontalOptions="Fill"
                 SemanticProperties.Hint="Navigate to sensor monitoring" />
-                HorizontalOptions="Fill" />
-          
+
+            <Button
+                Text="Locate Sensors"
+                Command="{Binding NavigateToSensorLocatorCommand}"
+                BackgroundColor="#fd7e14"
+                TextColor="White"
+                HorizontalOptions="Fill"
+                SemanticProperties.Hint="Navigate to sensor locator and routing" />
+
+
             <Button 
                 Text="Go to Data Storage" 
                 Command="{Binding NavigateToDataStorageCommand}" 

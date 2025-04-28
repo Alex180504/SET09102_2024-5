@@ -6,12 +6,6 @@
     x:Class="SET09102_2024_5.Views.DataStoragePage"
     Title="Data Storage">
 
-    <ContentPage.Resources>
-        <ResourceDictionary>
-            <conv:NullToBoolConverter x:Key="NullToBoolConverter" />
-        </ResourceDictionary>
-    </ContentPage.Resources>
-
     <StackLayout Padding="20">
         <Button Text="Backup now" Command="{Binding BackupCommand}" />
         <Label Text="Schedule time:" />

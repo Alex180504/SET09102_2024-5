@@ -15,6 +15,8 @@ namespace SET09102_2024_5
             Routing.RegisterRoute(nameof(Features.HistoricalData.HistoricalDataPage), typeof(Features.HistoricalData.HistoricalDataPage));
             Routing.RegisterRoute(nameof(MapPage), typeof(MapPage));
             Routing.RegisterRoute(nameof(DataStoragePage), typeof(DataStoragePage));
+            Routing.RegisterRoute(nameof(SensorLocatorPage), typeof(SensorLocatorPage));
+            Routing.RegisterRoute(nameof(SensorLocatorPage), typeof(SensorLocatorPage));
         }
     }
 }
