@@ -55,6 +55,8 @@
     <Compile Include="ViewModels\DataStorageViewModelTests.cs" />
     <Compile Include="ViewModels\HistoricalDataViewModelTests.cs" />
     <Compile Include="Converters\DictionaryValueConverterTests.cs" />
+
+    <Compile Include="ViewModels\SensorManagementViewModelFirmwareTests.cs" />
     <Compile Include="ViewModels\MapViewModelTests.cs" />
     <Compile Include="ViewModels\SensorIncidentLogViewModelTests.cs" />
     <Compile Include="ViewModels\SensorLocatorViewModelTests.cs" />
