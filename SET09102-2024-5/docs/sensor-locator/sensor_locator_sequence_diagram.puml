@@ -1,0 +1,113 @@
+@startuml Sensor Locator Sequence Diagram
+
+actor User
+participant "SensorLocatorPage" as Page
+participant "SensorLocatorViewModel" as ViewModel
+participant "ISensorService" as SensorService
+participant "OpenRouteService API" as API
+participant "Map/MapControl" as Map
+
+User -> Page: Navigate to Sensor Locator
+activate Page
+
+Page -> Page: OnAppearing()
+activate Page #DDDDDD
+Page -> ViewModel: InitializeAsync()
+activate ViewModel
+
+ViewModel -> ViewModel: RegisterPinAsync(pin images)
+ViewModel -> SensorService: GetAllWithConfigurationAsync()
+activate SensorService
+SensorService --> ViewModel: Return sensors
+deactivate SensorService
+
+ViewModel -> ViewModel: GetCurrentLocationAsync()
+activate ViewModel #DDDDDD
+note right: Retrieves user's location\nusing Geolocation API
+ViewModel -> ViewModel: UpdateCurrentLocationOnMap()
+deactivate ViewModel #DDDDDD
+
+ViewModel -> ViewModel: RefreshAsync()
+activate ViewModel #DDDDDD
+ViewModel -> ViewModel: Create map features from sensors
+ViewModel -> Map: Update pin layer features
+ViewModel -> Map: Refresh()
+deactivate ViewModel #DDDDDD
+
+ViewModel -> ViewModel: Start refresh timer
+ViewModel --> Page: Initialization complete
+deactivate ViewModel
+deactivate Page #DDDDDD
+
+Page --> User: Display map with sensors
+
+== Sensor Search ==
+
+User -> Page: Enter search text
+activate Page
+Page -> ViewModel: FilterSensors(searchText)
+activate ViewModel
+ViewModel -> ViewModel: Filter sensors by name/type
+ViewModel --> Page: Update FilteredSensors collection
+deactivate ViewModel
+Page --> User: Display filtered sensor list
+deactivate Page
+
+User -> Page: Tap sensor in list
+activate Page
+Page -> ViewModel: Set SelectedSensor
+activate ViewModel
+ViewModel -> ViewModel: CenterMapOnSensor(sensor)
+ViewModel -> Map: Navigator.CenterOn(coordinates)
+ViewModel -> Map: Navigator.ZoomTo(3000)
+Map --> ViewModel: Map centered on sensor
+deactivate ViewModel
+Page --> User: Map shows selected sensor
+deactivate Page
+
+== Route Navigation ==
+
+User -> Page: Tap "Navigate to Sensor"
+activate Page
+Page -> ViewModel: NavigateToSensorCommand.Execute(sensor)
+activate ViewModel
+
+ViewModel -> ViewModel: ClearRoute()
+ViewModel -> ViewModel: Add current location to route
+ViewModel -> ViewModel: Add sensor to route
+
+ViewModel -> ViewModel: BuildRouteAsync()
+activate ViewModel #DDDDDD
+ViewModel -> ViewModel: Prepare coordinates
+
+ViewModel -> API: POST request to OpenRouteService
+activate API
+API --> ViewModel: Return GeoJSON route
+deactivate API
+
+ViewModel -> ViewModel: Parse route geometry
+ViewModel -> ViewModel: Create route feature
+
+ViewModel -> Map: Update route layer
+ViewModel -> Map: Navigator.ZoomToBox(routeExtent)
+Map --> ViewModel: Map updated with route
+
+ViewModel -> ViewModel: Update route information
+ViewModel -> ViewModel: Update RouteDetailsText
+deactivate ViewModel #DDDDDD
+
+ViewModel --> Page: Route created and displayed
+deactivate ViewModel
+Page --> User: Show route on map with details
+deactivate Page
+
+== Location Updates ==
+
+ViewModel -> ViewModel: GetCurrentLocationAsync() [Timer]
+activate ViewModel
+ViewModel -> ViewModel: Update position
+ViewModel -> ViewModel: Update route if navigating
+ViewModel -> Map: Refresh map
+deactivate ViewModel
+
+@enduml
