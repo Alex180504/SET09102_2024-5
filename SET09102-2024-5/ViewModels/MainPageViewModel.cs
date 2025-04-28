@@ -13,6 +13,7 @@ namespace SET09102_2024_5.ViewModels
 
             NavigateToHistoricalDataCommand = new Command(OnNavigateToHistoricalData);
             NavigateToSensorMapCommand = new Command(OnNavigateToSensorMap);
+            NavigateToDataStorageCommand = new Command(OnNavigateToDataStorage);
 
         }
 
@@ -35,6 +36,7 @@ namespace SET09102_2024_5.ViewModels
 
         public ICommand NavigateToHistoricalDataCommand { get; }
         public ICommand NavigateToSensorMapCommand { get; }
+        public ICommand NavigateToDataStorageCommand { get; }
 
         private void OnIncrementCount()
         {
@@ -54,6 +56,10 @@ namespace SET09102_2024_5.ViewModels
         private async void OnNavigateToSensorMap()
         {
             await Shell.Current.GoToAsync("MapPage");
+        }
+        private async void OnNavigateToDataStorage()
+        {
+            await Shell.Current.GoToAsync("DataStoragePage");
         }
     }
 }
