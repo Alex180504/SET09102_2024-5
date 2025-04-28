@@ -15,6 +15,10 @@ namespace SET09102_2024_5.ViewModels
     /// <summary>
     /// ViewModel for managing sensor configuration settings
     /// </summary>
+    /// <remarks>
+    /// Provides functionality for searching, viewing, and editing sensor configurations.
+    /// Includes validation and persistence of sensor settings.
+    /// </remarks>
     public class SensorManagementViewModel : BaseViewModel
     {
         private readonly SensorMonitoringContext _context;
@@ -41,6 +45,13 @@ namespace SET09102_2024_5.ViewModels
         private Dictionary<string, string> _validationErrors = new Dictionary<string, string>();
         private bool _hasValidationErrors;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SensorManagementViewModel"/> class
+        /// </summary>
+        /// <param name="context">Database context for sensor data access</param>
+        /// <param name="mainThreadService">Service for executing code on the main thread</param>
+        /// <param name="dialogService">Service for displaying dialogs to the user</param>
+        /// <exception cref="ArgumentNullException">Thrown when context is null</exception>
         public SensorManagementViewModel(SensorMonitoringContext context, IMainThreadService mainThreadService = null, IDialogService dialogService = null)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -62,6 +73,7 @@ namespace SET09102_2024_5.ViewModels
             // Init async
             _mainThreadService.BeginInvokeOnMainThread(async () => await InitializeAsync());
         }
+
 
         public string FirmwareVersion
         {
@@ -104,18 +116,28 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets or sets the collection of all sensors
+        /// </summary>
         public ObservableCollection<Sensor> Sensors
         {
             get => _sensors;
             set => SetProperty(ref _sensors, value);
         }
 
+        /// <summary>
+        /// Gets or sets the collection of filtered sensors based on search criteria
+        /// </summary>
         public ObservableCollection<Sensor> FilteredSensors
         {
             get => _filteredSensors;
             set => SetProperty(ref _filteredSensors, value);
         }
 
+        /// <summary>
+        /// Gets or sets the currently selected sensor
+        /// When changed, loads the sensor's configuration details
+        /// </summary>
         public Sensor SelectedSensor
         {
             get => _selectedSensor;
@@ -144,36 +166,54 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets or sets the search text for filtering sensors
+        /// </summary>
         public string SearchText
         {
             get => _searchText;
             set => SetProperty(ref _searchText, value);
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether search results are being displayed
+        /// </summary>
         public bool IsSearchActive
         {
             get => _isSearching;
             set => SetProperty(ref _isSearching, value);
         }
 
+        /// <summary>
+        /// Gets or sets the configuration for the selected sensor
+        /// </summary>
         public Configuration Configuration
         {
             get => _configuration;
             set => SetProperty(ref _configuration, value);
         }
 
+        /// <summary>
+        /// Gets or sets the firmware information for the selected sensor
+        /// </summary>
         public SensorFirmware FirmwareInfo
         {
             get => _firmware;
             set => SetProperty(ref _firmware, value);
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether a sensor is currently selected
+        /// </summary>
         public bool IsSensorSelected
         {
             get => _isSensorSelected;
             set => SetProperty(ref _isSensorSelected, value);
         }
 
+        /// <summary>
+        /// Gets the list of available status options for sensors
+        /// </summary>
         public List<string> StatusOptions => _statusOptions;
 
         /// <summary>
@@ -191,17 +231,40 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets the dictionary of validation errors keyed by field name
+        /// </summary>
         public Dictionary<string, string> ValidationErrors => _validationErrors;
 
+        /// <summary>
+        /// Gets the command to load sensors from the database
+        /// </summary>
         public ICommand LoadSensorsCommand { get; }
+
+        /// <summary>
+        /// Gets the command to save changes to the selected sensor
+        /// </summary>
         public ICommand SaveChangesCommand { get; }
+
+        /// <summary>
+        /// Gets the command to execute a search based on the current SearchText
+        /// </summary>
         public ICommand SearchCommand { get; }
+
+        /// <summary>
+        /// Gets the command to clear the current search
+        /// </summary>
         public ICommand ClearSearchCommand { get; }
+
+        /// <summary>
+        /// Gets the command to validate a specific field
+        /// </summary>
         public ICommand ValidateCommand { get; }
 
         /// <summary>
         /// Filters sensors based on search text across DisplayName, SensorType, and Measurand
         /// </summary>
+        /// <param name="searchText">The search text to filter by</param>
         public void FilterSensors(string searchText)
         {
             // Always show the filtered list when search bar is active
@@ -232,16 +295,25 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Executes the search using the current SearchText
+        /// </summary>
         private void ExecuteSearch()
         {
             FilterSensors(SearchText);
         }
 
+        /// <summary>
+        /// Hides the search results and returns to the main view
+        /// </summary>
         public void HideSearchResults()
         {
             IsSearchActive = false;
         }
 
+        /// <summary>
+        /// Clears the current search text and hides search results
+        /// </summary>
         private void ClearSearch()
         {
             SearchText = string.Empty;
@@ -291,6 +363,7 @@ namespace SET09102_2024_5.ViewModels
         /// Validates a specific configuration field and updates validation errors
         /// Called when a field loses focus in the UI
         /// </summary>
+        /// <param name="fieldName">The name of the field to validate</param>
         private void ValidateField(string fieldName)
         {
             // Don't proceed with validation if Configuration is null (no sensor selected)
@@ -406,6 +479,8 @@ namespace SET09102_2024_5.ViewModels
         /// <summary>
         /// Adds a validation error for the specified property
         /// </summary>
+        /// <param name="propertyName">The name of the property with the error</param>
+        /// <param name="errorMessage">The error message</param>
         private void AddValidationError(string propertyName, string errorMessage)
         {
             if (_validationErrors.ContainsKey(propertyName))
@@ -420,6 +495,10 @@ namespace SET09102_2024_5.ViewModels
             OnPropertyChanged(nameof(ValidationErrors));
         }
 
+        /// <summary>
+        /// Clears the validation error for a specific property
+        /// </summary>
+        /// <param name="propertyName">The name of the property to clear errors for</param>
         private void ClearValidationError(string propertyName)
         {
             if (_validationErrors.ContainsKey(propertyName))
@@ -429,6 +508,9 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Clears all validation errors
+        /// </summary>
         private void ClearValidationErrors()
         {
             _validationErrors.Clear();
@@ -454,6 +536,7 @@ namespace SET09102_2024_5.ViewModels
         /// Loads all sensors from the database
         /// Uses AsNoTracking for better performance when only reading data
         /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         private async Task LoadSensorsAsync()
         {
             if (IsLoading) return;
@@ -500,6 +583,7 @@ namespace SET09102_2024_5.ViewModels
         /// Loads detailed configuration for the selected sensor
         /// Creates a default configuration if none is found
         /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         private async Task LoadSensorDetailsAsync()
         {
             if (SelectedSensor == null) return;
@@ -551,6 +635,7 @@ namespace SET09102_2024_5.ViewModels
         /// Saves configuration changes to the database
         /// Validates all fields before saving and shows confirmation dialog
         /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
         private async Task SaveChangesAsync()
         {
             if (SelectedSensor == null || IsLoading) return;

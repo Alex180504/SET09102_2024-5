@@ -5,11 +5,62 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:SET09102_2024_5"
     xmlns:views="clr-namespace:SET09102_2024_5.Views"
-    Shell.FlyoutBehavior="Disabled"
-    Title="SET09102_2024_5">
+    Shell.FlyoutBehavior="Flyout"
+    Title="Sensor Monitoring System">
 
+    <Shell.FlyoutHeader>
+        <Grid HeightRequest="120" BackgroundColor="{StaticResource Primary}" Padding="20">
+            <Label Text="Sensor Monitoring System" 
+                   TextColor="White" 
+                   FontAttributes="Bold" 
+                   FontSize="20" 
+                   VerticalOptions="Center" />
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <!-- Login Route (No Flyout) -->
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate views:MainPage}"
-        Route="MainPage" />
+        Title="Login"
+        ContentTemplate="{DataTemplate views:LoginPage}"
+        Route="LoginPage"
+        FlyoutItemIsVisible="False" />
+
+    <!-- Register Route (No Flyout) -->
+    <ShellContent
+        Title="Register"
+        ContentTemplate="{DataTemplate views:RegisterPage}"
+        Route="RegisterPage"
+        FlyoutItemIsVisible="False" />
+
+    <!-- Main Application Routes -->
+    <FlyoutItem Title="Dashboard" Icon="home.png">
+        <ShellContent
+            Title="Home"
+            ContentTemplate="{DataTemplate views:MainPage}"
+            Route="MainPage" />
+    </FlyoutItem>
+
+    <!-- Admin Section - Directly accessible from menu when user has Admin role -->
+    <FlyoutItem Title="Administration" IsVisible="{Binding IsAdmin}">
+        <Tab Title="Admin Panel">
+            <ShellContent
+                Title="Admin Dashboard"
+                ContentTemplate="{DataTemplate views:AdminDashboardPage}"
+                Route="AdminDashboardPage" />
+            <ShellContent
+                Title="Role Management"
+                ContentTemplate="{DataTemplate views:RoleManagementPage}"
+                Route="RoleManagementPage" />
+            <ShellContent
+                Title="User Role Assignment"
+                ContentTemplate="{DataTemplate views:UserRoleManagementPage}"
+                Route="UserRoleManagementPage" />
+        </Tab>
+    </FlyoutItem>
+
+    <!-- Log Out Option -->
+    <MenuItem Text="Log Out" 
+              IconImageSource="logout.png"
+              Command="{Binding LogoutCommand}" />
+
 </Shell>

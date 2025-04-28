@@ -1,17 +1,19 @@
-﻿using System.Reflection;
-using CommunityToolkit.Maui;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using SET09102_2024_5.Data;
 using SET09102_2024_5.Data.Repositories;
-using SET09102_2024_5.Interfaces;
-using SET09102_2024_5.Models;
 using SET09102_2024_5.Services;
 using SET09102_2024_5.ViewModels;
 using SET09102_2024_5.Views;
-using SkiaSharp.Views.Maui.Controls.Hosting;
-
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Caching.Memory;
+using System.Reflection;
+using System.IO;
+using System.Security.Cryptography.X509Certificates;
+using CommunityToolkit.Maui;
+using SET09102_2024_5.Views.Controls;
+using SET09102_2024_5.Interfaces;
 
 namespace SET09102_2024_5
 {
@@ -24,43 +26,39 @@ namespace SET09102_2024_5
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
-            builder
-                .UseMauiApp<App>()
-                .UseSkiaSharp()
-                .UseMauiCommunityToolkit()
-                .ConfigureFonts(fonts =>
-                {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-                });
-
+            
             try
             {
+                builder
+                    .UseMauiApp<App>()
+                    .UseMauiCommunityToolkit()
+                    .ConfigureFonts(fonts =>
+                    {
+                        fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                        fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                        fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
+                    });
+
                 // Load configuration
                 var assembly = Assembly.GetExecutingAssembly();
                 using var stream = assembly.GetManifestResourceStream("SET09102_2024_5.appsettings.json");
+
+                if (stream == null)
+                {
+                    throw new InvalidOperationException("Could not find appsettings.json embedded resource.");
+                }
 
                 var config = new ConfigurationBuilder()
                     .AddJsonStream(stream)
                     .Build();
 
                 // Get connection string from configuration
-#if DEBUG
-                ConnectionString = config.GetConnectionString("LocalConnection");
-#else
-                ConnectionString = config.GetConnectionString("DefaultConnection");
-#endif
-                var backupFolder = Path.Combine(FileSystem.CacheDirectory, "Backups");
-                Directory.CreateDirectory(backupFolder);
-                builder.Services.AddSingleton(new BackupOptions
-                {
-                    ScheduleTime = TimeSpan.FromHours(2),
-                    KeepLatestBackups = 7,
-                    BackupFolder = backupFolder
-                });
+                var connectionString = config.GetConnectionString("DefaultConnection") 
+                    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found in configuration.");
+
                 // Extract SSL certificate and save it to a temporary file
                 CertPath = ExtractSslCertificate();
-                ConnectionString = ConnectionString.Replace("SslCa=DigiCertGlobalRootG2.crt.pem;", $"SslCa={CertPath};");
+                ConnectionString = connectionString.Replace("SslCa=DigiCertGlobalRootG2.crt.pem;", $"SslCa={CertPath};");
 
                 // Register a factory for DbContextOptions rather than the DbContext itself
                 builder.Services.AddSingleton<DbContextOptions<SensorMonitoringContext>>(serviceProvider =>
@@ -82,47 +80,78 @@ namespace SET09102_2024_5
                     return optionsBuilder.Options;
                 });
 
-                // Your DbContext (scoped)
-                builder.Services.AddDbContextFactory<SensorMonitoringContext>(opts =>
-    opts.UseMySql(ConnectionString, ServerVersion.AutoDetect(ConnectionString)));
-                builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializationService>();
+                // Register the context itself
+                builder.Services.AddScoped<SensorMonitoringContext>();
 
-                // Repositories (scoped)
+                // Register database initialization service
+                builder.Services.AddSingleton<IDatabaseInitializationService>(serviceProvider => 
+                    new DatabaseInitializationService(
+                        serviceProvider.GetRequiredService<DbContextOptions<SensorMonitoringContext>>(),
+                        serviceProvider.GetRequiredService<ILoggingService>()));
+
+                // Add memory cache for repository optimization
+                builder.Services.AddMemoryCache();
+
+                // Register repositories
                 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+                // Register services - removed adapter pattern for simplicity
+                builder.Services.AddScoped<IDatabaseService, DatabaseService>(); 
+                builder.Services.AddSingleton<ILoggingService, LoggingService>(); 
+                builder.Services.AddSingleton<IAuthService, AuthService>();
+                builder.Services.AddSingleton<IDialogService, DialogService>();
+                builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
+                builder.Services.AddSingleton<IPasswordHasher, Services.Security.PasswordHasher>();
+                builder.Services.AddSingleton<ICacheManager, Services.Cache.CacheManager>();
+                builder.Services.AddSingleton<ITokenService, Services.Security.TokenService>();
+                
+                // Register sensor services and repositories
                 builder.Services.AddScoped<ISensorRepository, SensorRepository>();
                 builder.Services.AddScoped<IMeasurementRepository, MeasurementRepository>();
-
-                // Services (scoped, not singleton)
-                builder.Services.AddScoped<IDatabaseService, DatabaseService>();
-                builder.Services.AddSingleton<IMainThreadService, MainThreadService>();
                 builder.Services.AddScoped<ISensorService, SensorService>();
-                builder.Services.AddSingleton<IDialogService, DialogService>();
-                builder.Services.AddSingleton<SchedulerService>();
-                builder.Services.AddSingleton<IDialogService, DialogService>();
-                builder.Services.AddSingleton<IBackupService>(
-                _ => new MySqlBackupService(ConnectionString, backupFolder));
-                builder.Services.AddSingleton<HttpClient>();
+                
+                // Register navigation services
+                builder.Services.AddSingleton<INavigationService, NavigationService>();
+                builder.Services.AddSingleton<ViewModelLocator>();
+                builder.Services.AddSingleton<ViewLifecycleManager>();
 
+                // Register app shell with navigation
+                builder.Services.AddSingleton<AppShell>();
 
-                // ViewModels & Views
+                // Register ViewModels - all are transient for better memory management
+                // Core ViewModels
                 builder.Services.AddTransient<MainPageViewModel>();
-                builder.Services.AddTransient<SensorManagementViewModel>();
-                builder.Services.AddTransient<SensorOperationalStatusViewModel>();
-                builder.Services.AddTransient<SensorIncidentLogViewModel>();
-                builder.Services.AddTransient<SensorLocatorViewModel>();
-                builder.Services.AddTransient<SensorLocatorPage>();
+                builder.Services.AddTransient<LoginViewModel>();
+                builder.Services.AddTransient<RegisterViewModel>();
                 builder.Services.AddTransient<MapViewModel>();
+                
+                // Admin ViewModels
+                builder.Services.AddTransient<RoleManagementViewModel>();
+                builder.Services.AddTransient<UserRoleManagementViewModel>();
+                
+                // Register Reusable UI components
+                RegisterControls(builder.Services);
+
+                // Register Views - all views are transient to minimize memory usage
+                // Core Views
                 builder.Services.AddTransient<MainPage>();
-                builder.Services.AddTransient<SensorManagementPage>();
-                builder.Services.AddTransient<SensorOperationalStatusPage>();
-                builder.Services.AddTransient<SensorIncidentPage>();
+                builder.Services.AddTransient<LoginPage>();
+                builder.Services.AddTransient<RegisterPage>();
                 builder.Services.AddTransient<MapPage>();
-                builder.Services.AddTransient<DataStoragePage>();
-                builder.Services.AddTransient<DataStorageViewModel>();
-
-                builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-
-
+                
+                // Admin Views
+                builder.Services.AddTransient<AdminDashboardPage>();
+                builder.Services.AddTransient<RoleManagementPage>();
+                builder.Services.AddTransient<UserRoleManagementPage>();
+                
+                // Register page routes with Shell for navigation
+                Routing.RegisterRoute(RouteConstants.LoginPage, typeof(LoginPage));
+                Routing.RegisterRoute(RouteConstants.RegisterPage, typeof(RegisterPage));
+                Routing.RegisterRoute(RouteConstants.MainPage, typeof(MainPage));
+                Routing.RegisterRoute("MapPage", typeof(MapPage));
+                Routing.RegisterRoute(RouteConstants.AdminDashboardPage, typeof(AdminDashboardPage));
+                Routing.RegisterRoute(RouteConstants.RoleManagementPage, typeof(RoleManagementPage));
+                Routing.RegisterRoute(RouteConstants.UserRoleManagementPage, typeof(UserRoleManagementPage));
 
 #if DEBUG
                 builder.Logging.AddDebug();
@@ -133,10 +162,18 @@ namespace SET09102_2024_5
                 System.Diagnostics.Debug.WriteLine($"Application initialization error: {ex.Message}");
             }
 
-            var app = builder.Build();
-            var scheduler = app.Services.GetRequiredService<SchedulerService>();
-            scheduler.Start();
-            return app;
+            return builder.Build();
+        }
+        
+        /// <summary>
+        /// Register all reusable UI controls
+        /// </summary>
+        private static void RegisterControls(IServiceCollection services)
+        {
+            // Register common controls used across the application
+            services.AddTransient<PageHeaderView>();
+            services.AddTransient<EmptyStateView>();
+            services.AddTransient<LoadingOverlay>();
         }
 
         private static string ExtractSslCertificate()
@@ -158,47 +195,6 @@ namespace SET09102_2024_5
             }
 
             return tempPath;
-        }
-    }
-
-    public interface IDatabaseInitializationService
-    {
-        Task<bool> InitializeDatabaseAsync();
-        bool IsDatabaseAvailable { get; }
-        string GetLastErrorMessage();
-    }
-
-    public class DatabaseInitializationService : IDatabaseInitializationService
-    {
-        private readonly SensorMonitoringContext _dbContext;
-        private bool _isDatabaseAvailable = false;
-        private string _lastErrorMessage = string.Empty;
-
-        public bool IsDatabaseAvailable => _isDatabaseAvailable;
-
-        public DatabaseInitializationService(SensorMonitoringContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
-
-        public string GetLastErrorMessage() => _lastErrorMessage;
-
-        public async Task<bool> InitializeDatabaseAsync()
-        {
-            try
-            {
-                // Try to connect to the database
-                bool canConnect = await _dbContext.Database.CanConnectAsync();
-                _isDatabaseAvailable = canConnect;
-                return canConnect;
-            }
-            catch (Exception ex)
-            {
-                _lastErrorMessage = ex.Message;
-                System.Diagnostics.Debug.WriteLine($"Database connection error: {ex.Message}");
-                _isDatabaseAvailable = false;
-                return false;
-            }
         }
     }
 }

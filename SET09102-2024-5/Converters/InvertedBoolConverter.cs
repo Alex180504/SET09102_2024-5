@@ -1,8 +1,7 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace SET09102_2024_5.Converters
 {
-    // InvertedBoolConverter is a value converter that inverts a boolean value.
     public class InvertedBoolConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

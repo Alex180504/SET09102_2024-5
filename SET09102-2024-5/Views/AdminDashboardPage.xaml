@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<views:ViewBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:helpers="clr-namespace:SET09102_2024_5.Helpers"
+             xmlns:views="clr-namespace:SET09102_2024_5.Views"
+             x:Class="SET09102_2024_5.Views.AdminDashboardPage"
+             Title="Admin Dashboard"
+             BackgroundColor="{AppThemeBinding Light=#f5f5f5, Dark=#1f1f1f}">
+
+    <Grid Padding="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Page Header -->
+        <Border Grid.Row="0"
+                BackgroundColor="{AppThemeBinding Light=#673AB7, Dark=#512DA8}"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 12,12,12,12"
+                Padding="20"
+                Margin="0,0,0,20">
+            <Grid ColumnDefinitions="Auto,*">
+                <Label Grid.Column="0" 
+                       Text="{x:Static helpers:MaterialIcons.AdminSettings}"
+                       FontFamily="MaterialIcons" 
+                       FontSize="36"
+                       TextColor="White"
+                       VerticalOptions="Center"/>
+                <VerticalStackLayout Grid.Column="1" Margin="16,0,0,0">
+                    <Label Text="Administrator Dashboard" 
+                           FontSize="24" 
+                           FontAttributes="Bold" 
+                           TextColor="White" />
+                    <Label Text="Manage system, roles, and users"
+                           FontSize="14" 
+                           TextColor="#e0e0e0" />
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+
+        <!-- Dashboard Cards -->
+        <ScrollView Grid.Row="1">
+            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*" 
+                  RowSpacing="16" ColumnSpacing="16">
+                
+                <!-- Role Management Card -->
+                <Frame Grid.Row="0" Grid.Column="0" Padding="0"
+                       CornerRadius="12"
+                       HasShadow="True"
+                       BorderColor="{AppThemeBinding Light=#e0e0e0, Dark=#3e3e3e}"
+                       BackgroundColor="{AppThemeBinding Light=White, Dark=#2e2e2e}"
+                       Margin="0,0,0,0">
+                    <Grid Padding="0" RowSpacing="0" RowDefinitions="Auto,*,Auto">
+                        <!-- Card Header -->
+                        <Grid Grid.Row="0" BackgroundColor="{AppThemeBinding Light=#3F51B5, Dark=#303F9F}" Padding="16">
+                            <HorizontalStackLayout Spacing="12">
+                                <Label Text="{x:Static helpers:MaterialIcons.Group}" 
+                                       FontFamily="MaterialIcons"
+                                       TextColor="White"
+                                       FontSize="24"
+                                       VerticalOptions="Center" />
+                                <Label Text="Role Management" 
+                                       TextColor="White"
+                                       FontSize="18"
+                                       FontAttributes="Bold"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Grid>
+                        
+                        <!-- Card Content -->
+                        <VerticalStackLayout Grid.Row="1" Padding="16" Spacing="10">
+                            <Label Text="Create and manage system roles" 
+                                   TextColor="{AppThemeBinding Light=#505050, Dark=#b0b0b0}"
+                                   FontSize="14" />
+                            <Label Text="• Define access privileges"
+                                   TextColor="{AppThemeBinding Light=#757575, Dark=#9e9e9e}"
+                                   FontSize="14" />
+                            <Label Text="• Configure role permissions"
+                                   TextColor="{AppThemeBinding Light=#757575, Dark=#9e9e9e}"
+                                   FontSize="14" />
+                        </VerticalStackLayout>
+                        
+                        <!-- Card Action -->
+                        <Button Grid.Row="2" 
+                                Text="Open Role Management" 
+                                BackgroundColor="{AppThemeBinding Light=#3F51B5, Dark=#303F9F}" 
+                                TextColor="White"
+                                Margin="16"
+                                CornerRadius="8"
+                                Clicked="OnRoleManagementClicked" />
+                    </Grid>
+                </Frame>
+                
+                <!-- User Role Assignment Card -->
+                <Frame Grid.Row="0" Grid.Column="1" Padding="0"
+                       CornerRadius="12"
+                       HasShadow="True"
+                       BorderColor="{AppThemeBinding Light=#e0e0e0, Dark=#3e3e3e}"
+                       BackgroundColor="{AppThemeBinding Light=White, Dark=#2e2e2e}"
+                       Margin="0,0,0,0">
+                    <Grid Padding="0" RowSpacing="0" RowDefinitions="Auto,*,Auto">
+                        <!-- Card Header -->
+                        <Grid Grid.Row="0" BackgroundColor="{AppThemeBinding Light=#009688, Dark=#00796B}" Padding="16">
+                            <HorizontalStackLayout Spacing="12">
+                                <Label Text="{x:Static helpers:MaterialIcons.Person}" 
+                                       FontFamily="MaterialIcons"
+                                       TextColor="White"
+                                       FontSize="24"
+                                       VerticalOptions="Center" />
+                                <Label Text="User Role Assignment" 
+                                       TextColor="White"
+                                       FontSize="18"
+                                       FontAttributes="Bold"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Grid>
+                        
+                        <!-- Card Content -->
+                        <VerticalStackLayout Grid.Row="1" Padding="16" Spacing="10">
+                            <Label Text="Manage user roles and permissions" 
+                                   TextColor="{AppThemeBinding Light=#505050, Dark=#b0b0b0}"
+                                   FontSize="14" />
+                            <Label Text="• Assign roles to users"
+                                   TextColor="{AppThemeBinding Light=#757575, Dark=#9e9e9e}"
+                                   FontSize="14" />
+                            <Label Text="• Change user access levels"
+                                   TextColor="{AppThemeBinding Light=#757575, Dark=#9e9e9e}"
+                                   FontSize="14" />
+                        </VerticalStackLayout>
+                        
+                        <!-- Card Action -->
+                        <Button Grid.Row="2" 
+                                Text="Open User Management" 
+                                BackgroundColor="{AppThemeBinding Light=#009688, Dark=#00796B}" 
+                                TextColor="White"
+                                Margin="16"
+                                CornerRadius="8"
+                                Clicked="OnUserRoleAssignmentClicked" />
+                    </Grid>
+                </Frame>
+
+                <!-- System Overview Card - Stats Card -->
+                <Frame Grid.Row="1" Grid.ColumnSpan="2" Padding="0"
+                       CornerRadius="12"
+                       HasShadow="True"
+                       BorderColor="{AppThemeBinding Light=#e0e0e0, Dark=#3e3e3e}"
+                       BackgroundColor="{AppThemeBinding Light=White, Dark=#2e2e2e}"
+                       Margin="0,0,0,0">
+                    <Grid Padding="0" RowSpacing="0" RowDefinitions="Auto,Auto">
+                        <!-- Card Header -->
+                        <Grid Grid.Row="0" BackgroundColor="{AppThemeBinding Light=#FF5722, Dark=#E64A19}" Padding="16">
+                            <HorizontalStackLayout Spacing="12">
+                                <Label Text="{x:Static helpers:MaterialIcons.Dashboard}" 
+                                       FontFamily="MaterialIcons"
+                                       TextColor="White"
+                                       FontSize="24"
+                                       VerticalOptions="Center" />
+                                <Label Text="System Overview" 
+                                       TextColor="White"
+                                       FontSize="18"
+                                       FontAttributes="Bold"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Grid>
+                        
+                        <!-- Card Content -->
+                        <Grid Grid.Row="1" ColumnDefinitions="*,*,*" Padding="16" ColumnSpacing="16">
+                            <!-- Users Statistic -->
+                            <Border Grid.Column="0"
+                                    BackgroundColor="{AppThemeBinding Light=#EDE7F6, Dark=#311B92}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 8,8,8,8"
+                                    Padding="16">
+                                <VerticalStackLayout HorizontalOptions="Center" Spacing="8">
+                                    <Label Text="{x:Static helpers:MaterialIcons.Person}"
+                                           FontFamily="MaterialIcons"
+                                           TextColor="{AppThemeBinding Light=#673AB7, Dark=#B39DDB}"
+                                           FontSize="32"
+                                           HorizontalOptions="Center" />
+                                    <Label Text="5" 
+                                           TextColor="{AppThemeBinding Light=#673AB7, Dark=White}"
+                                           FontSize="24"
+                                           FontAttributes="Bold"
+                                           HorizontalOptions="Center" />
+                                    <Label Text="Users" 
+                                           TextColor="{AppThemeBinding Light=#673AB7, Dark=#B39DDB}"
+                                           FontSize="14"
+                                           HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </Border>
+                            
+
+                            <!-- Roles Statistic -->
+                            <Border Grid.Column="1"
+                                    BackgroundColor="{AppThemeBinding Light=#E3F2FD, Dark=#01579B}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 8,8,8,8"
+                                    Padding="16">
+                                <VerticalStackLayout HorizontalOptions="Center" Spacing="8">
+                                    <Label Text="{x:Static helpers:MaterialIcons.Group}"
+                                           FontFamily="MaterialIcons"
+                                           TextColor="{AppThemeBinding Light=#2196F3, Dark=#81D4FA}"
+                                           FontSize="32"
+                                           HorizontalOptions="Center" />
+                                    <Label Text="5" 
+                                           TextColor="{AppThemeBinding Light=#2196F3, Dark=White}"
+                                           FontSize="24"
+                                           FontAttributes="Bold"
+                                           HorizontalOptions="Center" />
+                                    <Label Text="Roles" 
+                                           TextColor="{AppThemeBinding Light=#2196F3, Dark=#81D4FA}"
+                                           FontSize="14"
+                                           HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </Border>
+                            
+
+                            <!-- Privileges Statistic -->
+                            <Border Grid.Column="2"
+                                    BackgroundColor="{AppThemeBinding Light=#E8F5E9, Dark=#1B5E20}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 8,8,8,8"
+                                    Padding="16">
+                                <VerticalStackLayout HorizontalOptions="Center" Spacing="8">
+                                    <Label Text="{x:Static helpers:MaterialIcons.Lock}"
+                                           FontFamily="MaterialIcons"
+                                           TextColor="{AppThemeBinding Light=#4CAF50, Dark=#A5D6A7}"
+                                           FontSize="32"
+                                           HorizontalOptions="Center" />
+                                    <Label Text="28" 
+                                           TextColor="{AppThemeBinding Light=#4CAF50, Dark=White}"
+                                           FontSize="24"
+                                           FontAttributes="Bold"
+                                           HorizontalOptions="Center" />
+                                    <Label Text="Privileges" 
+                                           TextColor="{AppThemeBinding Light=#4CAF50, Dark=#A5D6A7}"
+                                           FontSize="14"
+                                           HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Frame>
+            </Grid>
+        </ScrollView>
+    </Grid>
+</views:ViewBase>

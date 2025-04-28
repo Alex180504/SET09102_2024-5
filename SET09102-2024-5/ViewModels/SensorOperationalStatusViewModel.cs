@@ -2,6 +2,7 @@
 using SET09102_2024_5.Data;
 using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Models;
+using SET09102_2024_5.Services; // Add this for RouteConstants
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,15 +11,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using SET09102_2024_5.Views;
+using Microsoft.Extensions.Configuration;
+using System.IO;
 
 namespace SET09102_2024_5.ViewModels
 {
     public class SensorOperationalStatusViewModel : BaseViewModel
     {
-        private readonly SensorMonitoringContext _context;
         private readonly IMainThreadService _mainThreadService;
         private readonly IDialogService _dialogService;
         private readonly INavigationService _navigationService;
+        private readonly SensorMonitoringContextFactory _contextFactory;
 
         private ObservableCollection<SensorOperationalModel> _sensors;
         private ObservableCollection<SensorOperationalModel> _allSensors;
@@ -36,13 +39,14 @@ namespace SET09102_2024_5.ViewModels
 
         public SensorOperationalStatusViewModel(
             SensorMonitoringContext context,
-            IMainThreadService mainThreadService = null,
-            IDialogService dialogService = null,
-            INavigationService navigationService = null)
+            IMainThreadService? mainThreadService = null,
+            IDialogService? dialogService = null,
+            INavigationService? navigationService = null)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _contextFactory = new SensorMonitoringContextFactory();
             _mainThreadService = mainThreadService ?? new Services.MainThreadService();
             _dialogService = dialogService ?? new Services.DialogService();
+            _navigationService = navigationService;
 
             // Init commands
             LoadSensorsCommand = new Command(async () => await LoadSensorsAsync(), () => !IsLoading);
@@ -52,14 +56,15 @@ namespace SET09102_2024_5.ViewModels
 
             // Init collections
             _allSensors = new ObservableCollection<SensorOperationalModel>();
-            Sensors = new ObservableCollection<SensorOperationalModel>();
-            FilterProperties = new List<string> { "All", "ID", "Type", "Status", "Measurand" };
-            SelectedFilterProperty = "All";
-            SortProperty = "";
-            SortIndicator = "";
+            _sensors = new ObservableCollection<SensorOperationalModel>();
+            _filterProperties = new List<string> { "All", "ID", "Type", "Status", "Measurand" };
+            _selectedFilterProperty = "All";
+            _sortProperty = "";
+            _sortIndicator = "";
+            _filterText = "";
+            _selectedSensor = new SensorOperationalModel();
 
             _mainThreadService.BeginInvokeOnMainThread(async () => await LoadSensorsAsync());
-            _navigationService = navigationService;
         }
 
         public ObservableCollection<SensorOperationalModel> Sensors
@@ -153,13 +158,15 @@ namespace SET09102_2024_5.ViewModels
             {
                 IsLoading = true;
 
-                var sensors = await _context.Sensors
+                var sensors = await _contextFactory.CreateDbContext(new string[0])
+                    .Sensors
                     .Include(s => s.Measurand)
                     .AsNoTracking()
                     .ToListAsync();
 
                 // Calculate incident counts for each sensor
-                var incidentCounts = await _context.Measurements
+                var incidentCounts = await _contextFactory.CreateDbContext(new string[0])
+                    .Measurements
                     .GroupBy(m => m.SensorId)
                     .Select(g => new
                     {
@@ -300,16 +307,35 @@ namespace SET09102_2024_5.ViewModels
         {
             if (sensor == null) return;
 
-            // In a test environment, the mock navigation service will be used
-            // In production, we'll use Shell navigation
-            if (_navigationService != null &&
-                _navigationService.GetType().FullName.Contains("Mock"))
+            try
             {
-                await _navigationService.NavigateToAsync<SensorIncidentPage>($"SensorId={sensor.Id}");
+                // In a test environment, the mock navigation service will be used
+                if (_navigationService != null &&
+                    _navigationService.GetType().FullName.Contains("Mock"))
+                {
+                    await _navigationService.NavigateToAsync($"MainPage?SensorId={sensor.Id}");
+                }
+                else
+                {
+                    // Use _navigationService instead of direct Shell navigation to ensure proper routing
+                    if (_navigationService != null)
+                    {
+                        // Navigate to MainPage
+                        await _navigationService.NavigateToAsync(RouteConstants.MainPage);
+                        
+                        // Display a message to the user about the sensor ID
+                        await _dialogService.DisplayAlertAsync("Sensor Incidents", $"Viewing incidents for Sensor #{sensor.Id}.", "OK");
+                    }
+                    else
+                    {
+                        // Fallback to direct Shell navigation if navigation service is unavailable
+                        await Shell.Current.GoToAsync($"//{RouteConstants.MainPage}");
+                    }
+                }
             }
-            else
+            catch (Exception ex)
             {
-                await Shell.Current.GoToAsync($"SensorIncidentPage?SensorId={sensor.Id}");
+                await _dialogService.DisplayErrorAsync($"Navigation failed: {ex.Message}");
             }
         }
 

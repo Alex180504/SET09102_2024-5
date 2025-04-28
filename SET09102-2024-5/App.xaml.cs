@@ -1,77 +1,84 @@
-﻿using SET09102_2024_5.Services;
-
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
+using SET09102_2024_5.Services;
+using SET09102_2024_5.Interfaces;
 using System;
 using System.Threading.Tasks;
-using CommunityToolkit.Maui.Views;
-using SET09102_2024_5.Controls;
 
 namespace SET09102_2024_5
 {
     public partial class App : Application
     {
-        private readonly IDatabaseInitializationService _dbInitService;
-
-        public App(IDatabaseInitializationService dbInitService)
+        private readonly IAuthService? _authService;
+        private readonly INavigationService? _navigationService;
+        
+        public App(IServiceProvider services)
         {
-            try
-            {
-                InitializeComponent();
-            }
-            catch (Exception ex)
-            {
-                // This will show you exactly what XAML error is happening
-                System.Diagnostics.Debug.WriteLine("App XAML load failed: " + ex);
-                throw;
-            }
-            _dbInitService = dbInitService;
+            InitializeComponent();
 
-            MainPage = new AppShell();
-
-            // Check database connection
-            MainThread.BeginInvokeOnMainThread(CheckDatabaseConnection);
+            // Get services from the service provider
+            _authService = services.GetRequiredService<IAuthService>();
+            _navigationService = services.GetRequiredService<INavigationService>();
+            
+            // Create AppShell with the required services
+            MainPage = services.GetRequiredService<AppShell>();
         }
-
-        private async void CheckDatabaseConnection()
+        
+        protected override async void OnStart()
         {
+            base.OnStart();
+            
             try
             {
-                // Try to connect to the database
-                bool isConnected = await _dbInitService.InitializeDatabaseAsync();
-
-                if (!isConnected)
+                if (_authService != null && _navigationService != null)
                 {
-                    string errorDetails = _dbInitService.GetLastErrorMessage();
-                    if (string.IsNullOrEmpty(errorDetails))
-                    {
-                        errorDetails = "Cannot connect to the database";
-                    }
-
-                    ShowDatabaseErrorPopup(errorDetails);
+                    // Initialize authentication properly when the app is started
+                    await InitializeAuthenticationAsync();
                 }
             }
             catch (Exception ex)
             {
-                ShowDatabaseErrorPopup("Cannot connect to the database: " + ex.Message);
+                // Log the exception and handle it gracefully
+                System.Diagnostics.Debug.WriteLine($"Authentication initialization error: {ex.Message}");
+                
+                // Navigate to login page as fallback in case of authentication error
+                _navigationService?.NavigateToLoginAsync();
             }
         }
-
-        private void ShowDatabaseErrorPopup(string details)
+        
+        // Authentication initialization method with proper error handling
+        private async Task InitializeAuthenticationAsync()
         {
-            var popup = new DatabaseErrorPopup(details);
-            MainPage.ShowPopup(popup);
+            if (_authService == null || _navigationService == null) return;
+            
+            try
+            {
+                // This will trigger loading the saved user credentials if they exist
+                var currentUser = await _authService.GetCurrentUserAsync();
+                
+                // If we have a valid user from saved session, configure app accordingly
+                if (currentUser != null)
+                {
+                    await _navigationService.NavigateToMainPageAsync();
+                }
+                else
+                {
+                    await _navigationService.NavigateToLoginAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Properly handle and rethrow the exception so it can be caught by the caller
+                System.Diagnostics.Debug.WriteLine($"Authentication error: {ex.Message}");
+                throw;
+            }
         }
-
-        protected override void OnStart()
+        
+        // Parameterless constructor for design-time support only
+        public App()
         {
-        }
-
-        protected override void OnSleep()
-        {
-        }
-
-        protected override void OnResume()
-        {
+            InitializeComponent();
+            // This will only be called in design time or when services aren't available
         }
     }
 }
