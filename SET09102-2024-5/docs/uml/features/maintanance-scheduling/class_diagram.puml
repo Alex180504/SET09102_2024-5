@@ -1,0 +1,41 @@
+@startuml
+package Models {
+  class Maintenance {
+    +int MaintenanceId
+    +DateTime? MaintenanceDate
+    +string MaintainerComments
+    +int SensorId
+    +int MaintainerId
+  }
+  class Sensor {
+    +int SensorId
+    +string Name
+    ...
+  }
+  class User {
+    +int UserId
+    +string Username
+    ...
+  }
+}
+package Data.Repositories {
+  interface IMaintenanceRepository
+  class MaintenanceRepository
+}
+package Services {
+  interface IMaintenanceService
+  class MaintenanceService
+}
+package ViewModels {
+  class MaintenanceListViewModel
+  class MaintenanceDetailViewModel
+}
+Models.Maintenance --> Models.Sensor
+Models.Maintenance --> Models.User
+Data.Repositories.MaintenanceRepository ..|> Data.Repositories.IRepository
+Data.Repositories.MaintenanceRepository ..|> Data.Repositories.IMaintenanceRepository
+Services.MaintenanceService --> Data.Repositories.IMaintenanceRepository
+Services.MaintenanceService ..|> Services.IMaintenanceService
+ViewModels.MaintenanceListViewModel --> Services.IMaintenanceService
+ViewModels.MaintenanceDetailViewModel --> Services.IMaintenanceService
+@enduml
