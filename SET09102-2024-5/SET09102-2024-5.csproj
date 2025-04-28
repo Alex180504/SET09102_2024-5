@@ -102,8 +102,11 @@
 	  <MauiXaml Update="Controls\DatabaseErrorPopup.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Views\SensorIncidentPage.xaml"/>
+	  <MauiXaml Update="Views\SensorIncidentPage.xaml" />
 	  <MauiXaml Update="Views\HistoricalDataPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\SensorLocatorPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\SensorManagementPage.xaml">
@@ -117,6 +120,9 @@
 		<MauiAsset Include="Resources\Images\pin_default.png" />
 		<MauiAsset Include="Resources\Images\pin_warning.png" />
 		<MauiAsset Include="Resources\Images\pin_neutral.png" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="docs\sensor-locator\" />
 	</ItemGroup>
 
 </Project>

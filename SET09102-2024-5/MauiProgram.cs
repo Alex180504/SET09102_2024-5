@@ -101,14 +101,16 @@ namespace SET09102_2024_5
                 builder.Services.AddSingleton<IDialogService, DialogService>();
                 builder.Services.AddSingleton<IBackupService>(
                 _ => new MySqlBackupService(ConnectionString, backupFolder));
+                builder.Services.AddSingleton<HttpClient>();
+
 
                 // ViewModels & Views
                 builder.Services.AddTransient<MainPageViewModel>();
                 builder.Services.AddTransient<SensorManagementViewModel>();
                 builder.Services.AddTransient<SensorOperationalStatusViewModel>();
                 builder.Services.AddTransient<SensorIncidentLogViewModel>();
-
-                // Register Views
+                builder.Services.AddTransient<SensorLocatorViewModel>();
+                builder.Services.AddTransient<SensorLocatorPage>();
                 builder.Services.AddTransient<MapViewModel>();
                 builder.Services.AddTransient<MainPage>();
                 builder.Services.AddTransient<SensorManagementPage>();
@@ -117,6 +119,9 @@ namespace SET09102_2024_5
                 builder.Services.AddTransient<MapPage>();
                 builder.Services.AddTransient<DataStoragePage>();
                 builder.Services.AddTransient<DataStorageViewModel>();
+
+                builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
 
 
 #if DEBUG
