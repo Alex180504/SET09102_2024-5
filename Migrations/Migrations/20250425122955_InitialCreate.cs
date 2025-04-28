@@ -240,8 +240,7 @@ namespace Migrations.Migrations
                 columns: table => new
                 {
                     measurement_id = table.Column<int>(type: "int", nullable: false),
-                    incident_id = table.Column<int>(type: "int", nullable: false),
-                    Id = table.Column<int>(type: "int", nullable: false)
+                    incident_id = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
