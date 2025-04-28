@@ -55,8 +55,6 @@
             <Button
                 Text="Data Quality Checks"
                 Command="{Binding NavigateToDataQualityCommand}"
-                BackgroundColor="#007ACC"
-                TextColor="White"
                 HorizontalOptions="Fill" />
 
             <Button
