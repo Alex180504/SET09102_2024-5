@@ -1,0 +1,21 @@
+﻿@startuml
+actor Administrator
+participant SchedulerService
+participant SqlServerBackupService
+participant FileSystem
+participant EmailService
+
+Administrator -> SchedulerService : Configure(ScheduleTime, KeepLatest)
+SchedulerService -> SchedulerService : Schedule timer
+... Scheduled time triggers ...
+SchedulerService -> SqlServerBackupService : BackupNowAsync()
+activate SqlServerBackupService
+SqlServerBackupService -> FileSystem : Write backup file
+alt Success
+  SqlServerBackupService -> SqlServerBackupService : PruneBackupsAsync(KeepLatest)
+  SqlServerBackupService --> SchedulerService : Completed
+else Failure
+  SqlServerBackupService -> EmailService : SendFailureNotification()
+  SqlServerBackupService --> SchedulerService : Faulted
+end
+@enduml

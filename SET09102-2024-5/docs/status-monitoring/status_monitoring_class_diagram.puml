@@ -1,0 +1,137 @@
+@startuml Sensor Status Monitor Class Diagram
+
+' Base classes and interfaces
+abstract class BaseViewModel {
+  # SetProperty<T>(ref T field, T value, string propertyName): bool
+  # OnPropertyChanged(string propertyName): void
+}
+
+interface INotifyPropertyChanged {
+  + PropertyChanged: event
+}
+
+interface IQueryAttributable {
+  + ApplyQueryAttributes(IDictionary<string, object> query): void
+}
+
+' Main ViewModels
+class SensorOperationalStatusViewModel {
+  - _context: SensorMonitoringContext
+  - _mainThreadService: IMainThreadService
+  - _dialogService: IDialogService
+  - _sensors: ObservableCollection<SensorOperationalModel>
+  - _selectedSensor: SensorOperationalModel
+  - _filterText: string
+  - _isLoading: bool
+  - _selectedFilterProperty: string
+  - _filterProperties: List<string>
+  - _sortProperty: string
+  - _isSortAscending: bool
+  - _sortIndicator: string
+  + HasSensors: bool
+  + HasNoSensors: bool
+  + LoadSensorsCommand: ICommand
+  + ApplyCommand: ICommand
+  + ViewIncidentLogCommand: ICommand
+  + SortCommand: ICommand
+  - LoadSensorsAsync(): Task
+  - ApplyFilterAndRefresh(): void
+  - ApplyFilter(): void
+  - CanViewIncidentLog(SensorOperationalModel): bool
+  - ViewIncidentLog(SensorOperationalModel): void
+  - SortSensors(string): void
+  - ApplySorting(string, bool): void
+  + GetSortIndicator(string): string
+}
+
+class SensorIncidentLogViewModel {
+  - _context: SensorMonitoringContext
+  - _mainThreadService: IMainThreadService
+  - _dialogService: IDialogService
+  - _sensorId: int
+  - _sensorInfo: string
+  - _incidents: ObservableCollection<IncidentModel>
+  - _selectedIncident: IncidentModel
+  - _filterText: string
+  - _isLoading: bool
+  - _selectedFilterProperty: string
+  - _filterProperties: List<string>
+  - _sortProperty: string
+  - _isSortAscending: bool
+  - _sortIndicator: string
+  + HasIncidents: bool
+  + HasNoIncidents: bool
+  + LoadIncidentsCommand: ICommand
+  + ApplyCommand: ICommand
+  + SortCommand: ICommand
+  + BackCommand: ICommand
+  + ApplyQueryAttributes(IDictionary<string, object>): void
+  - LoadIncidentsAsync(): Task
+  - ApplyFilterAndRefresh(): void
+  - ApplyFilter(): void
+  - SortIncidents(string): void
+  - ApplySorting(string, bool): void
+  + GetSortIndicator(string): string
+}
+
+' Models
+class SensorOperationalModel {
+  - _id: int
+  - _type: string
+  - _status: string
+  - _measurand: string
+  - _deploymentDate: DateTime?
+  - _incidentCount: int
+  + PropertyChanged: event
+  + OnPropertyChanged(string): void
+}
+
+class IncidentModel {
+  - _id: int
+  - _priority: string
+  - _responderName: string
+  - _responderComments: string
+  - _status: string
+  - _resolvedDate: DateTime?
+  + PropertyChanged: event
+  + OnPropertyChanged(string): void
+}
+
+' View classes
+class SensorOperationalStatusPage {
+  - _viewModel: SensorOperationalStatusViewModel
+  + OnAppearing(): void
+}
+
+class SensorIncidentPage {
+  - _viewModel: SensorIncidentLogViewModel
+  + OnAppearing(): void
+}
+
+' Database context
+class SensorMonitoringContext {
+  + Sensors: DbSet<Sensor>
+  + Incidents: DbSet<Incident>
+  + Measurements: DbSet<Measurement>
+  + IncidentMeasurements: DbSet<IncidentMeasurement>
+}
+
+' Relationships
+BaseViewModel <|-- SensorOperationalStatusViewModel
+BaseViewModel <|-- SensorIncidentLogViewModel
+INotifyPropertyChanged <|.. BaseViewModel
+IQueryAttributable <|.. SensorIncidentLogViewModel
+
+INotifyPropertyChanged <|.. SensorOperationalModel
+INotifyPropertyChanged <|.. IncidentModel
+
+SensorOperationalStatusViewModel "1" --> "*" SensorOperationalModel: contains
+SensorIncidentLogViewModel "1" --> "*" IncidentModel: contains
+
+SensorOperationalStatusPage "1" --> "1" SensorOperationalStatusViewModel: uses
+SensorIncidentPage "1" --> "1" SensorIncidentLogViewModel: uses
+
+SensorOperationalStatusViewModel "1" --> "1" SensorMonitoringContext: uses
+SensorIncidentLogViewModel "1" --> "1" SensorMonitoringContext: uses
+
+@enduml

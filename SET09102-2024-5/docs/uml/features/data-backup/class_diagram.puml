@@ -1,0 +1,40 @@
+@startuml
+interface IBackupService {
+  +Task BackupNowAsync()
+  +Task<IEnumerable<BackupInfo>> ListBackupsAsync()
+  +Task PruneBackupsAsync(int keepLatest)
+  +Task RestoreAsync(string backupFile)
+}
+
+class SqlServerBackupService {
+  -string _connectionString
+  +SqlServerBackupService(string connectionString)
+  +Task BackupNowAsync()
+  +Task<IEnumerable<BackupInfo>> ListBackupsAsync()
+  +Task PruneBackupsAsync(int keepLatest)
+  +Task RestoreAsync(string backupFile)
+}
+
+class BackupOptions {
+  +TimeSpan ScheduleTime
+  +int KeepLatestBackups
+  +string BackupFolder
+}
+
+class SchedulerService {
+  -IBackupService _backupService
+  -BackupOptions _options
+  +SchedulerService(IBackupService, BackupOptions)
+  +void Start()
+}
+
+class BackupInfo {
+  +string FileName
+  +DateTime CreatedOn
+}
+
+IBackupService <|.. SqlServerBackupService
+SchedulerService --> IBackupService
+SchedulerService --> BackupOptions
+
+@enduml
