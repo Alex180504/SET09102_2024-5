@@ -16,6 +16,7 @@ namespace SET09102_2024_5.ViewModels
             NavigateToSensorMonitoringCommand = new Command(OnNavigateToSensorMonitoring);
             NavigateToDataStorageCommand = new Command(OnNavigateToDataStorage);
             NavigateToSensorLocatorCommand = new Command(OnNavigateToSensorLocator);
+            NavigateToMaintananceListCommand = new Command(OnNavigateToMaintananceList);
 
         }
 
@@ -41,6 +42,7 @@ namespace SET09102_2024_5.ViewModels
         public ICommand NavigateToSensorMonitoringCommand { get; }
         public ICommand NavigateToDataStorageCommand { get; }
         public ICommand NavigateToSensorLocatorCommand { get; }
+        public ICommand NavigateToMaintananceListCommand { get; }
 
 
 
@@ -77,6 +79,10 @@ namespace SET09102_2024_5.ViewModels
         private async void OnNavigateToSensorLocator()
         {
             await Shell.Current.GoToAsync("SensorLocatorPage");
+        }
+        private async void OnNavigateToMaintananceList()
+        {
+            await Shell.Current.GoToAsync("MaintenanceListPage");
         }
     }
 }

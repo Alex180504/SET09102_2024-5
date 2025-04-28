@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SET09102_2024_5.Models
 {
@@ -20,5 +16,8 @@ namespace SET09102_2024_5.Models
 
         public ICollection<Maintenance> Maintenances { get; set; }
         public ICollection<Incident> RespondedIncidents { get; set; }
+
+        [NotMapped]
+        public string DisplayName { get; set; }
     }
 }

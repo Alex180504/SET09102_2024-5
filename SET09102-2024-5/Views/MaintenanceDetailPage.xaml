@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="SET09102_2024_5.Views.MaintenanceDetailPage"
+    Title="Schedule Maintenance">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label Text="Sensor" />
+            <Picker
+        ItemsSource="{Binding Sensors}"
+        ItemDisplayBinding="{Binding DisplayName}"
+        SelectedItem="{Binding SelectedSensor}" />
+
+            <Label Text="Maintainer" />
+            <Picker
+        ItemsSource="{Binding Users}"
+        ItemDisplayBinding="{Binding DisplayName}"
+        SelectedItem="{Binding SelectedMaintainer}" />
+
+            <Label Text="Date" />
+            <DatePicker Date="{Binding MaintenanceDate}" />
+
+            <Label Text="Comments" />
+            <Editor
+        Text="{Binding Comments}"
+        AutoSize="TextChanges"
+        HeightRequest="100" />
+
+            <Button
+        Text="Save"
+        Command="{Binding SaveCommand}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

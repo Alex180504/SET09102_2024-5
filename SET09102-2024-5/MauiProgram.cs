@@ -7,6 +7,7 @@ using SET09102_2024_5.Data;
 using SET09102_2024_5.Data.Repositories;
 using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Models;
+using SET09102_2024_5.Repositories;
 using SET09102_2024_5.Services;
 using SET09102_2024_5.ViewModels;
 using SET09102_2024_5.Views;
@@ -91,6 +92,7 @@ namespace SET09102_2024_5
                 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
                 builder.Services.AddScoped<ISensorRepository, SensorRepository>();
                 builder.Services.AddScoped<IMeasurementRepository, MeasurementRepository>();
+                builder.Services.AddScoped<IMaintenanceRepository, MaintenanceRepository>();
 
                 // Services (scoped, not singleton)
                 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
@@ -102,6 +104,7 @@ namespace SET09102_2024_5
                 builder.Services.AddSingleton<IBackupService>(
                 _ => new MySqlBackupService(ConnectionString, backupFolder));
                 builder.Services.AddSingleton<HttpClient>();
+                builder.Services.AddScoped<IMaintenanceService, MaintenanceService>();
 
 
                 // ViewModels & Views
@@ -119,6 +122,10 @@ namespace SET09102_2024_5
                 builder.Services.AddTransient<MapPage>();
                 builder.Services.AddTransient<DataStoragePage>();
                 builder.Services.AddTransient<DataStorageViewModel>();
+                builder.Services.AddTransient<MaintenanceListViewModel>();
+                builder.Services.AddTransient<MaintenanceDetailViewModel>();
+                builder.Services.AddTransient<MaintenanceListPage>();
+                builder.Services.AddTransient<MaintenanceDetailPage>();
 
                 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
