@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using Microsoft.Extensions.Caching.Memory;
+using SET09102_2024_5.Interfaces;
 
 namespace SET09102_2024_5.Data.Repositories
 {
