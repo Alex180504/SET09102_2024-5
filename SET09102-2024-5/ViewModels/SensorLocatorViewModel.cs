@@ -22,12 +22,20 @@ using SkiaSharp;
 
 namespace SET09102_2024_5.ViewModels
 {
+    /// <summary>
+    /// Represents the available modes of transportation for route navigation.
+    /// </summary>
     public enum TravelMode
     {
         Walking,
         Driving
     }
 
+    /// <summary>
+    /// ViewModel for the sensor locator feature that provides map-based visualization,
+    /// search functionality, and navigation to sensors. Integrates with OpenRouteService
+    /// for route planning and displays sensor locations using interactive map pins.
+    /// </summary>
     public class SensorLocatorViewModel : BaseViewModel, IDisposable
     {
         private readonly ISensorService _sensorService;
@@ -63,16 +71,55 @@ namespace SET09102_2024_5.ViewModels
         private Position _currentPosition;
         private int _selectedTravelModeIndex;
 
-
+        /// <summary>
+        /// Gets the Mapsui Map instance used for displaying the interactive map.
+        /// Contains layers for sensors, routes, and the user's current location.
+        /// </summary>
         public Map Map { get; }
+
+        /// <summary>
+        /// Command to execute search for sensors based on the current search text.
+        /// </summary>
         public ICommand SearchCommand { get; }
+
+        /// <summary>
+        /// Command to clear the current search and hide search results.
+        /// </summary>
         public ICommand ClearSearchCommand { get; }
+
+        /// <summary>
+        /// Command to refresh sensor data and update the map.
+        /// </summary>
         public ICommand RefreshCommand { get; }
+
+        /// <summary>
+        /// Command to add a sensor to the current navigation route.
+        /// </summary>
         public ICommand AddToRouteCommand { get; }
+
+        /// <summary>
+        /// Command to remove a sensor from the current navigation route.
+        /// </summary>
         public ICommand RemoveFromRouteCommand { get; }
+
+        /// <summary>
+        /// Command to clear all waypoints from the current route.
+        /// </summary>
         public ICommand ClearRouteCommand { get; }
+
+        /// <summary>
+        /// Command to calculate and display a route between waypoints using OpenRouteService.
+        /// </summary>
         public ICommand BuildRouteCommand { get; }
+
+        /// <summary>
+        /// Command to start navigation to a specific sensor from the current location.
+        /// </summary>
         public ICommand NavigateToSensorCommand { get; }
+
+        /// <summary>
+        /// Command to change the travel mode used for route calculation.
+        /// </summary>
         public ICommand ChangeTravelModeCommand { get; }
 
         public SensorLocatorViewModel(
@@ -92,10 +139,10 @@ namespace SET09102_2024_5.ViewModels
 
             // Get OpenRouteService API key from configuration
             _openRouteServiceApiKey = configuration["OpenRouteServiceApiKey"];
-            
+
             // Handle missing API key gracefully
             bool hasApiKey = !string.IsNullOrEmpty(_openRouteServiceApiKey);
-            
+
             if (hasApiKey)
             {
                 // Set base address for OpenRouteService API
@@ -166,54 +213,90 @@ namespace SET09102_2024_5.ViewModels
             _selectedTravelModeIndex = 0;
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether data is currently being loaded.
+        /// Controls loading indicators and disables certain operations during loading.
+        /// </summary>
         public bool IsLoading
         {
             get => _isLoading;
             set => SetProperty(ref _isLoading, value);
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether an error has occurred during data operations.
+        /// Used to display error messages to the user.
+        /// </summary>
         public bool HasError
         {
             get => _hasError;
             private set => SetProperty(ref _hasError, value);
         }
 
+        /// <summary>
+        /// Gets or sets the error message to display when an operation fails.
+        /// </summary>
         public string ErrorMessage
         {
             get => _errorMessage;
             private set => SetProperty(ref _errorMessage, value);
         }
 
+        /// <summary>
+        /// Gets or sets the text entered by the user for searching sensors.
+        /// Used to filter the sensor list based on sensor name, type, or properties.
+        /// </summary>
         public string SearchText
         {
             get => _searchText;
             set => SetProperty(ref _searchText, value);
         }
 
+        /// <summary>
+        /// Gets or sets the collection of sensors that match the current search criteria.
+        /// This collection is displayed in the search results list.
+        /// </summary>
         public ObservableCollection<Sensor> FilteredSensors
         {
             get => _filteredSensors;
             set => SetProperty(ref _filteredSensors, value);
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether search results are currently being displayed.
+        /// Controls the visibility of the search results panel in the UI.
+        /// </summary>
         public bool IsSearchActive
         {
             get => _isSearching;
             set => SetProperty(ref _isSearching, value);
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the user is currently building a route.
+        /// Affects the behavior of sensor selection, adding selected sensors to the route instead of centering the map.
+        /// </summary>
         public bool IsRouteBuilding
         {
             get => _isRouteBuilding;
             set => SetProperty(ref _isRouteBuilding, value);
         }
 
+        /// <summary>
+        /// Gets or sets the total distance of the current route in kilometers.
+        /// Used for displaying route information to the user.
+        /// </summary>
         public double RouteDistance
         {
             get => _routeDistance;
             set => SetProperty(ref _routeDistance, value);
         }
 
+        /// <summary>
+        /// Gets or sets the estimated duration of the current route.
+        /// Used for displaying route information to the user.
+        /// Setting this value also updates the RouteDetailsText.
+        /// </summary>
         public TimeSpan RouteDuration
         {
             get => _routeDuration;
@@ -226,12 +309,20 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets or sets the formatted text that displays route details (distance and duration).
+        /// This is displayed in the UI to provide route information to the user.
+        /// </summary>
         public string RouteDetailsText
         {
             get => _routeDetailsText;
             private set => SetProperty(ref _routeDetailsText, value);
         }
 
+        /// <summary>
+        /// Updates the route details text based on the current route distance and duration.
+        /// Creates a formatted string combining distance and time information.
+        /// </summary>
         private void UpdateRouteDetailsText()
         {
             if (RouteWaypoints.Count < 2)
@@ -257,6 +348,10 @@ namespace SET09102_2024_5.ViewModels
             { TravelMode.Driving, "driving-car" }
         };
 
+        /// <summary>
+        /// Gets or sets the selected travel mode for route calculations.
+        /// Changing this value triggers a route recalculation if a route is active.
+        /// </summary>
         public TravelMode SelectedTravelMode
         {
             get => _selectedTravelMode;
@@ -273,6 +368,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets or sets the index of the selected travel mode in the UI picker.
+        /// This property bridges between the enum values and the UI control's index-based selection.
+        /// </summary>
         public int SelectedTravelModeIndex
         {
             get => _selectedTravelModeIndex;
@@ -286,8 +385,17 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets the list of available travel modes for route navigation.
+        /// Used to populate the travel mode picker in the UI.
+        /// </summary>
         public List<TravelMode> AvailableTravelModes => Enum.GetValues<TravelMode>().ToList();
 
+        /// <summary>
+        /// Gets or sets the currently selected sensor in the UI.
+        /// Selecting a sensor either adds it to the route (if in route building mode) or
+        /// centers the map on the sensor (in normal mode).
+        /// </summary>
         public Sensor SelectedSensor
         {
             get => _selectedSensor;
@@ -309,6 +417,11 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets or sets the list of waypoints in the current navigation route.
+        /// Each waypoint is represented by a sensor object.
+        /// Changing this collection updates related properties and commands.
+        /// </summary>
         public List<Sensor> RouteWaypoints
         {
             get => _routeWaypoints;
@@ -325,6 +438,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets a descriptive text about the current navigation route.
+        /// Changes format based on the number of waypoints and their types.
+        /// </summary>
         public string RouteWaypointsText
         {
             get
@@ -343,6 +460,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets a formatted title for the navigation route, including a travel mode icon.
+        /// Used in the UI header to indicate active navigation.
+        /// </summary>
         public string NavigationTitle
         {
             get
@@ -363,6 +484,11 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Initializes the view model by loading sensor data, getting the user's location,
+        /// and setting up pin styles and the refresh timer.
+        /// Should be called when the view is loaded.
+        /// </summary>
         public async Task InitializeAsync()
         {
             // Register pin images
@@ -445,6 +571,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Updates the user's current location indicator on the map.
+        /// Creates a feature with appropriate styling to represent the user's position.
+        /// </summary>
         private void UpdateCurrentLocationOnMap()
         {
             if (_currentPosition == null)
@@ -459,7 +589,7 @@ namespace SET09102_2024_5.ViewModels
             var locationStyle = new SymbolStyle
             {
                 BitmapId = _statusStyles["Location"].BitmapId,
-                SymbolScale = 0.2, 
+                SymbolScale = 0.2,
                 SymbolOffset = new Offset(0, 0)
             };
             feature.Styles.Add(locationStyle);
@@ -557,6 +687,12 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Formats a TimeSpan into a human-readable string with appropriate units.
+        /// Handles days, hours, minutes, and seconds with proper pluralization.
+        /// </summary>
+        /// <param name="span">The TimeSpan to format</param>
+        /// <returns>A formatted string representation of the time span</returns>
         string FormatTimeSpan(TimeSpan span)
         {
             string formatted = string.Format("{0}{1}{2}{3}",
@@ -569,6 +705,10 @@ namespace SET09102_2024_5.ViewModels
             return formatted;
         }
 
+        /// <summary>
+        /// Handles map information events, specifically for tapping on sensor pins.
+        /// Delegates the actual handling to the HandlePinTappedAsync method.
+        /// </summary>
         private void OnMapInfo(object? sender, MapInfoEventArgs e)
         {
             var info = e.MapInfo;
@@ -577,6 +717,12 @@ namespace SET09102_2024_5.ViewModels
             _ = HandlePinTappedAsync(info);
         }
 
+        /// <summary>
+        /// Processes a tap on a sensor pin, showing information about the sensor
+        /// and offering navigation options. Displays a dialog with sensor details
+        /// and provides an option to navigate to the selected sensor.
+        /// </summary>
+        /// <param name="info">Map information from the tap event</param>
         public async Task HandlePinTappedAsync(MapInfo info)
         {
             if (info?.Feature == null) return;
@@ -612,6 +758,12 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Registers a pin image for use on the map, loading from app resources or creating a fallback.
+        /// Handles error cases by generating a colored circle when the image file cannot be found.
+        /// </summary>
+        /// <param name="filename">The name of the image file to load</param>
+        /// <returns>The bitmap ID registered with Mapsui</returns>
         async Task<int> RegisterPinAsync(string filename)
         {
             var paths = new[] { filename, Path.Combine("Resources", "Images", filename) };
@@ -633,16 +785,16 @@ namespace SET09102_2024_5.ViewModels
 
             // Create a default bitmap if the file wasn't found
             _logger.LogWarning("Could not find pin image '{filename}', creating default bitmap", filename);
-            
+
             try
             {
                 // Create a simple color bitmap based on the filename
-                Microsoft.Maui.Graphics.Color color = filename.Contains("warning") 
+                Microsoft.Maui.Graphics.Color color = filename.Contains("warning")
                     ? Microsoft.Maui.Graphics.Colors.Yellow  // Yellow for warning
-                    : filename.Contains("location") 
+                    : filename.Contains("location")
                         ? Microsoft.Maui.Graphics.Colors.Blue  // Blue for location
                         : Microsoft.Maui.Graphics.Colors.Green; // Green for default
-                
+
                 // Generate a simple image using SkiaSharp (already included in MAUI)
                 var ms = new MemoryStream();
                 using (var surface = SKSurface.Create(new SKImageInfo(64, 64)))
@@ -650,7 +802,7 @@ namespace SET09102_2024_5.ViewModels
                     var canvas = surface.Canvas;
                     // Clear with transparent background
                     canvas.Clear(SKColors.Transparent);
-                    
+
                     // Create circle with specific color
                     using var paint = new SKPaint
                     {
@@ -658,10 +810,10 @@ namespace SET09102_2024_5.ViewModels
                         Color = new SKColor((byte)color.Red, (byte)color.Green, (byte)color.Blue, 255),
                         Style = SKPaintStyle.Fill
                     };
-                    
+
                     // Draw a circle
                     canvas.DrawCircle(32, 32, 28, paint);
-                    
+
                     // Add border
                     using var strokePaint = new SKPaint
                     {
@@ -671,13 +823,13 @@ namespace SET09102_2024_5.ViewModels
                         StrokeWidth = 2
                     };
                     canvas.DrawCircle(32, 32, 28, strokePaint);
-                    
+
                     // Convert to PNG
                     using var image = surface.Snapshot();
                     using var data = image.Encode(SKEncodedImageFormat.Png, 100);
                     data.SaveTo(ms);
                 }
-                
+
                 ms.Position = 0;
                 var id = BitmapRegistry.Instance.Register(ms);
                 if (id > 0)
@@ -691,11 +843,17 @@ namespace SET09102_2024_5.ViewModels
             {
                 _logger.LogError(ex, "Failed to create fallback bitmap for '{filename}'", filename);
             }
-            
+
             _logger.LogError("Could not register pin '{filename}'", filename);
             return -1;
         }
 
+        /// <summary>
+        /// Filters the list of sensors based on search text.
+        /// Matches against sensor name, type, or measurand name.
+        /// Updates the FilteredSensors collection with matching sensors.
+        /// </summary>
+        /// <param name="searchText">The text to search for</param>
         public void FilterSensors(string searchText)
         {
             _mainThread.BeginInvokeOnMainThread(() =>
@@ -728,22 +886,39 @@ namespace SET09102_2024_5.ViewModels
             });
         }
 
+        /// <summary>
+        /// Executes the search operation using the current search text.
+        /// Called when the search button is pressed.
+        /// </summary>
         private void ExecuteSearch()
         {
             FilterSensors(SearchText);
         }
 
+        /// <summary>
+        /// Hides the search results panel.
+        /// Called when the user dismisses search results.
+        /// </summary>
         public void HideSearchResults()
         {
             IsSearchActive = false;
         }
 
+        /// <summary>
+        /// Clears the current search text and hides search results.
+        /// Called when the clear search button is pressed.
+        /// </summary>
         private void ClearSearch()
         {
             SearchText = string.Empty;
             HideSearchResults();
         }
 
+        /// <summary>
+        /// Centers the map on a specific sensor location.
+        /// Adjusts the zoom level for appropriate visibility.
+        /// </summary>
+        /// <param name="sensor">The sensor to center on</param>
         private void CenterMapOnSensor(Sensor sensor)
         {
             if (sensor?.Configuration?.Latitude == null || sensor?.Configuration?.Longitude == null)
@@ -796,6 +971,12 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Adds a sensor to the current navigation route.
+        /// Handles special case for location-based navigation by preserving the current location waypoint.
+        /// Updates the map display and command states after adding the sensor.
+        /// </summary>
+        /// <param name="sensor">The sensor to add to the route</param>
         private void AddSensorToRoute(Sensor sensor)
         {
             if (sensor == null) return;
@@ -838,6 +1019,11 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Removes a sensor from the current navigation route.
+        /// Updates the map display and rebuilds the route if necessary.
+        /// </summary>
+        /// <param name="sensor">The sensor to remove from the route</param>
         private void RemoveSensorFromRoute(Sensor sensor)
         {
             if (sensor == null)
@@ -870,6 +1056,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Clears the current navigation route and all associated waypoints.
+        /// Resets route visualization and related properties.
+        /// </summary>
         private void ClearRoute()
         {
             RouteWaypoints = new List<Sensor>();
@@ -884,6 +1074,12 @@ namespace SET09102_2024_5.ViewModels
             OnPropertyChanged(nameof(RouteWaypointsText));
         }
 
+        /// <summary>
+        /// Determines if a sensor can be added to the current route.
+        /// A sensor can be added if it has valid coordinates and is not already in the route.
+        /// </summary>
+        /// <param name="sensor">The sensor to check</param>
+        /// <returns>True if the sensor can be added; otherwise, false</returns>
         private bool CanAddToRoute(Sensor sensor)
         {
             // Can add if sensor has coordinates and is not already in route
@@ -892,12 +1088,23 @@ namespace SET09102_2024_5.ViewModels
                    !RouteWaypoints.Any(wp => wp.SensorId == sensor.SensorId);
         }
 
+        /// <summary>
+        /// Determines if a sensor can be removed from the current route.
+        /// A sensor can be removed if it is currently in the route.
+        /// </summary>
+        /// <param name="sensor">The sensor to check</param>
+        /// <returns>True if the sensor can be removed; otherwise, false</returns>
         private bool CanRemoveFromRoute(Sensor sensor)
         {
             // Can remove if sensor is in route
             return sensor != null && RouteWaypoints.Any(wp => wp.SensorId == sensor.SensorId);
         }
 
+        /// <summary>
+        /// Determines if a route can be built with the current waypoints.
+        /// A route can be built if there are at least 2 waypoints.
+        /// </summary>
+        /// <returns>True if a route can be built; otherwise, false</returns>
         private bool CanBuildRoute()
         {
             // Need at least 2 waypoints to build a route
@@ -1055,6 +1262,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Safely refreshes both location data and sensor data with error handling.
+        /// Called periodically by the refresh timer to keep the map up to date.
+        /// </summary>
         private async Task SafeRefreshLocationAndDataAsync()
         {
             try
@@ -1071,6 +1282,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Implements IDisposable to clean up resources used by the view model.
+        /// Stops timers, unregisters event handlers, and disposes streams.
+        /// </summary>
         public void Dispose()
         {
             _refreshTimer?.Stop();
@@ -1085,58 +1300,161 @@ namespace SET09102_2024_5.ViewModels
         }
     }
 
-    // Helper classes for OpenRouteService API
+    /// <summary>
+    /// Represents a collection of GeoJSON features from the OpenRouteService API.
+    /// </summary>
     public class GeoJsonFeatureCollection
     {
+        /// <summary>
+        /// The GeoJSON type, typically "FeatureCollection".
+        /// </summary>
         public string type { get; set; }
+
+        /// <summary>
+        /// The list of features contained in the collection.
+        /// </summary>
         public List<GeoJsonFeature> features { get; set; }
     }
 
+    /// <summary>
+    /// Represents a single GeoJSON feature with properties and geometry.
+    /// </summary>
     public class GeoJsonFeature
     {
+        /// <summary>
+        /// The GeoJSON feature type, typically "Feature".
+        /// </summary>
         public string type { get; set; }
+
+        /// <summary>
+        /// Properties associated with the feature, including route information.
+        /// </summary>
         public GeoJsonProperties properties { get; set; }
+
+        /// <summary>
+        /// The geometry that defines the feature's shape and location.
+        /// </summary>
         public GeoJsonGeometry geometry { get; set; }
     }
 
+    /// <summary>
+    /// Represents properties associated with a GeoJSON feature.
+    /// Contains route information such as summary and segments.
+    /// </summary>
     public class GeoJsonProperties
     {
+        /// <summary>
+        /// Summary information about the route, including distance and duration.
+        /// </summary>
         public GeoJsonSummary summary { get; set; }
+
+        /// <summary>
+        /// Detailed information about the route's segments.
+        /// </summary>
         public List<GeoJsonSegment> segments { get; set; }
     }
 
+    /// <summary>
+    /// Represents summary information for a route, including total distance and duration.
+    /// </summary>
     public class GeoJsonSummary
     {
+        /// <summary>
+        /// The total distance of the route in meters.
+        /// </summary>
         public double distance { get; set; }
+
+        /// <summary>
+        /// The total duration of the route in seconds.
+        /// </summary>
         public double duration { get; set; }
     }
 
+    /// <summary>
+    /// Represents a segment of a route with distance, duration, and steps.
+    /// </summary>
     public class GeoJsonSegment
     {
+        /// <summary>
+        /// The distance of this segment in meters.
+        /// </summary>
         public double distance { get; set; }
+
+        /// <summary>
+        /// The duration of this segment in seconds.
+        /// </summary>
         public double duration { get; set; }
+
+        /// <summary>
+        /// The individual steps that make up this segment.
+        /// </summary>
         public List<GeoJsonStep> steps { get; set; }
     }
 
+    /// <summary>
+    /// Represents a single navigation step within a route segment.
+    /// </summary>
     public class GeoJsonStep
     {
+        /// <summary>
+        /// The distance of this step in meters.
+        /// </summary>
         public double distance { get; set; }
+
+        /// <summary>
+        /// The duration of this step in seconds.
+        /// </summary>
         public double duration { get; set; }
+
+        /// <summary>
+        /// The navigation instruction for this step (e.g., "Turn right").
+        /// </summary>
         public string instruction { get; set; }
+
+        /// <summary>
+        /// The name of the road or path for this step.
+        /// </summary>
         public string name { get; set; }
     }
 
+    /// <summary>
+    /// Represents the geometry component of a GeoJSON feature.
+    /// </summary>
     public class GeoJsonGeometry
     {
+        /// <summary>
+        /// The GeoJSON geometry type, typically "LineString" for routes.
+        /// </summary>
         public string type { get; set; }
+
+        /// <summary>
+        /// The array of coordinate pairs that define the geometry.
+        /// For routes, this is a sequence of [longitude, latitude] points.
+        /// </summary>
         public List<double[]> coordinates { get; set; }
     }
 
+    /// <summary>
+    /// Represents a geographical position with X (longitude) and Y (latitude) coordinates.
+    /// Used for tracking and displaying the user's current location.
+    /// </summary>
     public class Position
     {
+        /// <summary>
+        /// Gets or sets the X coordinate (longitude).
+        /// </summary>
         public double X { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Y coordinate (latitude).
+        /// </summary>
         public double Y { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of the Position class with the specified coordinates.
+        /// </summary>
+        /// <param name="x">The X coordinate (longitude)</param>
+        /// <param name="y">The Y coordinate (latitude)</param>
         public Position(double x, double y)
         {
             X = x;

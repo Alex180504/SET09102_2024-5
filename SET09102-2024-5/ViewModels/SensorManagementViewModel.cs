@@ -74,7 +74,10 @@ namespace SET09102_2024_5.ViewModels
             _mainThreadService.BeginInvokeOnMainThread(async () => await InitializeAsync());
         }
 
-
+        /// <summary>
+        /// Gets or sets the firmware version of the selected sensor.
+        /// Updates the underlying FirmwareInfo object when changed.
+        /// </summary>
         public string FirmwareVersion
         {
             get => _firmwareVersion;
@@ -88,12 +91,21 @@ namespace SET09102_2024_5.ViewModels
                 }
             }
         }
+
+        /// <summary>
+        /// Gets or sets the last update date of the sensor's firmware.
+        /// Used to track when firmware was last updated or installed.
+        /// </summary>
         public DateTime? LastUpdateDate
         {
             get => _lastUpdateDate;
             set => SetProperty(ref _lastUpdateDate, value);
         }
 
+        /// <summary>
+        /// Initializes the view model by loading sensor data.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         public async Task InitializeAsync()
         {
             await LoadSensorsAsync();
