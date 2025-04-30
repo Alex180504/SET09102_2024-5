@@ -8,7 +8,6 @@ using Microsoft.Maui.Controls;
 using SET09102_2024_5.Models;
 using SET09102_2024_5.Services;
 using SET09102_2024_5.Interfaces;
-using SET09102_2024_5.Data.Repositories;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace SET09102_2024_5.ViewModels

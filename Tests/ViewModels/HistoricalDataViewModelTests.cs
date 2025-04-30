@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Xunit;
 using SET09102_2024_5.Features.HistoricalData.ViewModels;
 using SET09102_2024_5.Models;
-using SET09102_2024_5.Services;
+using SET09102_2024_5.Interfaces;
 
 namespace SET09102_2024_5.Tests.ViewModels
 {
