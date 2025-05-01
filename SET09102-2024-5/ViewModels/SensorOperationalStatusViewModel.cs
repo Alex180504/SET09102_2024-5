@@ -16,6 +16,16 @@ using System.IO;
 
 namespace SET09102_2024_5.ViewModels
 {
+    /// <summary>
+    /// ViewModel for the SensorOperationalStatus page that manages the display, filtering, and sorting of sensor operational data.
+    /// Provides functionality for:
+    /// - Loading sensor data from the database with incident counts
+    /// - Filtering sensors by various properties (ID, Type, Status, Measurand)
+    /// - Sorting data by multiple columns with direction toggle
+    /// - Navigating to incident logs for selected sensors
+    /// - Maintaining separate collections for all sensors and filtered results
+    /// This class implements the MVVM pattern with observable properties and commands for data binding.
+    /// </summary>
     public class SensorOperationalStatusViewModel : BaseViewModel
     {
         private readonly IMainThreadService _mainThreadService;
@@ -37,6 +47,15 @@ namespace SET09102_2024_5.ViewModels
         public bool HasSensors => Sensors != null && Sensors.Count > 0;
         public bool HasNoSensors => !HasSensors;
 
+        /// <summary>
+        /// Initializes a new instance of the SensorOperationalStatusViewModel.
+        /// Sets up commands, default property values, and initiates the initial data load.
+        /// Supports dependency injection for services to facilitate testing.
+        /// </summary>
+        /// <param name="context">Database context for sensor data access</param>
+        /// <param name="mainThreadService">Service for UI thread operations</param>
+        /// <param name="dialogService">Service for displaying dialogs and alerts</param>
+        /// <param name="navigationService">Service for navigation between pages</param>
         public SensorOperationalStatusViewModel(
             SensorMonitoringContext context,
             IMainThreadService? mainThreadService = null,
@@ -67,6 +86,10 @@ namespace SET09102_2024_5.ViewModels
             _mainThreadService.BeginInvokeOnMainThread(async () => await LoadSensorsAsync());
         }
 
+        /// <summary>
+        /// Gets or sets the collection of sensor models displayed in the UI.
+        /// Updates HasSensors and HasNoSensors properties when changed.
+        /// </summary>
         public ObservableCollection<SensorOperationalModel> Sensors
         {
             get => _sensors;
@@ -80,6 +103,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets or sets the currently selected sensor in the UI.
+        /// Updates command execution state for ViewIncidentLogCommand when changed.
+        /// </summary>
         public SensorOperationalModel SelectedSensor
         {
             get => _selectedSensor;
@@ -92,6 +119,10 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets or sets the loading state of the view model.
+        /// Controls the enabled state of LoadSensorsCommand and ApplyCommand.
+        /// </summary>
         public bool IsLoading
         {
             get => _isLoading;
@@ -105,45 +136,79 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets or sets the text used for filtering sensors.
+        /// </summary>
         public string FilterText
         {
             get => _filterText;
             set => SetProperty(ref _filterText, value);
         }
 
+        /// <summary>
+        /// Gets or sets the currently selected property for filtering (ID, Type, Status, etc.).
+        /// </summary>
         public string SelectedFilterProperty
         {
             get => _selectedFilterProperty;
             set => SetProperty(ref _selectedFilterProperty, value);
         }
 
+        /// <summary>
+        /// Gets or sets the list of available filter properties.
+        /// </summary>
         public List<string> FilterProperties
         {
             get => _filterProperties;
             set => SetProperty(ref _filterProperties, value);
         }
 
+        /// <summary>
+        /// Gets or sets the current property used for sorting the sensor collection.
+        /// </summary>
         public string SortProperty
         {
             get => _sortProperty;
             set => SetProperty(ref _sortProperty, value);
         }
 
+        /// <summary>
+        /// Gets or sets whether sorting is in ascending order.
+        /// When false, sorting is in descending order.
+        /// </summary>
         public bool IsSortAscending
         {
             get => _isSortAscending;
             set => SetProperty(ref _isSortAscending, value);
         }
 
+        /// <summary>
+        /// Gets or sets the current sort indicator character (arrow) used in the UI.
+        /// </summary>
         public string SortIndicator
         {
             get => _sortIndicator;
             set => SetProperty(ref _sortIndicator, value);
         }
 
+        /// <summary>
+        /// Command to load or refresh sensor data from the database.
+        /// </summary>
         public ICommand LoadSensorsCommand { get; }
+
+        /// <summary>
+        /// Command to apply the current filter to the sensor collection.
+        /// </summary>
         public ICommand ApplyCommand { get; }
+
+        /// <summary>
+        /// Command to navigate to the incident log for a selected sensor.
+        /// </summary>
         public ICommand ViewIncidentLogCommand { get; }
+
+        /// <summary>
+        /// Command to sort the sensor collection by a specified property.
+        /// </summary>
         public ICommand SortCommand { get; }
 
         /// <summary>
@@ -298,11 +363,23 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Determines whether the ViewIncidentLog command can execute for a given sensor.
+        /// A sensor must be properly initialized with a valid ID.
+        /// </summary>
+        /// <param name="sensor">The sensor to check</param>
+        /// <returns>True if the command can execute; otherwise, false</returns>
         private bool CanViewIncidentLog(SensorOperationalModel sensor)
         {
             return sensor != null && sensor.Id > 0;
         }
 
+        /// <summary>
+        /// Navigates to the incident log view for the selected sensor.
+        /// Handles navigation differently based on whether the app is in test mode or production.
+        /// Displays appropriate error messages if navigation fails.
+        /// </summary>
+        /// <param name="sensor">The sensor whose incidents should be displayed</param>
         private async void ViewIncidentLog(SensorOperationalModel sensor)
         {
             if (sensor == null) return;
@@ -322,7 +399,7 @@ namespace SET09102_2024_5.ViewModels
                     {
                         // Navigate to MainPage
                         await _navigationService.NavigateToAsync(RouteConstants.MainPage);
-                        
+
                         // Display a message to the user about the sensor ID
                         await _dialogService.DisplayAlertAsync("Sensor Incidents", $"Viewing incidents for Sensor #{sensor.Id}.", "OK");
                     }
@@ -428,7 +505,13 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
-        // Helper to generate appropriate sort indicators for the UI
+        /// <summary>
+        /// Returns the appropriate sort indicator (arrow) for a column based on current sort state.
+        /// If the column is the current sort column, returns an up or down arrow based on sort direction.
+        /// Otherwise, returns an empty string.
+        /// </summary>
+        /// <param name="columnName">The name of the column to get the indicator for</param>
+        /// <returns>A string containing an arrow symbol or empty string</returns>
         public string GetSortIndicator(string columnName)
         {
             if (columnName == SortProperty)
@@ -438,11 +521,29 @@ namespace SET09102_2024_5.ViewModels
             return string.Empty;
         }
 
-        // Properties for each column's sort indicator
+        /// <summary>
+        /// Gets the sort indicator for the Id column.
+        /// </summary>
         public string IdSortIndicator => GetSortIndicator("Id");
+
+        /// <summary>
+        /// Gets the sort indicator for the Type column.
+        /// </summary>
         public string TypeSortIndicator => GetSortIndicator("Type");
+
+        /// <summary>
+        /// Gets the sort indicator for the Status column.
+        /// </summary>
         public string StatusSortIndicator => GetSortIndicator("Status");
+
+        /// <summary>
+        /// Gets the sort indicator for the Measurand column.
+        /// </summary>
         public string MeasurandSortIndicator => GetSortIndicator("Measurand");
+
+        /// <summary>
+        /// Gets the sort indicator for the DeploymentDate column.
+        /// </summary>
         public string DeploymentDateSortIndicator => GetSortIndicator("DeploymentDate");
     }
 }

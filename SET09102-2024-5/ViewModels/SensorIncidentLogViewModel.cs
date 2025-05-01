@@ -13,6 +13,11 @@ using System.Windows.Input;
 
 namespace SET09102_2024_5.ViewModels
 {
+    /// <summary>
+    /// ViewModel for displaying and managing sensor incident logs.
+    /// Provides functionality for loading, filtering, and sorting incident records
+    /// associated with a specific sensor.
+    /// </summary>
     public class SensorIncidentLogViewModel : BaseViewModel, IQueryAttributable
     {
         private readonly SensorMonitoringContext _context;
@@ -32,18 +37,31 @@ namespace SET09102_2024_5.ViewModels
         private bool _isSortAscending = true;
         private string _sortIndicator;
 
+        /// <summary>
+        /// Gets or sets the ID of the sensor whose incidents are being displayed.
+        /// This value is typically passed through navigation parameters.
+        /// </summary>
         public int SensorId
         {
             get => _sensorId;
             set => SetProperty(ref _sensorId, value);
         }
 
+        /// <summary>
+        /// Gets or sets the formatted display information about the current sensor,
+        /// including its ID, type, and associated measurand.
+        /// </summary>
         public string SensorInfo
         {
             get => _sensorInfo;
             set => SetProperty(ref _sensorInfo, value);
         }
 
+        /// <summary>
+        /// Gets or sets the collection of incident models currently displayed in the UI.
+        /// This collection may be filtered or sorted based on user interactions.
+        /// Setting this property also updates HasIncidents and HasNoIncidents properties.
+        /// </summary>
         public ObservableCollection<IncidentModel> Incidents
         {
             get => _incidents;
@@ -57,12 +75,21 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets or sets the currently selected incident in the UI.
+        /// This can be used for detail views or context actions.
+        /// </summary>
         public IncidentModel SelectedIncident
         {
             get => _selectedIncident;
             set => SetProperty(ref _selectedIncident, value);
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether data is currently being loaded.
+        /// When true, loading indicators should be displayed and commands are disabled.
+        /// Setting this property also updates the command execution states.
+        /// </summary>
         public bool IsLoading
         {
             get => _isLoading;
@@ -76,48 +103,100 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets or sets the text entered by the user for filtering incidents.
+        /// This text is applied to the selected filter property.
+        /// </summary>
         public string FilterText
         {
             get => _filterText;
             set => SetProperty(ref _filterText, value);
         }
 
+        /// <summary>
+        /// Gets or sets the property name selected for filtering (e.g., "All", "ID", "Priority").
+        /// Determines which incident properties are searched when applying filters.
+        /// </summary>
         public string SelectedFilterProperty
         {
             get => _selectedFilterProperty;
             set => SetProperty(ref _selectedFilterProperty, value);
         }
 
+        /// <summary>
+        /// Gets or sets the list of properties available for filtering incidents.
+        /// Typically includes options like "All", "ID", "Priority", "Status", and "Responder".
+        /// </summary>
         public List<string> FilterProperties
         {
             get => _filterProperties;
             set => SetProperty(ref _filterProperties, value);
         }
 
+        /// <summary>
+        /// Gets or sets the name of the property currently used for sorting.
+        /// This corresponds to one of the incident model properties.
+        /// </summary>
         public string SortProperty
         {
             get => _sortProperty;
             set => SetProperty(ref _sortProperty, value);
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether sorting is in ascending order.
+        /// When false, sorting is in descending order.
+        /// </summary>
         public bool IsSortAscending
         {
             get => _isSortAscending;
             set => SetProperty(ref _isSortAscending, value);
         }
 
+        /// <summary>
+        /// Gets or sets the visual indicator for sort direction (e.g., "▲" or "▼").
+        /// Used to display the current sort direction in the UI.
+        /// </summary>
         public string SortIndicator
         {
             get => _sortIndicator;
             set => SetProperty(ref _sortIndicator, value);
         }
 
+        /// <summary>
+        /// Gets a value indicating whether there are any incidents to display.
+        /// Used for conditional visibility in the UI.
+        /// </summary>
         public bool HasIncidents => Incidents != null && Incidents.Count > 0;
+
+        /// <summary>
+        /// Gets a value indicating whether there are no incidents to display.
+        /// Used for conditional visibility of empty state messaging in the UI.
+        /// </summary>
         public bool HasNoIncidents => !HasIncidents;
 
+        /// <summary>
+        /// Command to load or reload incidents for the current sensor.
+        /// Disabled while loading is in progress.
+        /// </summary>
         public ICommand LoadIncidentsCommand { get; }
+
+        /// <summary>
+        /// Command to apply the current filter text and selected filter property.
+        /// Disabled while loading is in progress.
+        /// </summary>
         public ICommand ApplyCommand { get; }
+
+        /// <summary>
+        /// Command to sort incidents by a specified property.
+        /// Takes a string parameter indicating which property to sort by.
+        /// </summary>
         public ICommand SortCommand { get; }
+
+        /// <summary>
+        /// Command to navigate back to the previous page.
+        /// Uses MAUI Shell navigation.
+        /// </summary>
         public ICommand BackCommand { get; }
 
         public SensorIncidentLogViewModel(
@@ -306,6 +385,11 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
+        /// <summary>
+        /// Handles the column header click event to sort incidents by the selected property.
+        /// Toggles sort direction if the same property is clicked multiple times.
+        /// </summary>
+        /// <param name="propertyName">The name of the property to sort by</param>
         private void SortIncidents(string propertyName)
         {
             if (string.IsNullOrWhiteSpace(propertyName)) return;
@@ -384,7 +468,12 @@ namespace SET09102_2024_5.ViewModels
             }
         }
 
-        // Helper to generate appropriate sort indicators for the UI
+        /// <summary>
+        /// Helper to generate appropriate sort indicators for the UI.
+        /// Returns an arrow symbol when the column is the current sort column.
+        /// </summary>
+        /// <param name="columnName">The name of the column to check</param>
+        /// <returns>A sort indicator arrow if this is the sort column; otherwise an empty string</returns>
         public string GetSortIndicator(string columnName)
         {
             if (columnName == SortProperty)
@@ -394,11 +483,29 @@ namespace SET09102_2024_5.ViewModels
             return string.Empty;
         }
 
-        // Properties for each column's sort indicator
+        /// <summary>
+        /// Gets the sort indicator for the ID column
+        /// </summary>
         public string IdSortIndicator => GetSortIndicator("Id");
+
+        /// <summary>
+        /// Gets the sort indicator for the Priority column
+        /// </summary>
         public string PrioritySortIndicator => GetSortIndicator("Priority");
+
+        /// <summary>
+        /// Gets the sort indicator for the Status column
+        /// </summary>
         public string StatusSortIndicator => GetSortIndicator("Status");
+
+        /// <summary>
+        /// Gets the sort indicator for the Responder column
+        /// </summary>
         public string ResponderSortIndicator => GetSortIndicator("Responder");
+
+        /// <summary>
+        /// Gets the sort indicator for the ResolvedDate column
+        /// </summary>
         public string ResolvedDateSortIndicator => GetSortIndicator("ResolvedDate");
     }
 }

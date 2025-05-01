@@ -4,11 +4,17 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ClosedXML.Excel;
+using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Models;
-using SET09102_2024_5.Services;
 
 namespace SET09102_2024_5.Services
 {
+    /// <summary>
+    /// Mock implementation of the IDataService interface that provides historical environmental data
+    /// from local Excel files. This service reads structured data from Excel workbooks stored in the
+    /// application's Resources/Raw directory. Supports different data categories (Air, Water, Weather)
+    /// with appropriate handling for each format's timestamp representation.
+    /// </summary>
     public class MockDataService : IDataService
     {
         public async Task<List<EnvironmentalDataModel>> GetHistoricalData(string category, string site)
@@ -53,7 +59,7 @@ namespace SET09102_2024_5.Services
                 int timeCol = isWeather ? -1 : headerRow.CellsUsed()
                     .First(c => c.GetString().Trim().Equals("Time", StringComparison.OrdinalIgnoreCase))
                     .Address.ColumnNumber;
-   
+
                 // Find the very last column in the sheet
                 int lastCol = ws.LastColumnUsed().ColumnNumber();
 
