@@ -321,15 +321,18 @@ namespace SET09102_2024_5.Services
             var result = await ServiceOperations.ExecuteAsync<bool>(
                 async () =>
                 {
+                    // Create a single context instance to use throughout the method
+                    using var context = _contextFactory.CreateDbContext(new string[0]);
+                    
                     // Check if user already exists
-                    if (await _contextFactory.CreateDbContext(new string[0]).Users.AnyAsync(u => u.Email == email))
+                    if (await context.Users.AnyAsync(u => u.Email == email))
                     {
                         _loggingService.Warning($"Registration failed - user already exists: {email}", _serviceCategory);
                         return false;
                     }
 
                     // Get guest role (create if doesn't exist)
-                    var guestRole = await _contextFactory.CreateDbContext(new string[0]).Roles.FirstOrDefaultAsync(r => r.RoleName == "Guest");
+                    var guestRole = await context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Guest");
                     if (guestRole == null)
                     {
                         _loggingService.Info("Creating missing Guest role", _serviceCategory);
@@ -338,8 +341,8 @@ namespace SET09102_2024_5.Services
                             RoleName = "Guest",
                             Description = "Limited access role for new users"
                         };
-                        _contextFactory.CreateDbContext(new string[0]).Roles.Add(guestRole);
-                        await _contextFactory.CreateDbContext(new string[0]).SaveChangesAsync();
+                        context.Roles.Add(guestRole);
+                        await context.SaveChangesAsync();
                     }
 
                     // Create password hash and salt using the password hasher service
@@ -356,8 +359,8 @@ namespace SET09102_2024_5.Services
                         RoleId = guestRole.RoleId,
                     };
 
-                    _contextFactory.CreateDbContext(new string[0]).Users.Add(user);
-                    await _contextFactory.CreateDbContext(new string[0]).SaveChangesAsync();
+                    context.Users.Add(user);
+                    await context.SaveChangesAsync();
                     _loggingService.Info($"User registered successfully: {email}", _serviceCategory);
                     return true;
                 },

@@ -26,4 +26,12 @@ public partial class DataStoragePage : ViewBase
             await vm.LoadBackupsAsync();
         }
     }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        // Force garbage collection to ensure streams get properly disposed
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+    }
 }
