@@ -1,5 +1,4 @@
-﻿using SET09102_2024_5.Data.Repositories;
-using SET09102_2024_5.Interfaces;
+﻿using SET09102_2024_5.Interfaces;
 using SET09102_2024_5.Models;
 
 namespace SET09102_2024_5.Services
