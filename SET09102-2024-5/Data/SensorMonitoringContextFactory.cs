@@ -12,28 +12,34 @@ namespace SET09102_2024_5.Data
     {
         public SensorMonitoringContext CreateDbContext(string[] args)
         {
-            // 1) build config from appsettings.json
-            var basePath = Directory.GetCurrentDirectory();
+            // Get connection string from embedded resource instead of physical file
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            using var stream = assembly.GetManifestResourceStream("SET09102_2024_5.appsettings.json");
+
+            if (stream == null)
+            {
+                throw new InvalidOperationException(
+                    "Could not find appsettings.json embedded resource. " +
+                    "Make sure it exists and its Build Action is set to 'Embedded resource'.");
+            }
+
             var config = new ConfigurationBuilder()
-                .SetBasePath(basePath)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+                .AddJsonStream(stream)
                 .Build();
 
-            // 2) grab your connection string
+            // Get the connection string
             var conn = config.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-            // 3) If we have a certificate path from MauiProgram, use it
+            // Handle SSL certificate
             if (!string.IsNullOrEmpty(MauiProgram.CertPath))
             {
                 conn = conn.Replace("SslCa=DigiCertGlobalRootG2.crt.pem;", $"SslCa={MauiProgram.CertPath};");
             }
-            // Otherwise, try to extract the certificate ourselves
             else
             {
-                try 
+                try
                 {
-                    // For design-time tools that don't use MauiProgram
                     string certPath = ExtractSslCertificate();
                     conn = conn.Replace("SslCa=DigiCertGlobalRootG2.crt.pem;", $"SslCa={certPath};");
                 }
@@ -43,7 +49,7 @@ namespace SET09102_2024_5.Data
                 }
             }
 
-            // 4) configure the MySQL/MariaDB provider
+            // Configure the context options
             var opts = new DbContextOptionsBuilder<SensorMonitoringContext>()
                 .UseMySql(conn, ServerVersion.AutoDetect(conn));
 
