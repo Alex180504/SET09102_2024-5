@@ -280,15 +280,28 @@ namespace SET09102_2024_5.ViewModels
                 try
                 {
                     using var raw = await FileSystem.OpenAppPackageFileAsync(path);
-                    var ms = new MemoryStream();
+                    // Create a memory stream that will remain open for the lifetime of the app
+                    var ms = new MemoryStream((int)raw.Length);
                     await raw.CopyToAsync(ms);
                     ms.Position = 0;
+                    
+                    // Register with BitmapRegistry first
                     var id = BitmapRegistry.Instance.Register(ms);
-                    if (id > 0) { _pinStreams.Add(ms); return id; }
-                    ms.Dispose();
+                    
+                    // Store the stream in our collection regardless of registration outcome
+                    _pinStreams.Add(ms);
+                    
+                    if (id > 0) 
+                    {
+                        return id;
+                    }
                 }
                 catch (FileNotFoundException) { }
                 catch (DirectoryNotFoundException) { }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error loading pin image '{filename}' from path: {path}", filename, path);
+                }
             }
             
             // Image file not found, create a fallback image programmatically
